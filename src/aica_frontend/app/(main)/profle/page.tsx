@@ -2,12 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-
-interface UserProfile {
-  id: string
-  email: string
-  created_at: string | null
-}
+import { UserProfile } from '@/types/user'
 
 export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null)
@@ -59,22 +54,45 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold mb-6 text-center">User Profile</h1>
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">ID</label>
-          <p className="mt-1 text-sm text-gray-900">{user.id}</p>
+    <div className="max-w-2xl mx-auto space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
+        <p className="text-gray-600 mt-2">Manage your account information.</p>
+      </div>
+
+      <div className="bg-white p-8 rounded-lg shadow-md">
+        <div className="flex items-center space-x-6 mb-6">
+          <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-2xl font-bold">
+              {user.email.charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800">{user.email}</h2>
+            <p className="text-gray-600">Member since {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}</p>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Email</label>
-          <p className="mt-1 text-sm text-gray-900">{user.email}</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+            <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded">{user.email}</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Account Created</label>
+            <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded">
+              {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Not available'}
+            </p>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Created At</label>
-          <p className="mt-1 text-sm text-gray-900">
-            {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Not available'}
-          </p>
+
+        <div className="mt-8 flex space-x-4">
+          <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Edit Profile
+          </button>
+          <button className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">
+            Change Password
+          </button>
         </div>
       </div>
     </div>
