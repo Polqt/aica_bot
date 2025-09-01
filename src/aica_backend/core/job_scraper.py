@@ -1,41 +1,43 @@
 import asyncio
+import os
 import logging
+import streamlit as st
+
 from typing import List, Dict, Optional
 from datetime import datetime
+from dotenv import load_dotenv
 
-import streamlit as st
-from firecrawl import FirecrawlApp
+from firecrawl import Firecrawl
 from langchain_anthropic import ChatAnthropic
 from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
-from ..database.models.job_models import Job, JobListings
+from ..database.models.job_models import Job
 
 logger = logging.getLogger(__name__)
 
 class ExtractedJobData(BaseModel):
-    """Structured job data extracted from raw content"""
     title: str = Field(description="Job title")
     company: str = Field(description="Company name")
     location: Optional[str] = Field(description="Job location")
     description: str = Field(description="Full job description")
     requirements: List[str] = Field(description="Job requirements and qualifications")
     skills: List[str] = Field(description="Required and preferred skills")
-    experience_level: Optional[str] = Field(description="Required experience level")
-    employment_type: Optional[str] = Field(description="Full-time, part-time, contract, etc.")
-    salary_range: Optional[str] = Field(description="Salary information if available")
 
 class JobScraper:
     ETHICAL_JOB_SOURCES = {
         "we_work_remotely": "https://weworkremotely.com/",
         "angel_list": "https://angel.co/jobs",
-        "authentic_jobs": "https://authenticjobs.com/",
     }
     
     def __init__(self, firecrawl_api_key: Optional[str] = None):
-        self.app = FirecrawlApp(api_key=firecrawl_api_key)
-        self.llm = ChatAnthropic(model="claude-3-5-sonnet-20241022", temperature=0)
+        load_dotenv()
+        firecrawl_api_key = firecrawl_api_key or os.getenv("FIRECRAWL_API_KEY")
+        model_name = os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-20241022")
+          
+        self.app = Firecrawl(api_key=firecrawl_api_key)
+        self.llm = ChatAnthropic(model=model_name, temperature=0)
         self.parser = PydanticOutputParser(pydantic_object=ExtractedJobData)
         
         self.extraction_prompt = ChatPromptTemplate.from_messages([
@@ -60,10 +62,14 @@ class JobScraper:
 
     @st.cache_data(show_spinner=False)
     def _cached_parse_resume(pdf_link: str) -> str:
-        app = FirecrawlApp()
+        app = Firecrawl()
         try:
-            response = app.scrape_url(url=pdf_link)
-            return response.get("markdown", response.get("content", ""))
+            response = app.scrape(url=pdf_link)
+            if hasattr(response, "markdown") and response.markdown:
+                return response.markdown
+            elif hasattr(response, "content") and response.content:
+                return response.content
+            return ""
         except Exception as e:
             logger.error(f"Error parsing resume from {pdf_link}: {e}")
             raise
@@ -73,15 +79,16 @@ class JobScraper:
 
     async def scrape_job_posting(self, job_url: str) -> str:
         try:
-            response = self.app.scrape_url(
+            response = self.app.scrape(
                 url=job_url,
-                params={
-                    "formats": ["markdown"],
-                    "onlyMainContent": True,
-                    "removeTags": ["nav", "footer", "header", "ads"]
-                }
+                formats=["markdown"],
+                only_main_content=True,
             )
-            return response.get("markdown", response.get("content", ""))
+            if hasattr(response, "markdown") and response.markdown:
+                return response.markdown
+            elif hasattr(response, "content") and response.content:
+                return response.content
+            return ""
         except Exception as e:
             logger.error(f"Error scraping job posting {job_url}: {e}")
             return ""
@@ -134,29 +141,23 @@ class JobScraper:
 
     async def scrape_job_board_search(self, search_url: str, max_jobs: int = 50) -> List[Job]:
         try:
-            search_response = self.app.scrape_url(
-                url=search_url,
-                params={
-                    "formats": ["extract"],
-                    "extract": {
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "job_urls": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                    "description": "List of individual job posting URLs"
-                                }
-                            }
-                        },
-                        "prompt": f"Extract up to {max_jobs} individual job posting URLs from this job search results page."
+            search_response = self.app.extract(
+                urls=[search_url],
+                schema={
+                    "type": "object",
+                    "properties": {
+                        "job_urls": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "List of individual job posting URLs"
+                        }
                     }
-                }
+                },
+                prompt=f"Extract up to {max_jobs} individual job posting URLs from this job search results page.",
             )
             
-            job_urls = search_response.get("extract", {}).get("job_urls", [])
+            job_urls = search_response.data.get("job_urls", [])
             if not job_urls:
-                logger.warning(f"No job URLs found in search results: {search_url}")
                 return []
             
             job_urls = job_urls[:max_jobs]

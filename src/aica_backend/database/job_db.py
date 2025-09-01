@@ -50,16 +50,16 @@ class JobDatabase:
         self.client.table("job_sources").update(update_data).eq("url", url).execute()
         
     def save_job(self, job: Job) -> str:
-        job_data = job.dict(exclude={'id'})
+        job_data = job.model_dump(mode="json", exclude={'id'})
         
         if job_data.get('requirements'):
-            job_data['requirements'] = json.dumps(job_data['requirements'])
+            job_data['requirements'] = job_data['requirements']
         if job_data.get('skills'):
-            job_data['skills'] = json.dumps(job_data['skills'])
+            job_data['skills'] = job_data['skills']
         if job_data.get('content_embedding'):
-            job_data['content_embedding'] = json.dumps(job_data['content_embedding'])
+            job_data['content_embedding'] = job_data['content_embedding']
         if job_data.get('skills_embedding'):
-            job_data['skills_embedding'] = json.dumps(job_data['skills_embedding'])
+            job_data['skills_embedding'] = job_data['skills_embedding']
             
         response = self.client.table("jobs").upsert(job_data).execute()
         return response.data[0]['id']
