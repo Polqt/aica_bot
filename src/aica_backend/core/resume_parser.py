@@ -1,4 +1,5 @@
 import re
+import os
 
 from typing import Dict, List, Optional
 from langchain_anthropic import ChatAnthropic
@@ -6,6 +7,9 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 from dataclasses import dataclass
+
+from ..database.user_db import UserDatabase
+from ..database.models.user_models import UserSkillCreate
 
 class ResumeSkills(BaseModel):
     technical_skills: List[str] = Field(description="Technical skills and technologies")
@@ -23,7 +27,10 @@ class ParsedResume:
     
 class ResumeParser:
     def __init__(self):
-        self.llm = ChatAnthropic(model="claude-3-5-sonnet-20241022", temperature=0)
+        self.llm = ChatAnthropic(
+            model=os.getenv("ANTHROPIC_MODEL", "claude-3-5-haikyu-20241022"), 
+            temperature=0
+        )
         self.parser = PydanticOutputParser(pydantic_object=ResumeSkills)
         
         self.extraction_prompt = ChatPromptTemplate.from_messages([
@@ -34,6 +41,13 @@ class ResumeParser:
                     information from resumes to enable accurate job matching. Be thorough in 
                     identifying both explicit and implicit skills, and accurately estimate 
                     experience levels based on career progression.
+                    
+                    Focus on:
+                    - All technical skills (programming languages, tools, frameworks, databases, cloud platforms)
+                    - Soft skills (communication, leadership, problem-solving, teamwork)
+                    - Calculate realistic years of professional experience
+                    - Extract actual job titles held
+                    - Identify education level and industries worked in.
                 """
             ),
             (
@@ -84,6 +98,32 @@ class ResumeParser:
             "phone": phone_match.group() if phone_match else None
         }
         
+    async def parse_resume(self, resume_text: str) -> ParsedResume:
+        cleaned_text = self.clean_text(resume_text)
+        contact_info = self.extract_contact_info(cleaned_text)
+        
+        try:
+            prompt = self.extraction_prompt.format_prompt(
+                resume_text=cleaned_text,
+                format_instructions=self.parser.get_format_instructions()
+            )
+            
+            response = await self.llm.ainvoke(prompt)
+            extracted_skills = self.parser.parse(response.content)
+        except Exception as e:
+            extracted_skills = self._fallback_extraction(cleaned_text)
+
+        return ParsedResume(
+            raw_text=resume_text,
+            skills=extracted_skills,
+            cleaned_text=cleaned_text,
+            contact_info=contact_info
+        )
+        
+    def _fallback_extraction(self, text: str) -> ResumeSkills:
+        
+        technical_skills = []
+        
     def create_search_text(self, parsed_resume: ParsedResume) -> str:
         skills = parsed_resume.skills
         
@@ -97,3 +137,41 @@ class ResumeParser:
         ]
         
         return " ".join(filter(None, search_components)) 
+    
+    async def process_and_store_resume(self, user_id: str, resume_text: str) -> ParsedResume:
+        parsed_resume = await self.parse_resume(resume_text)
+        
+        db = UserDatabase()
+        
+        db.clear_user_skills(user_id)
+        
+        skills_to_store = []
+        
+        for skill in parsed_resume.skills.technical_skills:
+            skills_to_store.append(UserSkillCreate(
+                skill_name=skill,
+                skill_category="technical",
+                source="resume"
+            ))
+            
+        for skill in parsed_resume.skills.soft_skills:
+            skills_to_store.append(UserSkillCreate(
+                skill_name=skill,
+                skill_category="soft",
+                source="resume"
+            ))
+            
+        for industry in parsed_resume.skills.industries:
+            skills_to_store.append(UserSkillCreate(
+                skill_name=industry,
+                skill_category="industry",
+                source="resume"
+            ))
+        
+        if skills_to_store:
+            db.add_user_skills_batch(user_id, skills_to_store)
+        
+        db.mark_resume_processed(user_id)
+        
+        return parsed_resume
+        

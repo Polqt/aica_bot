@@ -16,7 +16,7 @@ async def main():
     db = JobDatabase()
 
     sources = ["we_work_remotely", "angel_list"]  
-    jobs_per_source = 2 
+    jobs_per_source = 10
 
     # Scrape
     jobs = await scraper.batch_scrape_ethical_sources(sources, jobs_per_source)
