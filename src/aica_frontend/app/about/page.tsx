@@ -10,6 +10,7 @@ export default function AboutPage() {
       <Navbar />
       <Team />
       <Contact />
+      Hello
       <Testimony />
     </div>
   );
