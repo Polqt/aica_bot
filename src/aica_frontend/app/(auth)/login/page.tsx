@@ -2,6 +2,18 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion } from 'motion/react'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import {
+  Mail,
+  Lock,
+  ArrowRight,
+  Loader2
+} from 'lucide-react'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -16,7 +28,7 @@ export default function LoginPage() {
     setError('')
 
     try {
-      const response = await fetch('http://localhost:8000/auth/login', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,9 +44,27 @@ export default function LoginPage() {
       if (!response.ok) {
         setError(data.detail || 'Check your email for the confirmation first!')
       } else {
-        // Store the token in localStorage for future API calls
         localStorage.setItem('access_token', data.access_token)
-        router.push('/dashboard')
+        try {
+          const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/auth/profile`, {
+            headers: {
+              'Authorization': `Bearer ${data.access_token}`,
+            },
+          })
+
+          if (profileResponse.ok) {
+            const profile = await profileResponse.json()
+            if (!profile.resume_uploaded) {
+              router.push('/upload')
+            } else {
+              router.push('/dashboard')
+            }
+          } else {
+            router.push('/dashboard')
+          }
+        } catch {
+          router.push('/dashboard')
+        }
       }
     } catch {
       setError('An unexpected error occurred')
@@ -44,71 +74,120 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-center text-3xl font-extrabold text-gray-900">
-          Sign in to your account
-        </h2>
-      </div>
-      <form className="space-y-6" onSubmit={handleLogin}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-          </div>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
 
-          {error && (
-            <div className="text-red-600 text-sm text-center">
-              {error}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="w-full max-w-md"
+      >
+        <Card className="glass-card border-0 shadow-2xl">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl text-center">Sign In</CardTitle>
+            <CardDescription className="text-center">
+              Enter your credentials to access your account
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div className="space-y-4">
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-blue-500/50 focus:ring-blue-500/20"
+                  />
+                </div>
+
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    name="password"
+                    type='password'
+                    required
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 pr-10 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-blue-500/50 focus:ring-blue-500/20"
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-4 bg-red-50/50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-lg"
+                >
+                  <p className="text-red-600 dark:text-red-400 text-sm text-center">
+                    {error}
+                  </p>
+                </motion.div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 btn-modern group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                size="lg"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    Sign In
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <Separator className="my-6" />
+
+            <div className="text-center space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Don&apos;t have an account?{' '}
+                <Link
+                  href="/sign-up"
+                  className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                >
+                  Sign up for free
+                </Link>
+              </p>
             </div>
-          )}
+          </CardContent>
+        </Card>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
-
-          <div className="text-center">
-            <a
-              href="/sign-up"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Don&apos;t have an account? Sign up
-            </a>
-          </div>
-        </form>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="mt-8 text-center"
+        >
+          <p className="text-xs text-muted-foreground">
+            By signing in, you agree to our{' '}
+            <Link href="#" className="underline hover:text-foreground transition-colors">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link href="#" className="underline hover:text-foreground transition-colors">
+              Privacy Policy
+            </Link>
+          </p>
+        </motion.div>
+      </motion.div>
     </div>
   )
 }

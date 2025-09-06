@@ -1,7 +1,12 @@
-import React from 'react'
+import { Navbar } from '@/components/Navbar';
+import Testimony from '@/components/Testimony';
+import React from 'react';
 
-export default function page() {
+export default function PaperPage() {
   return (
-    <div>page</div>
-  )
+    <div>
+      <Navbar />
+      <Testimony />
+    </div>
+  );
 }

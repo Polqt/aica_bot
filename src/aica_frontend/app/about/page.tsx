@@ -1,7 +1,17 @@
-import React from 'react'
+import Contact from '@/components/Contact';
+import { Navbar } from '@/components/Navbar';
+import Team from '@/components/Team';
+import Testimony from '@/components/Testimony';
+import React from 'react';
 
-export default function page() {
+export default function AboutPage() {
   return (
-    <div>page</div>
-  )
+    <div>
+      <Navbar />
+      <Team />
+      <Contact />
+      Hello
+      <Testimony />
+    </div>
+  );
 }

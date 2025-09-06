@@ -1,4 +1,5 @@
 'use client';
+
 import {
   Navbar as ResizableNavbar,
   NavBody,
@@ -11,9 +12,14 @@ import {
   MobileNavMenu,
 } from '@/components/ui/resizable-navbar';
 import { useState } from 'react';
+import Link from 'next/link';
 
 export function Navbar() {
   const navItems = [
+    {
+      name: 'Home',
+      link: '/',
+    },
     {
       name: 'About',
       link: '/about',
@@ -32,9 +38,13 @@ export function Navbar() {
         <NavBody>
           <NavbarLogo />
           <NavItems items={navItems} />
-          <div className="flex items-center gap-4">
-            <NavbarButton variant="gradient">Login</NavbarButton>
-            <NavbarButton variant="primary">Sign up</NavbarButton>
+          <div className="flex items-center gap-4 z-10">
+            <NavbarButton as={Link} href="/login" variant="secondary">
+              Login
+            </NavbarButton>
+            <NavbarButton as={Link} href="/sign-up" variant="primary">
+              Sign Up
+            </NavbarButton>
           </div>
         </NavBody>
 
@@ -63,19 +73,25 @@ export function Navbar() {
             ))}
             <div className="flex w-full flex-col gap-4">
               <NavbarButton
+                as={Link}
+                href="/login"
                 onClick={() => setIsMobileMenuOpen(false)}
-                variant="primary"
+                variant="secondary"
                 className="w-full"
               >
                 Login
               </NavbarButton>
-              <NavbarButton
-                onClick={() => setIsMobileMenuOpen(false)}
-                variant="primary"
-                className="w-full"
-              >
-                Sign up
-              </NavbarButton>
+              <Link href={'/sign-up'} className="w-full">
+                <NavbarButton
+                  as={Link}
+                  href="/sign-up"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  variant="primary"
+                  className="w-full"
+                >
+                  Sign Up
+                </NavbarButton>
+              </Link>
             </div>
           </MobileNavMenu>
         </MobileNav>

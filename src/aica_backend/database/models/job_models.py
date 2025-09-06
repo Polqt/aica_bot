@@ -4,19 +4,19 @@ from datetime import datetime
 
 
 class Job(BaseModel):
-    id: Optional[str] = Field(description="Job ID")
+    id: Optional[str] = Field(default=None, description="Job ID")
     title: str = Field(description="Job title")
     url: str = Field(description="URL of the job posting")
     company: str = Field(description="Company name")
-    description: Optional[str] = Field(description="Job description")
-    location: Optional[str] = Field(description="Job location")
-    created_at: Optional[datetime] = Field(description="Job creation timestamp")
-    
-    requirements: List[str] = Field(default=[], description="Job requirements and qualifications")
-    skills: List[str] = Field(default=[], description="Required and preferred skills")
-    
-    content_embedding: Optional[List[float]] = Field(description="Vector embedding of job content")
-    skills_embedding: Optional[List[float]] = Field(description="Vector embedding of skills")
+    description: Optional[str] = Field(default=None, description="Job description")
+    location: Optional[str] = Field(default=None, description="Job location")
+    created_at: Optional[datetime] = Field(default_factory=datetime.now, description="Job creation timestamp")
+
+    requirements: List[str] = Field(default_factory=list, description="Job requirements and qualifications")
+    skills: List[str] = Field(default_factory=list, description="Required and preferred skills")
+
+    content_embedding: Optional[List[float]] = Field(default=None, description="Vector embedding of job content")
+    skills_embedding: Optional[List[float]] = Field(default=None, description="Vector embedding of skills")
     is_indexed: bool = Field(default=False, description="Whether job is indexed in vector store")
 
 class JobSource(BaseModel):

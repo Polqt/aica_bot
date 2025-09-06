@@ -28,7 +28,7 @@ class JobMatch:
 
 class JobMatcher:
     def __init__(self):
-        self.llm = ChatAnthropic(model="claude-3-5-sonnet-20241022", temperature=0)
+        self.llm = ChatAnthropic(model="claude-3-haiku-20240307", temperature=0)
         self.parser = PydanticOutputParser(pydantic_object=MatchResult)
 
         self.embedder = TextEmbedder()
