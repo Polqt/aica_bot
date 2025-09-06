@@ -50,24 +50,25 @@ class ResumeParser:
     }
     
     def __init__(self):
-        self.llm = self._create_llm_client()
+        self.llm = None
+        try:
+            self.llm = self._create_llm_client()
+        except Exception as e:
+            logger.warning(f"LLM client initialization failed: {str(e)}. Will use fallback extraction methods.")
+        
         self.skills_parser = PydanticOutputParser(pydantic_object=ResumeSkills)
         self.info_parser = PydanticOutputParser(pydantic_object=PersonalInfo)
         
     def _create_llm_client(self) -> ChatAnthropic:
-        try:
-            api_key = os.getenv("ANTHROPIC_API_KEY")
-            if not api_key:
-                raise ValueError("ANTHROPIC_API_KEY environment variable not set")
-                
-            return ChatAnthropic(
-                model=os.getenv("ANTHROPIC_MODEL", "claude-3-haiku-20240307"),
-                temperature=0,
-                anthropic_api_key=api_key
-            )
-        except Exception as e:
-            logger.error(f"Failed to initialize LLM client: {str(e)}")
-            raise ValueError(f"Failed to initialize LLM client: {str(e)}")
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key or api_key == "your_anthropic_api_key_here":
+            raise ValueError("ANTHROPIC_API_KEY environment variable not set or contains placeholder value")
+        
+        return ChatAnthropic(
+            model=os.getenv("ANTHROPIC_MODEL", "claude-3-haiku-20240307"),
+            temperature=0,
+            anthropic_api_key=api_key
+        )
     
     def _create_extraction_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
@@ -201,6 +202,11 @@ class ResumeParser:
         return text.strip()
 
     async def extract_personal_info(self, text: str) -> PersonalInfo:
+        # If LLM is not available, use fallback directly
+        if self.llm is None:
+            logger.info("LLM not available, using fallback info extraction")
+            return self._fallback_info_extraction(text)
+        
         try:
             max_chars = 3000
             truncated_text = text[:max_chars] if len(text) > max_chars else text
@@ -229,6 +235,11 @@ class ResumeParser:
             return self._fallback_info_extraction(text)
 
     async def extract_skills(self, text: str) -> ResumeSkills:
+        # If LLM is not available, use fallback directly
+        if self.llm is None:
+            logger.info("LLM not available, using fallback skills extraction")
+            return self._fallback_skills_extraction(text)
+        
         try:
             prompt = self._create_extraction_prompt().format_prompt(
                 resume_text=text,
@@ -325,6 +336,58 @@ class ResumeParser:
                     continue
         
         return None
+
+    def _extract_name_from_text(self, text: str) -> Optional[str]:
+        lines = text.split('\n')
+        lines = [line.strip() for line in lines if line.strip()]
+        
+        if not lines:
+            return None
+        
+        # Try first few lines for name
+        for i, line in enumerate(lines[:5]):  # Check first 5 lines
+            line = line.strip()
+            
+            skip_keywords = [
+                'resume', 'cv', 'curriculum', 'vitae', 'phone', 'email', 'address',
+                'objective', 'summary', 'profile', 'experience', 'education',
+                'skills', 'contact', 'www', 'http', '.com', '@'
+            ]
+            
+            if any(keyword in line.lower() for keyword in skip_keywords):
+                continue
+            
+            # Check if line looks like a name (2-4 words, proper capitalization)
+            words = line.split()
+            if 2 <= len(words) <= 4:
+                # Check if words start with capital letters and contain only letters
+                if all(word[0].isupper() and word.replace('-', '').replace("'", '').isalpha() 
+                      for word in words if word):
+                    return line
+        
+        return None
+
+    def _clean_extracted_name(self, name: str) -> str:
+        if not name:
+            return name
+            
+        # Remove common prefixes
+        prefixes_to_remove = ['resume of ', 'cv of ', 'name:', 'full name:']
+        name_lower = name.lower().strip()
+        
+        for prefix in prefixes_to_remove:
+            if name_lower.startswith(prefix):
+                name = name[len(prefix):].strip()
+                break
+        
+        # Remove extra whitespace and clean up
+        name = ' '.join(name.split())
+        
+        # Capitalize properly if it's all caps or all lowercase
+        if name.isupper() or name.islower():
+            name = name.title()
+        
+        return name
 
     async def parse_resume_from_file(self, file_content: bytes, file_type: str) -> ParsedResume:
         try:

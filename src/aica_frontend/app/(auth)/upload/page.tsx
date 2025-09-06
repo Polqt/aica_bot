@@ -94,8 +94,11 @@ export default function ResumeUpload() {
 
     const token = localStorage.getItem('access_token');
     if (!token) {
-      toast.error('Please log in first.');
-      router.push('/login');
+      toast.error('Please log in first to upload your resume.');
+      // Add a small delay to show the toast before redirecting
+      setTimeout(() => {
+        router.push('/login');
+      }, 1500);
       return null;
     }
     return token;
@@ -209,9 +212,21 @@ export default function ResumeUpload() {
 
       if (!response.ok) {
         const errorData = responseData as ApiError;
-        throw new Error(
-          errorData.detail || errorData.message || 'Upload failed',
-        );
+        const errorMessage =
+          errorData.detail || errorData.message || 'Upload failed';
+
+        // Provide more specific error messages for common issues
+        if (response.status === 401) {
+          throw new Error('Authentication expired. Please log in again.');
+        } else if (response.status === 413) {
+          throw new Error(
+            'File too large. Please use a file smaller than 10MB.',
+          );
+        } else if (response.status === 400) {
+          throw new Error(errorMessage);
+        } else {
+          throw new Error(`Upload failed: ${errorMessage}`);
+        }
       }
 
       if (!isComponentMountedRef.current) return;
@@ -225,7 +240,17 @@ export default function ResumeUpload() {
       console.error('Upload error:', error);
 
       if (isComponentMountedRef.current) {
-        toast.error(errorMessage);
+        // Handle specific error cases
+        if (errorMessage.includes('Authentication expired')) {
+          toast.error('Your session has expired. Redirecting to login...');
+          setTimeout(() => {
+            localStorage.removeItem('access_token');
+            router.push('/login');
+          }, 2000);
+        } else {
+          toast.error(errorMessage);
+        }
+
         setError(errorMessage);
         setProcessingStatus('failed');
       }
