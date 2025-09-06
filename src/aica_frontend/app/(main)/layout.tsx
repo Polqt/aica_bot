@@ -31,7 +31,7 @@ export default function MainLayout({
             Saved Jobs
           </Link>
           <Link
-            href="/profle"
+            href="/profile"
             className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
           >
             Profile

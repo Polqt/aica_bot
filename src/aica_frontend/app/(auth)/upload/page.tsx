@@ -1,105 +1,299 @@
-"use client"
+'use client';
 
-import React, { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion } from 'motion/react'
-import { FileUpload } from '@/components/ui/file-upload'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { toast } from 'sonner'
-import { Upload, CheckCircle, ArrowRight, Loader2 } from 'lucide-react'
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
+import { FileUpload } from '@/components/ui/file-upload';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { toast } from 'sonner';
+import {
+  Upload,
+  CheckCircle,
+  ArrowRight,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
+
+const MAX_FILE_SIZE_MB = 10;
+const MAX_POLLS = 30;
+const POLL_INTERVAL_MS = 2000;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+type ProcessingStatus =
+  | 'not_uploaded'
+  | 'processing'
+  | 'completed'
+  | 'failed'
+  | 'not_found';
+
+interface StatusResponse {
+  status: ProcessingStatus;
+  message?: string;
+}
+
+interface ApiError {
+  detail?: string;
+  message?: string;
+}
 
 export default function ResumeUpload() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadComplete, setUploadComplete] = useState(false)
-  const router = useRouter()
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [processingStatus, setProcessingStatus] =
+    useState<ProcessingStatus>('not_uploaded');
+  const [pollCount, setPollCount] = useState(0);
+  const [error, setError] = useState<string>('');
 
-  const handleFileChange = useCallback((files: File[]) => {
-    if (files.length > 0) {
-      const file = files[0]
+  const router = useRouter();
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isComponentMountedRef = useRef(true);
 
-      const allowedTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ]
-
-      if (!allowedTypes.includes(file.type)) {
-        toast.error('Invalid file type. Please upload a PDF, DOC, or DOCX file.')
-        return
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isComponentMountedRef.current = false;
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
       }
+    };
+  }, []);
 
-      // Validate file size (10MB max)
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error('File too large. Please upload a file smaller than 10MB.')
-        return
-      }
+  // Handle polling logic
+  useEffect(() => {
+    if (processingStatus === 'processing' && pollCount < MAX_POLLS) {
+      pollIntervalRef.current = setInterval(() => {
+        if (isComponentMountedRef.current) {
+          checkProcessingStatus();
+          setPollCount(prev => prev + 1);
+        }
+      }, POLL_INTERVAL_MS);
 
-      setSelectedFile(file)
-      toast.success('File selected successfully!')
+      return () => {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+        }
+      };
     }
-  }, [])
 
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      toast.error('Please select a file first.')
-      return
+    // Stop polling and handle timeout
+    if (pollCount >= MAX_POLLS && processingStatus === 'processing') {
+      setProcessingStatus('failed');
+      toast.error('Processing timeout. Please try uploading again.');
     }
+  }, [processingStatus, pollCount]);
 
-    setIsUploading(true)
+  const getAuthToken = useCallback((): string | null => {
+    if (typeof window === 'undefined') return null;
+
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      toast.error('Please log in first.');
+      router.push('/login');
+      return null;
+    }
+    return token;
+  }, [router]);
+
+  const checkProcessingStatus = useCallback(async (): Promise<void> => {
+    const token = getAuthToken();
+    if (!token || !isComponentMountedRef.current) return;
 
     try {
-      const token = localStorage.getItem('access_token')
-      if (!token) {
-        toast.error('Please log in first.')
-        router.push('/login')
-        return
+      const response = await fetch(`${API_BASE_URL}/auth/processing-status`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const formData = new FormData()
-      formData.append('file', selectedFile)
+      const data: StatusResponse = await response.json();
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/auth/upload-resume`, {
+      if (!isComponentMountedRef.current) return;
+
+      setProcessingStatus(data.status);
+
+      if (data.status === 'completed') {
+        toast.success('Resume processed successfully!');
+        setTimeout(() => {
+          if (isComponentMountedRef.current) {
+            router.push('/dashboard');
+          }
+        }, 1500);
+      } else if (data.status === 'failed') {
+        toast.error('Resume processing failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error checking processing status:', error);
+      if (isComponentMountedRef.current) {
+        setProcessingStatus('failed');
+        toast.error('Failed to check processing status.');
+      }
+    }
+  }, [getAuthToken, router]);
+
+  const validateFile = useCallback((file: File): string | null => {
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      return 'Invalid file type. Please upload a PDF, DOC, or DOCX file.';
+    }
+
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      return `File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.`;
+    }
+
+    return null;
+  }, []);
+
+  const handleFileChange = useCallback(
+    (files: File[]): void => {
+      if (!files.length) return;
+
+      const file = files[0];
+      const validationError = validateFile(file);
+
+      if (validationError) {
+        toast.error(validationError);
+        setError(validationError);
+        setSelectedFile(null);
+        return;
+      }
+
+      setSelectedFile(file);
+      setError('');
+      toast.success('File selected successfully!');
+    },
+    [validateFile],
+  );
+
+  const handleUpload = async (): Promise<void> => {
+    if (!selectedFile) {
+      toast.error('Please select a file first.');
+      return;
+    }
+
+    const token = getAuthToken();
+    if (!token) return;
+
+    setIsUploading(true);
+    setError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const response = await fetch(`${API_BASE_URL}/auth/upload-resume`, {
         method: 'POST',
         body: formData,
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
-      })
+      });
+
+      const responseData = await response.json();
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Upload failed')
+        const errorData = responseData as ApiError;
+        throw new Error(
+          errorData.detail || errorData.message || 'Upload failed',
+        );
       }
 
-      await response.json()
-      setUploadComplete(true)
-      toast.success('Resume uploaded successfully!')
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 2000)
+      if (!isComponentMountedRef.current) return;
 
+      toast.success('Resume uploaded successfully! Processing...');
+      setProcessingStatus('processing');
+      setPollCount(0);
     } catch (error) {
-      console.error('Upload error:', error)
-      toast.error(error instanceof Error ? error.message : 'Upload failed. Please try again.')
-    } finally {
-      setIsUploading(false)
-    }
-  }
+      const errorMessage =
+        error instanceof Error ? error.message : 'Upload failed.';
+      console.error('Upload error:', error);
 
-  const handleSkip = () => {
-    router.push('/dashboard')
-  }
+      if (isComponentMountedRef.current) {
+        toast.error(errorMessage);
+        setError(errorMessage);
+        setProcessingStatus('failed');
+      }
+    } finally {
+      if (isComponentMountedRef.current) {
+        setIsUploading(false);
+      }
+    }
+  };
+
+  const handleSkip = (): void => {
+    router.push('/dashboard');
+  };
+
+  const handleRetry = (): void => {
+    setProcessingStatus('not_uploaded');
+    setPollCount(0);
+    setError('');
+    setSelectedFile(null);
+  };
+
+  const getStatusIcon = () => {
+    switch (processingStatus) {
+      case 'processing':
+        return (
+          <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin" />
+        );
+      case 'completed':
+        return (
+          <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+        );
+      case 'failed':
+        return <AlertCircle className="h-8 w-8 text-red-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusContent = () => {
+    switch (processingStatus) {
+      case 'processing':
+        return {
+          title: 'Processing Resume...',
+          description: "We're analyzing your resume and extracting skills...",
+          showProgress: true,
+        };
+      case 'completed':
+        return {
+          title: 'Upload Complete!',
+          description:
+            'Your resume has been uploaded and processed successfully!',
+          showProgress: false,
+        };
+      case 'failed':
+        return {
+          title: 'Processing Failed',
+          description: 'Something went wrong. Please try uploading again.',
+          showProgress: false,
+        };
+      default:
+        return { title: '', description: '', showProgress: false };
+    }
+  };
+
+  const statusContent = getStatusContent();
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 overflow-hidden -z-10">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-br from-green-400/20 to-blue-600/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-br from-purple-400/20 to-green-600/20 rounded-full blur-3xl animate-float delay-1000" />
-      </div>
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -115,12 +309,25 @@ export default function ResumeUpload() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {!uploadComplete ? (
+            {processingStatus === 'not_uploaded' && (
               <>
                 <div className="space-y-4">
                   <FileUpload onChange={handleFileChange} />
 
-                  {selectedFile && (
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex items-center space-x-2 p-3 bg-red-50/50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800"
+                    >
+                      <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+                      <p className="text-sm text-red-600 dark:text-red-400">
+                        {error}
+                      </p>
+                    </motion.div>
+                  )}
+
+                  {selectedFile && !error && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -144,7 +351,7 @@ export default function ResumeUpload() {
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
                     onClick={handleUpload}
-                    disabled={!selectedFile || isUploading}
+                    disabled={!selectedFile || isUploading || !!error}
                     className="flex-1 btn-modern group bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
                     size="lg"
                   >
@@ -173,37 +380,49 @@ export default function ResumeUpload() {
                   </Button>
                 </div>
               </>
-            ) : (
+            )}
+
+            {processingStatus !== 'not_uploaded' && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center space-y-4"
               >
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
-                  <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+                  {getStatusIcon()}
                 </div>
+
                 <div>
-                  <h3 className="text-xl font-semibold text-green-800 dark:text-green-200">
-                    Upload Complete!
+                  <h3 className="text-xl font-semibold">
+                    {statusContent.title}
                   </h3>
-                  <p className="text-green-600 dark:text-green-400 mt-2">
-                    Your resume has been uploaded successfully. We&apos;re processing it now.
+                  <p className="mt-2 text-muted-foreground">
+                    {statusContent.description}
                   </p>
+
+                  {statusContent.showProgress && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Attempt {pollCount + 1} of {MAX_POLLS}
+                    </p>
+                  )}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Redirecting to dashboard in a few seconds...
-                </p>
+
+                {processingStatus === 'failed' && (
+                  <Button onClick={handleRetry} className="btn-modern">
+                    Try Again
+                  </Button>
+                )}
               </motion.div>
             )}
 
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
-                Supported formats: PDF, DOC, DOCX (Max 10MB)
+                Supported formats: PDF, DOC, DOCX (Max {MAX_FILE_SIZE_MB}MB)
               </p>
             </div>
           </CardContent>
         </Card>
       </motion.div>
     </div>
-  )
+  );
 }

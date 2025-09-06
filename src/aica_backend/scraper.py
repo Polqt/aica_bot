@@ -15,14 +15,13 @@ async def main():
     scraper = JobScraper()
     db = JobDatabase()
 
-    sources = ["we_work_remotely", "angel_list"]  
-    jobs_per_source = 10
+    sources = ["angel_list", "we_work_remotely"]  
+    jobs_per_source = 100
 
     # Scrape
     jobs = await scraper.batch_scrape_ethical_sources(sources, jobs_per_source)
     print(f"Scraped {len(jobs)} jobs")
 
-    # Convert to JSON-like dicts for inspection
     jobs_json = [job.dict() for job in jobs]
     print(jobs_json)
 
