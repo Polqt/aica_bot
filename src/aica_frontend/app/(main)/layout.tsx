@@ -1,10 +1,20 @@
+'use client'
+
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { 
+  LayoutDashboard, 
+  BriefcaseBusiness, 
+  Bookmark, 
+  User 
+} from 'lucide-react'
 
 export default function MainLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname()
   return (
     <div className="flex min-h-screen relative">
       {/* Background gradient */}
@@ -22,29 +32,49 @@ export default function MainLayout({
           <div className="p-6 flex-shrink-0">
             <h1 className="text-2xl font-bold text-slate-800 dark:text-white">AICA</h1>
           </div>
-          <nav className="mt-6 px-2 flex-1 overflow-y-auto">
+          <nav className="mt-6 px-2 flex-1 overflow-y-auto space-y-2">
             <Link
               href="/dashboard"
-              className="block px-4 py-3 mx-2 text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white rounded-lg transition-all duration-200"
+              className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${
+                pathname === '/dashboard'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'
+              }`}
             >
+              <LayoutDashboard className="w-5 h-5" />
               Dashboard
             </Link>
             <Link
               href="/job-matches"
-              className="block px-4 py-3 mx-2 text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white rounded-lg transition-all duration-200"
+              className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${
+                pathname === '/job-matches'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'
+              }`}
             >
+              <BriefcaseBusiness className="w-5 h-5" />
               Job Matches
             </Link>
             <Link
               href="/saved-jobs"
-              className="block px-4 py-3 mx-2 text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white rounded-lg transition-all duration-200"
+              className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${
+                pathname === '/saved-jobs'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'
+              }`}
             >
+              <Bookmark className="w-5 h-5" />
               Saved Jobs
             </Link>
             <Link
               href="/profile"
-              className="block px-4 py-3 mx-2 text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white rounded-lg transition-all duration-200"
+              className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${
+                pathname === '/profile'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'
+              }`}
             >
+              <User className="w-5 h-5" />
               Profile
             </Link>
           </nav>
