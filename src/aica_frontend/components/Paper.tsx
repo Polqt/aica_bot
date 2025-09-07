@@ -4,25 +4,10 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Calendar, Download, FileText, Users } from 'lucide-react';
 import { motion } from 'motion/react';
+import { paperData } from '@/lib/constants/app-data';
 
 export default function Paper() {
   const [showPDF, setShowPDF] = useState(false);
-
-  const paperData = {
-    title: 'AICA: AI-Powered Career Assistant for Skills-Based Job Matching',
-    authors: ['Gamboa, A.F.', 'Hidalgo, J.', 'Mahandog, H.M.', 'Santia, N.E.'],
-    keywords: [
-      'Artificial Intelligence',
-      'Natural Language Processing',
-      'Job Matching',
-      'Web Scraping',
-      'Retrieval Augmented Generation',
-      'Skills Assessment',
-      'Career Guidance',
-    ],
-    publicationDate: 'December 2024',
-    conference: 'International Conference on AI Applications',
-  };
 
   return (
     <div>

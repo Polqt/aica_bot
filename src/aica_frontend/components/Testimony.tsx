@@ -3,7 +3,7 @@ import React from 'react';
 
 export default function Testimony() {
   return (
-    <section className="text-center space-y-8">
+    <section className="text-center space-y-8 mt-16">
       <h2 className="text-3xl font-bold">About Our Research</h2>
       <p className="max-w-3xl mx-auto text-neutral-700 dark:text-neutral-300">
         This research paper is part of an undergraduate study by Gamboa,

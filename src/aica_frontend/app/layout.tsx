@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
+import { appInfo } from '@/lib/constants/app-data';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 // import Footer from '@/components/Footer';
@@ -18,8 +19,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'AICA - AI-Powered Job Matching',
-  description: 'Connect your resume with real job opportunities using AI — personalized, real-time job matching for tech graduates.',
+  title: `${appInfo.name} - ${appInfo.fullName}`,
+  description: appInfo.description,
   keywords: 'AI, job matching, resume, tech jobs, career, recruitment',
   authors: [{ name: 'AICA Team' }],
   viewport: 'width=device-width, initial-scale=1',
