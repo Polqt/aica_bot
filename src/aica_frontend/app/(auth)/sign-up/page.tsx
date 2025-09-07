@@ -163,7 +163,7 @@ export default function SignupPage() {
   return (
     <>
       {/* Left Section - Carousel */}
-      <div className={`hidden lg:block min-h-screen p-4 transition-all duration-500 ease-in-out ${isCarouselCollapsed ? 'w-20' : 'w-2/5'}`}>
+      <div className={`hidden lg:block min-h-screen p-4 transition-all duration-500 ease-in-out ${isCarouselCollapsed ? 'w-20' : 'w-1/3'}`}>
         <AuthCarouselWrapper 
           className="h-full" 
           onCollapseChange={setIsCarouselCollapsed}
