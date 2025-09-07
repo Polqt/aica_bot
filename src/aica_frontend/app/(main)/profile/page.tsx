@@ -42,55 +42,55 @@ export default function ProfilePage() {
   }, [router])
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>
+    return <div className="flex justify-center items-center min-h-screen text-gray-900 dark:text-white">Loading...</div>
   }
 
   if (error) {
-    return <div className="flex justify-center items-center min-h-screen text-red-600">{error}</div>
+    return <div className="flex justify-center items-center min-h-screen text-red-600 dark:text-red-400">{error}</div>
   }
 
   if (!user) {
-    return <div className="flex justify-center items-center min-h-screen">No user data</div>
+    return <div className="flex justify-center items-center min-h-screen text-gray-900 dark:text-white">No user data</div>
   }
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
-        <p className="text-gray-600 mt-2">Manage your account information.</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Profile</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">Manage your account information.</p>
       </div>
 
-      <div className="bg-white p-8 rounded-lg shadow-md">
+      <div className="glass-card border-0 shadow-2xl p-8">
         <div className="flex items-center space-x-6 mb-6">
-          <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
             <span className="text-white text-2xl font-bold">
               {user.email.charAt(0).toUpperCase()}
             </span>
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-gray-800">{user.email}</h2>
-            <p className="text-gray-600">Member since {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}</p>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white">{user.email}</h2>
+            <p className="text-gray-600 dark:text-gray-400">Member since {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-            <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded">{user.email}</p>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
+            <p className="text-gray-900 dark:text-white bg-gray-50/50 dark:bg-slate-800/50 backdrop-blur-sm px-3 py-2 rounded border border-gray-200 dark:border-slate-700">{user.email}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Account Created</label>
-            <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Account Created</label>
+            <p className="text-gray-900 dark:text-white bg-gray-50/50 dark:bg-slate-800/50 backdrop-blur-sm px-3 py-2 rounded border border-gray-200 dark:border-slate-700">
               {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Not available'}
             </p>
           </div>
         </div>
 
         <div className="mt-8 flex space-x-4">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          <button className="btn-modern px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg">
             Edit Profile
           </button>
-          <button className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">
+          <button className="btn-modern px-4 py-2 bg-gray-200/50 dark:bg-slate-700/50 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300/50 dark:hover:bg-slate-600/50 backdrop-blur-sm border border-gray-300 dark:border-slate-600">
             Change Password
           </button>
         </div>

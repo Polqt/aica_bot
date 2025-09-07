@@ -1,25 +1,14 @@
 import React from 'react';
 import { Card } from './ui/card';
+import { team, mentors } from '@/lib/constants/app-data';
 
 export default function Team() {
-  const team = [
-    { name: 'Heidine Marie Mahandog', role: 'Developer' },
-    { name: 'Nathania Elouise Santia', role: 'Project Manager' },
-    { name: 'Janpol Hidalgo', role: 'Developer' },
-    { name: 'April Faith Gamboa', role: 'Researcher' },
-  ];
-
-  const mentors = [
-    'Julian Diego Mapa - Thesis Adviser',
-    'Dr. Eddie de Paula - Thesis Co-Adviser',
-    'Dr. Eischeid Arcenal - AI Expert',
-  ];
 
   return (
     <section className="space-y-12">
       <div>
-        <h2 className="text-3xl font-bold text-center mb-8">Our Team</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+        <h2 className="text-3xl font-bold text-center mb-8 mt-16">Our Team</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 px-12">
           {team.map(member => (
             <Card
               key={member.name}

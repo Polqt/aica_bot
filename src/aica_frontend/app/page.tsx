@@ -15,36 +15,7 @@ import {
   Play,
 } from 'lucide-react';
 import Link from 'next/link';
-
-const features = [
-  {
-    icon: Target,
-    title: "AI-Powered Matching",
-    description: "Advanced algorithms analyze your resume and match you with the perfect job opportunities in real-time."
-  },
-  {
-    icon: Zap,
-    title: "Instant Insights",
-    description: "Get immediate feedback on your resume's strengths and areas for improvement with AI analysis."
-  },
-  {
-    icon: TrendingUp,
-    title: "Career Growth",
-    description: "Track your job search progress and receive personalized recommendations for career advancement."
-  },
-  {
-    icon: Users,
-    title: "Community Support",
-    description: "Connect with fellow job seekers and industry professionals in our supportive community."
-  }
-];
-
-const stats = [
-  { value: "95%", label: "Match Accuracy" },
-  { value: "10K+", label: "Active Users" },
-  { value: "50K+", label: "Jobs Matched" },
-  { value: "24/7", label: "AI Support" }
-];
+import { features, stats, appInfo, heroContent } from '@/lib/constants/app-data';
 
 export default function Home() {
   return (
@@ -61,32 +32,31 @@ export default function Home() {
             >
               <div className="space-y-4">
                 <Badge variant="secondary" className="glass px-4 py-2">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Powered by Advanced AI
+                  <heroContent.badge.icon className="w-4 h-4 mr-2" />
+                  {heroContent.badge.text}
                 </Badge>
 
                 <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
-                  Connect Your Resume with
-                  <span className="gradient-text block">Real Opportunities</span>
+                  {heroContent.title.main}
+                  <span className="gradient-text block">{heroContent.title.highlight}</span>
                 </h1>
 
                 <p className="text-xl text-muted-foreground leading-relaxed">
-                  Transform your job search with AI-powered matching. Get personalized job recommendations,
-                  instant resume feedback, and connect with opportunities that match your unique skills.
+                  {heroContent.description}
                 </p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button asChild size="lg" className="btn-modern group">
-                  <Link href="/sign-up">
-                    Get Started Free
+                  <Link href={heroContent.cta.primary.href}>
+                    {heroContent.cta.primary.text}
                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </Button>
 
                 <Button variant="outline" size="lg" className="btn-modern group">
                   <Play className="w-4 h-4 mr-2" />
-                  Watch Demo
+                  {heroContent.cta.secondary.text}
                 </Button>
               </div>
 
@@ -192,7 +162,7 @@ export default function Home() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl lg:text-5xl font-bold mb-4">
-              Why Choose <span className="gradient-text">AICA</span>?
+              Why Choose <span className="gradient-text">{appInfo.name}</span>?
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Experience the future of job searching with our cutting-edge AI technology
