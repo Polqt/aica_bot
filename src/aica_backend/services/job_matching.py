@@ -1,6 +1,6 @@
 import logging
 import json
-from typing import List, Dict, Optional
+from typing import List, Dict
 from dataclasses import dataclass
 
 from ..database.user_db import UserDatabase
@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class JobMatchResult:
-    """Enhanced result of AI-powered job matching."""
     job: Job
     match_score: float
     matched_skills: List[str]
@@ -27,15 +26,6 @@ class JobMatchResult:
 
 
 class JobMatchingService:
-    """
-    AI-Powered Job Matching Service using RAG and LLM for intelligent skill matching.
-    
-    This service uses:
-    1. Vector embeddings for semantic similarity
-    2. LLM-powered analysis for context understanding
-    3. RAG to provide intelligent matching decisions
-    """
-    
     def __init__(self, user_db: UserDatabase = None, job_db: JobDatabase = None):
         self.user_db = user_db or UserDatabase()
         self.job_db = job_db or JobDatabase()
@@ -48,17 +38,6 @@ class JobMatchingService:
         self.MEDIUM_CONFIDENCE_THRESHOLD = 0.55
 
     async def find_job_matches(self, user_id: str, limit: int = 20) -> List[JobMatchResult]:
-        """
-        Find job matches using optimized AI-powered RAG approach.
-        Uses fast vector similarity first, then AI analysis for top candidates.
-        
-        Args:
-            user_id: User ID to find matches for
-            limit: Maximum number of matches to return
-            
-        Returns:
-            List of AI-analyzed job matches
-        """
         try:
             # Get user skills with context
             user_skills = self.user_db.get_user_skills(user_id)
@@ -94,9 +73,6 @@ class JobMatchingService:
             return []
 
     async def _fast_similarity_screening(self, user_skills: List[UserSkill], jobs: List[Job], limit: int) -> List[Job]:
-        """
-        Fast vector similarity screening to eliminate obviously poor matches.
-        """
         try:
             user_skill_names = [skill.skill_name.lower() for skill in user_skills]
             technical_skills = [skill.skill_name.lower() for skill in user_skills 
@@ -134,15 +110,9 @@ class JobMatchingService:
             return jobs[:limit]  # Fallback
 
     async def _find_semantic_matches_fast(self, user_skills: List[str], job_skills: List[str]) -> List[str]:
-        """
-        Fast semantic matching using keyword similarity (no embeddings to save time).
-        """
         return self._keyword_similarity_matches(user_skills, job_skills)
 
     async def _ai_analyze_top_candidates(self, user_skills: List[UserSkill], jobs: List[Job]) -> List[JobMatchResult]:
-        """
-        AI analysis for top job candidates only.
-        """
         user_context = self._prepare_user_skill_context(user_skills)
         matches = []
         
@@ -180,9 +150,6 @@ class JobMatchingService:
         return matches
 
     def _rank_final_matches(self, matches: List[JobMatchResult]) -> List[JobMatchResult]:
-        """
-        Final ranking considering AI confidence, match score, and skill coverage.
-        """
         def ranking_key(match):
             confidence_score = {"high": 3, "medium": 2, "low": 1}.get(match.confidence, 1)
             return (match.match_score, confidence_score, match.skill_coverage)
@@ -191,7 +158,6 @@ class JobMatchingService:
         return matches
 
     def _find_exact_matches(self, user_skills: List[str], job_skills: List[str]) -> List[str]:
-        """Find exact skill matches between user skills and job requirements."""
         matches = []
         for job_skill in job_skills:
             for user_skill in user_skills:
@@ -201,7 +167,6 @@ class JobMatchingService:
         return matches
 
     def _keyword_similarity_matches(self, user_skills: List[str], job_skills: List[str]) -> List[str]:
-        """Find skill matches using keyword similarity mapping."""
         matches = []
         
         # Define similar skill mappings
@@ -227,7 +192,6 @@ class JobMatchingService:
         return matches
 
     def _determine_confidence(self, match_score: float, skill_coverage: float) -> str:
-        """Determine confidence level based on match metrics."""
         if match_score >= 0.8 and skill_coverage >= 0.7:
             return "high"
         elif match_score >= 0.6 and skill_coverage >= 0.5:
@@ -236,8 +200,6 @@ class JobMatchingService:
             return "low"
 
     def _prepare_user_skill_context(self, user_skills: List[UserSkill]) -> Dict[str, any]:
-        """Prepare structured user skill context for AI analysis."""
-        
         # Group skills by category
         skills_by_category = {
             'technical': [],
@@ -267,8 +229,6 @@ class JobMatchingService:
         }
 
     def _generate_skill_profile_summary(self, skills_by_category: Dict) -> str:
-        """Generate a natural language summary of user's skill profile."""
-        
         summary_parts = []
         
         # Technical skills
@@ -299,10 +259,7 @@ class JobMatchingService:
         user_skills: List[UserSkill], 
         job: Job
     ) -> JobMatchResult:
-        """
-        Use AI/LLM to calculate job match with detailed reasoning.
-        """
-        
+    
         # Prepare job context
         job_context = self._prepare_job_context(job)
         
@@ -352,10 +309,6 @@ class JobMatchingService:
         user_skills: List[UserSkill], 
         job: Job
     ) -> JobMatchResult:
-        """
-        Fast AI/LLM job match calculation with timeout protection.
-        """
-        
         # Prepare job context
         job_context = self._prepare_job_context(job)
         
@@ -404,9 +357,6 @@ class JobMatchingService:
             return await self._simple_calculate_job_match(user_skills, job)
 
     async def _simple_calculate_job_match(self, user_skills: List[UserSkill], job: Job) -> JobMatchResult:
-        """
-        Simple fallback matching when AI analysis fails or times out.
-        """
         try:
             if not job.skills:
                 return JobMatchResult(
@@ -477,8 +427,6 @@ class JobMatchingService:
             )
 
     def _prepare_job_context(self, job: Job) -> Dict[str, any]:
-        """Prepare structured job context for AI analysis."""
-        
         # Extract requirements and skills
         job_skills = job.skills or []
         job_requirements = job.requirements or []
@@ -505,10 +453,6 @@ class JobMatchingService:
         user_skills: List[UserSkill], 
         job: Job
     ) -> JobMatchResult:
-        """
-        Fallback vector similarity matching when AI is unavailable.
-        """
-        
         # Create embeddings for comparison
         user_skill_names = [skill.skill_name for skill in user_skills]
         job_skills = job.skills or []
@@ -574,8 +518,6 @@ class JobMatchingService:
             return self._basic_keyword_match(user_skills, job)
 
     def _basic_keyword_match(self, user_skills: List[UserSkill], job: Job) -> JobMatchResult:
-        """Most basic fallback matching using keyword overlap."""
-        
         user_skill_names = [skill.skill_name.lower() for skill in user_skills]
         job_skills = [skill.lower() for skill in (job.skills or [])]
         
@@ -615,14 +557,11 @@ class JobMatchingService:
         )
 
     def _calculate_skill_coverage(self, matched_skills: List[str], required_skills: List[str]) -> float:
-        """Calculate what percentage of required skills are covered."""
         if not required_skills:
             return 1.0
         return len(matched_skills) / len(required_skills)
 
     def _determine_ai_confidence(self, match_score: float, skill_coverage: float, matched_count: int) -> str:
-        """Determine confidence level based on AI analysis metrics."""
-        
         if match_score >= self.HIGH_CONFIDENCE_THRESHOLD and skill_coverage >= 0.7 and matched_count >= 3:
             return "high"
         elif match_score >= self.MEDIUM_CONFIDENCE_THRESHOLD and skill_coverage >= 0.4:
@@ -631,7 +570,6 @@ class JobMatchingService:
             return "low"
 
     def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
-        """Calculate cosine similarity between two vectors."""
         try:
             if len(vec1) != len(vec2) or not vec1 or not vec2:
                 return 0.0
@@ -648,16 +586,6 @@ class JobMatchingService:
             return 0.0
 
     async def save_job_matches(self, user_id: str, matches: List[JobMatchResult]) -> List[UserJobMatch]:
-        """
-        Save AI-analyzed job matches to the database.
-        
-        Args:
-            user_id: The user's ID
-            matches: List of AI-analyzed job match results
-            
-        Returns:
-            List of saved UserJobMatch objects
-        """
         saved_matches = []
         
         try:
@@ -682,15 +610,6 @@ class JobMatchingService:
             return []
 
     async def update_matches_for_user(self, user_id: str) -> Dict[str, any]:
-        """
-        Complete AI workflow: find matches using LLM and save them to database.
-        
-        Args:
-            user_id: The user's ID
-            
-        Returns:
-            Summary of the AI matching process
-        """
         try:
             # Find AI-powered matches
             matches = await self.find_job_matches(user_id)
@@ -727,7 +646,6 @@ class JobMatchingService:
             return summary
             
         except Exception as e:
-            logger.error(f"Error in AI matching workflow for user {user_id}: {str(e)}")
             return {
                 "success": False,
                 "message": f"Error in AI matching: {str(e)}",
@@ -757,7 +675,6 @@ class JobMatchingService:
             return saved_matches
             
         except Exception as e:
-            logger.error(f"Error saving job matches for user {user_id}: {str(e)}")
             return []
 
     async def update_matches_for_user(self, user_id: str) -> Dict[str, any]:

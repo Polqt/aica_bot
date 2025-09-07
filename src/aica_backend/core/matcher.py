@@ -118,14 +118,9 @@ class JobMatcher:
         return "\n".join(filter(None, summary_parts))
     
     async def _get_job_content(self, job_id: str) -> Optional[str]:
-        # This should be implemented to fetch job content from your Supabase database
-        # For now, returning a placeholder
         return f"Job content for {job_id} - implement database fetch here"
     
     async def calculate_compatibility(self, user_skills: List[str], job_skills: List[str], job_title: str, company: str) -> Dict:
-        """
-        Calculate AI-powered compatibility between user skills and job requirements
-        """
         try:
             # Create detailed prompts for AI analysis
             user_skills_text = ", ".join(user_skills)
@@ -193,7 +188,6 @@ class JobMatcher:
             }
 
         except Exception as e:
-            # Fallback to basic compatibility calculation
             matched_count = len([skill for skill in user_skills if any(self._skills_match(skill.lower(), job_skill.lower()) for job_skill in job_skills)])
             basic_score = matched_count / len(job_skills) if job_skills else 0
             
@@ -212,7 +206,6 @@ class JobMatcher:
             }
 
     def _skills_match(self, user_skill: str, job_skill: str) -> bool:
-        """Check if two skills match with fuzzy matching"""
         user_skill = user_skill.lower().strip()
         job_skill = job_skill.lower().strip()
         
