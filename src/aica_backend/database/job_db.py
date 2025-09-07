@@ -306,3 +306,65 @@ class JobDatabase:
                 requirements=[],
                 skills=[]
             )
+
+    def get_jobs_for_matching(self, limit: int = 100, min_skills: int = 1) -> List[Job]:
+        """
+        Get jobs suitable for matching against user skills.
+        
+        Args:
+            limit: Maximum number of jobs to return
+            min_skills: Minimum number of skills required for a job to be included
+            
+        Returns:
+            List of Job objects suitable for matching
+        """
+        try:
+            # Query jobs that have skills and are suitable for matching
+            response = (self.client.table("jobs")
+                       .select("*")
+                       .not_.is_("skills", "null")
+                       .order("created_at", desc=True)
+                       .limit(limit)
+                       .execute())
+            
+            if not response.data:
+                return []
+            
+            jobs = []
+            for job_data in response.data:
+                try:
+                    job = self._deserialize_job(job_data)
+                    # Only include jobs with sufficient skills
+                    if job.skills and len(job.skills) >= min_skills:
+                        jobs.append(job)
+                except Exception as e:
+                    print(f"Error processing job for matching: {e}")
+                    continue
+            
+            return jobs
+            
+        except Exception as e:
+            print(f"Error getting jobs for matching: {e}")
+            return []
+
+    def get_job_by_id(self, job_id: str) -> Optional[Job]:
+        """
+        Get a single job by its ID.
+        
+        Args:
+            job_id: The job's ID
+            
+        Returns:
+            Job object if found, None otherwise
+        """
+        try:
+            response = self.client.table("jobs").select("*").eq("id", job_id).execute()
+            
+            if not response.data:
+                return None
+            
+            return self._deserialize_job(response.data[0])
+            
+        except Exception as e:
+            print(f"Error getting job by id {job_id}: {e}")
+            return None

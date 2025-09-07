@@ -12,6 +12,7 @@ sys.path.insert(0, str(parent_dir))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from aica_backend.api.routes.auth import router as auth_router
+from aica_backend.api.routes.jobs import router as jobs_router
 
 app = FastAPI(title="AICA Backend", version="1.0.0")
 
@@ -24,6 +25,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router, prefix="/auth", tags=["authentication"])
+app.include_router(jobs_router, prefix="/jobs", tags=["job matching"])
 
 @app.get("/")
 async def root():

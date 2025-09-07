@@ -122,6 +122,126 @@ class JobMatcher:
         # For now, returning a placeholder
         return f"Job content for {job_id} - implement database fetch here"
     
+    async def calculate_compatibility(self, user_skills: List[str], job_skills: List[str], job_title: str, company: str) -> Dict:
+        """
+        Calculate AI-powered compatibility between user skills and job requirements
+        """
+        try:
+            # Create detailed prompts for AI analysis
+            user_skills_text = ", ".join(user_skills)
+            job_skills_text = ", ".join(job_skills)
+            
+            analysis_prompt = f"""
+            As an expert career counselor and hiring manager, analyze the compatibility between a candidate's skills and job requirements.
+
+            Candidate Skills: {user_skills_text}
+            Job Requirements: {job_skills_text}
+            Position: {job_title} at {company}
+
+            Provide a comprehensive analysis including:
+            1. Overall compatibility score (0-100)
+            2. Matching skills and their relevance
+            3. Missing critical skills and their impact
+            4. Skill gaps that can be bridged with training
+            5. Overall assessment reasoning
+
+            Be precise and professional in your assessment.
+            """
+
+            # Get AI response
+            response = await self.llm.ainvoke(analysis_prompt)
+            ai_analysis = response.content
+
+            # Calculate basic metrics
+            matched_skills = []
+            missing_skills = []
+            
+            for job_skill in job_skills:
+                skill_matched = False
+                for user_skill in user_skills:
+                    if self._skills_match(user_skill.lower(), job_skill.lower()):
+                        matched_skills.append(job_skill)
+                        skill_matched = True
+                        break
+                if not skill_matched:
+                    missing_skills.append(job_skill)
+
+            # Calculate scores
+            skill_coverage = len(matched_skills) / len(job_skills) if job_skills else 0
+            compatibility_score = min(skill_coverage * 100, 95)  # Cap at 95% for realistic scoring
+            
+            # Determine confidence level
+            if skill_coverage >= 0.8:
+                confidence = "high"
+            elif skill_coverage >= 0.5:
+                confidence = "medium"
+            else:
+                confidence = "low"
+
+            return {
+                "compatibility_score": compatibility_score / 100,  # Normalize to 0-1
+                "confidence": confidence,
+                "skill_coverage": skill_coverage,
+                "matched_skills": matched_skills,
+                "missing_skills": missing_skills,
+                "ai_reasoning": ai_analysis,
+                "skill_gap_analysis": {
+                    "critical_gaps": missing_skills[:3],  # Top 3 missing skills
+                    "trainable_skills": missing_skills[3:],  # Other missing skills
+                    "strength_areas": matched_skills[:5]  # Top 5 matched skills
+                }
+            }
+
+        except Exception as e:
+            # Fallback to basic compatibility calculation
+            matched_count = len([skill for skill in user_skills if any(self._skills_match(skill.lower(), job_skill.lower()) for job_skill in job_skills)])
+            basic_score = matched_count / len(job_skills) if job_skills else 0
+            
+            return {
+                "compatibility_score": basic_score,
+                "confidence": "low",
+                "skill_coverage": basic_score,
+                "matched_skills": [],
+                "missing_skills": job_skills,
+                "ai_reasoning": f"Basic calculation fallback due to error: {str(e)}",
+                "skill_gap_analysis": {
+                    "critical_gaps": job_skills,
+                    "trainable_skills": [],
+                    "strength_areas": []
+                }
+            }
+
+    def _skills_match(self, user_skill: str, job_skill: str) -> bool:
+        """Check if two skills match with fuzzy matching"""
+        user_skill = user_skill.lower().strip()
+        job_skill = job_skill.lower().strip()
+        
+        # Exact match
+        if user_skill == job_skill:
+            return True
+        
+        # Check if one skill contains the other
+        if user_skill in job_skill or job_skill in user_skill:
+            return True
+        
+        # Common skill mappings
+        skill_mappings = {
+            'js': 'javascript',
+            'ts': 'typescript',
+            'react.js': 'react',
+            'node.js': 'nodejs',
+            'vue.js': 'vue',
+            'mongodb': 'mongo',
+            'postgresql': 'postgres',
+            'mysql': 'sql',
+        }
+        
+        # Normalize using mappings
+        normalized_user = skill_mappings.get(user_skill, user_skill)
+        normalized_job = skill_mappings.get(job_skill, job_skill)
+        
+        return normalized_user == normalized_job or normalized_user in normalized_job or normalized_job in normalized_user
+
     def get_match_statistics(self, job_matches: List[JobMatch]) -> Dict:
         if not job_matches:
             return {"total_jobs": 0, "matches": 0, "average_score": 0}
