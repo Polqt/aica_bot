@@ -50,8 +50,8 @@ export const AuthCarousel = ({
   return (
     <motion.div
       animate={{
-        width: isCollapsed ? "60px" : "100%",
-        opacity: isCollapsed ? 0.8 : 1,
+        width: isCollapsed ? "20px" : "100%",
+        opacity: isCollapsed ? 0.3 : 1,
       }}
       transition={{
         type: "spring",
@@ -59,7 +59,8 @@ export const AuthCarousel = ({
         damping: 35,
       }}
       className={cn(
-        "relative w-full h-full bg-gradient-to-br from-blue-50 to-purple-100 dark:from-slate-800 dark:to-slate-900 rounded-lg overflow-hidden flex-shrink-0",
+        "relative w-full h-full bg-gradient-to-br from-blue-50 to-purple-100 dark:from-slate-800 dark:to-slate-900 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200/40 dark:border-0 shadow-lg shadow-black/5 dark:shadow-none",
+        isCollapsed && "bg-gradient-to-br from-blue-50/30 to-purple-100/30 dark:from-slate-800/30 dark:to-slate-900/30 border-slate-200/20 dark:border-slate-700/20",
         className
       )}
     >
@@ -124,11 +125,7 @@ export const AuthCarousel = ({
       {/* Collapsed State Content */}
       {isCollapsed && (
         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-          <div 
-            className="text-slate-500 dark:text-slate-400 text-xs font-medium transform -rotate-90 whitespace-nowrap select-none"
-          >
-            {appInfo.name}
-          </div>
+          {/* Remove the AICA text when collapsed */}
         </div>
       )}
     </motion.div>

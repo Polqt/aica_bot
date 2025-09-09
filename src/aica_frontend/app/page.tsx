@@ -178,13 +178,13 @@ export default function Home() {
                 transition={{ delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <Card className="glass-card h-full hover:scale-105 transition-transform duration-300">
+                <Card className="glass-card-enhanced h-full hover:scale-105 transition-transform duration-300">
                   <CardContent className="p-6">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mb-4 shadow-lg dark:shadow-none">
                       <feature.icon className="w-6 h-6 text-white" />
                     </div>
-                    <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                    <p className="text-muted-foreground">{feature.description}</p>
+                    <h3 className="text-xl font-semibold mb-3 text-slate-800 dark:text-slate-100">{feature.title}</h3>
+                    <p className="text-slate-600 dark:text-slate-300">{feature.description}</p>
                   </CardContent>
                 </Card>
               </motion.div>

@@ -26,6 +26,7 @@ import {
 import Link from 'next/link';
 import { AuthCarouselWrapper } from '@/components/AuthCarousel';
 import { authContent } from '@/lib/constants/app-data';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -163,7 +164,7 @@ export default function SignupPage() {
   return (
     <>
       {/* Left Section - Carousel */}
-      <div className={`hidden lg:block min-h-screen p-4 transition-all duration-500 ease-in-out ${isCarouselCollapsed ? 'w-20' : 'w-1/3'}`}>
+      <div className={`hidden lg:block min-h-screen p-4 transition-all duration-500 ease-in-out ${isCarouselCollapsed ? 'w-8' : 'w-1/3'}`}>
         <AuthCarouselWrapper 
           className="h-full" 
           onCollapseChange={setIsCarouselCollapsed}
@@ -171,12 +172,25 @@ export default function SignupPage() {
       </div>
 
       {/* Right Section - Sign Up Form */}
-      <div className={`min-h-screen flex items-center p-4 lg:p-8 transition-all duration-500 ease-in-out ${isCarouselCollapsed ? 'flex-1 justify-center' : 'flex-1 justify-center'}`}>
+      <div className={`min-h-screen flex items-center p-4 lg:p-8 transition-all duration-500 ease-in-out ${isCarouselCollapsed ? 'flex-1 justify-center' : 'flex-1 justify-center'} relative`}>
+        {/* Header with Logo and Theme Toggle - positioned within right section only */}
+        <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-50">
+          <Link href="/" className="flex items-center space-x-2 group">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-200">
+              <span className="text-white font-bold text-lg">A</span>
+            </div>
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-purple-700 transition-all duration-200">
+              AICA
+            </span>
+          </Link>
+          <ThemeToggle />
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="w-full max-w-md"
+          className="w-full max-w-md mt-16 lg:mt-0"
         >
           <Card className="glass-card border-0 shadow-2xl">
             <CardHeader className="space-y-1">

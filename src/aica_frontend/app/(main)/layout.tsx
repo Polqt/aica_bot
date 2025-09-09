@@ -8,6 +8,7 @@ import {
   Bookmark, 
   User 
 } from 'lucide-react'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export default function MainLayout({
   children,
@@ -78,6 +79,13 @@ export default function MainLayout({
               Profile
             </Link>
           </nav>
+          
+          {/* Theme Toggle at bottom of sidebar */}
+          <div className="mt-auto p-4 border-t border-slate-200/50 dark:border-slate-700/50">
+            <div className="flex items-center justify-center">
+              <ThemeToggle />
+            </div>
+          </div>
         </aside>
       </div>
 

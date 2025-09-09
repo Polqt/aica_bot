@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/resizable-navbar';
 import { useState } from 'react';
 import Link from 'next/link';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export function Navbar() {
   const navItems = [
@@ -39,6 +40,7 @@ export function Navbar() {
           <NavbarLogo />
           <NavItems items={navItems} />
           <div className="flex items-center gap-4 z-10">
+            <ThemeToggle />
             <NavbarButton as={Link} href="/login" variant="secondary">
               Login
             </NavbarButton>
@@ -72,6 +74,7 @@ export function Navbar() {
               </a>
             ))}
             <div className="flex w-full flex-col gap-4">
+              <ThemeToggle />
               <NavbarButton
                 as={Link}
                 href="/login"

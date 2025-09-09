@@ -1,17 +1,72 @@
+'use client'
+
+import About from '@/components/About';
 import Contact from '@/components/Contact';
 import { Navbar } from '@/components/Navbar';
 import Team from '@/components/Team';
 import Testimony from '@/components/Testimony';
 import React from 'react';
+import { motion } from 'motion/react';
 
 export default function AboutPage() {
   return (
-    <div>
+    <div className="min-h-screen">
       <Navbar />
-      <Team />
-      <Contact />
-      Hello
-      <Testimony />
+      
+      {/* Background gradient */}
+      <div className="fixed inset-0 bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 -z-10" />
+      
+      {/* Animated background elements */}
+      <div className="fixed inset-0 overflow-hidden -z-10">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-600/20 rounded-full blur-3xl animate-pulse delay-1000" />
+      </div>
+
+      <div className="flex flex-col items-center justify-center px-4 py-8">
+        {/* About Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-7xl mx-auto mt-8"
+        >
+          <About />
+        </motion.div>
+
+        {/* Team Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="w-full max-w-6xl mx-auto mt-20"
+        >
+          <Team />
+        </motion.div>
+
+        {/* Contact Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="w-full max-w-4xl mx-auto mt-20"
+        >
+          <Contact />
+        </motion.div>
+
+        {/* Testimonials Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="w-full max-w-6xl mx-auto mt-20"
+        >
+          <Testimony />
+        </motion.div>
+      </div>
     </div>
   );
 }

@@ -112,21 +112,21 @@ export function AuthCarouselWrapper({ className, onCollapseChange }: AuthCarouse
       description: researchInfo.abstract,
       content: (
         <div className="space-y-4">
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-700 p-4 rounded-lg">
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-700 p-4 rounded-lg border border-blue-100/50 dark:border-0 shadow-sm dark:shadow-none">
             <div className="flex items-center space-x-2 mb-2">
               <GraduationCap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <h4 className="font-semibold text-sm">Academic Excellence</h4>
+              <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-200">Academic Excellence</h4>
             </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300">
+            <p className="text-xs text-slate-700 dark:text-slate-300">
               Supervised by expert faculty members and industry professionals
             </p>
           </div>
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-slate-700 dark:to-slate-800 p-4 rounded-lg">
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-slate-700 dark:to-slate-800 p-4 rounded-lg border border-purple-100/50 dark:border-0 shadow-sm dark:shadow-none">
             <div className="flex items-center space-x-2 mb-2">
               <BookOpen className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <h4 className="font-semibold text-sm">Published Research</h4>
+              <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-200">Published Research</h4>
             </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300">
+            <p className="text-xs text-slate-700 dark:text-slate-300">
               {researchInfo.title}
             </p>
           </div>
@@ -148,10 +148,10 @@ export function AuthCarouselWrapper({ className, onCollapseChange }: AuthCarouse
             ];
             const color = colors[idx];
             return (
-              <Card key={idx} className={`p-3 bg-gradient-to-br ${color.bg} ${color.border}`}>
+              <Card key={idx} className={`p-3 bg-gradient-to-br ${color.bg} ${color.border} shadow-sm border-2 dark:shadow-none dark:border`}>
                 <CardContent className="p-0 text-center">
                   <div className={`text-xl font-bold ${color.text}`}>{stat.value}</div>
-                  <div className={`text-xs ${color.text.replace('600', '700').replace('400', '300')}`}>{stat.label}</div>
+                  <div className={`text-xs font-medium ${color.text.replace('600', '700').replace('400', '300')}`}>{stat.label}</div>
                 </CardContent>
               </Card>
             );
@@ -163,14 +163,15 @@ export function AuthCarouselWrapper({ className, onCollapseChange }: AuthCarouse
 
   return (
     <div className="relative h-full group">
-      {/* Toggle Button - Outside the carousel container */}
+      {/* Toggle Button - Positioned in the middle, right side when open, left side when collapsed */}
       <motion.button
         onClick={handleToggleCollapse}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         className={cn(
-          "absolute z-50 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:shadow-xl transition-all duration-200 border border-slate-200 dark:border-slate-700",
-          "top-4 left-4 opacity-0 group-hover:opacity-100"
+          "absolute z-50 bg-white/95 dark:bg-slate-800/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:shadow-xl dark:hover:shadow-lg transition-all duration-200 border border-slate-300/60 dark:border-slate-700",
+          "top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100",
+          isCollapsed ? "left-4" : "right-4"
         )}
       >
         {isCollapsed ? (
