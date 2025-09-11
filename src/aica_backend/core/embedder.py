@@ -45,7 +45,6 @@ class VectorJobStore:
                     allow_dangerous_deserialization=True
                 )
             except Exception:
-                # Create new store if loading fails
                 self._create_empty_store()
         else:
             self._create_empty_store()
@@ -56,7 +55,6 @@ class VectorJobStore:
         self.vector_store = FAISS.from_documents([dummy_doc], self.embedder.embeddings)
     
     def add_job(self, job_id: str, job_content: str, metadata: dict = None) -> None:
-        """Add a job posting to the vector store."""
         if metadata is None:
             metadata = {}
         
@@ -121,3 +119,4 @@ class VectorJobStore:
     def clear(self) -> None:
         self._create_empty_store()
         self.save()
+        

@@ -157,7 +157,6 @@ class JobScraper:
         return None
 
     def _is_valid_extraction(self, data: ExtractedJobData) -> bool:
-        """Validate the extracted job data to catch malformed responses"""
         if not data.title or not data.company:
             return False
             

@@ -181,7 +181,6 @@ class UserDatabase:
                 
             return UserSkill(**response.data[0])
         except Exception as e:
-            logger.error(f"Failed to add user skill: {str(e)}")
             raise DatabaseError(f"Failed to add user skill: {str(e)}")
 
     def add_user_skills_batch(self, user_id: str, skills: List[UserSkillCreate]) -> List[UserSkill]:
@@ -204,7 +203,6 @@ class UserDatabase:
             
             return [UserSkill(**item) for item in response.data] if response.data else []
         except Exception as e:
-            logger.error(f"Failed to add user skills batch: {str(e)}")
             raise DatabaseError(f"Failed to add user skills batch: {str(e)}")
     
     def get_user_skills(self, user_id: str) -> List[UserSkill]:
@@ -214,7 +212,6 @@ class UserDatabase:
             
             return [UserSkill(**item) for item in response.data] if response.data else []
         except Exception as e:
-            logger.error(f"Failed to get user skills: {str(e)}")
             return []
 
     def get_user_skills_by_category(self, user_id: str, category: str) -> List[UserSkill]:
@@ -237,7 +234,6 @@ class UserDatabase:
             # Note: Supabase delete doesn't return error for non-existent records
             return True
         except Exception as e:
-            logger.error(f"Failed to clear user skills: {str(e)}")
             return False
     
     def delete_user_skill(self, skill_id: str) -> bool:
@@ -247,7 +243,6 @@ class UserDatabase:
             
             return len(response.data) > 0
         except Exception as e:
-            logger.error(f"Failed to delete user skill: {str(e)}")
             return False
 
     def update_user_skill(self, skill_id: str, update_data: dict) -> Optional[UserSkill]:
@@ -280,7 +275,6 @@ class UserDatabase:
             match_data["matched_skills"] = json.loads(match_data["matched_skills"])
             return UserJobMatch(**match_data)
         except Exception as e:
-            logger.error(f"Failed to save job match: {str(e)}")
             raise DatabaseError(f"Failed to save job match: {str(e)}")
 
     def get_user_job_matches(self, user_id: str, limit: int = 50) -> List[UserJobMatch]:
@@ -304,7 +298,6 @@ class UserDatabase:
             
             return matches
         except Exception as e:
-            logger.error(f"Failed to get user job matches: {str(e)}")
             return []
 
     def get_user_stats(self, user_id: str) -> Dict[str, Any]:
@@ -355,7 +348,6 @@ class UserDatabase:
                 industries=industries
             )
         except Exception as e:
-            logger.error(f"Failed to get skills summary: {str(e)}")
             return SkillsResponse(
                 technical_skills=[],
                 soft_skills=[],

@@ -18,44 +18,16 @@ import {
   Building,
   ExternalLink,
   RefreshCw,
-  Star,
   AlertCircle,
-  CheckCircle2,
   Brain,
   Target,
   Zap,
   BookmarkPlus,
-  BarChart3,
-  Users,
-  Grid,
-  List,
 } from 'lucide-react';
 
 import { apiClient } from '@/lib/api-client';
-
-// Interface matching your actual API response
-interface JobMatch {
-  job_id: string;
-  job_title: string;
-  company: string;
-  location: string;
-  match_score: number;
-  matched_skills: string[];
-  missing_critical_skills: string[];
-  skill_coverage: number;
-  confidence: string;
-  job_url: string;
-  ai_reasoning?: string;
-}
-
-interface MatchingStats {
-  total_matches: number;
-  average_score: number;
-  high_confidence_matches: number;
-  medium_confidence_matches: number;
-  low_confidence_matches: number;
-  last_updated: string | null;
-}
+import { JobMatch, MatchingStats } from '@/types/jobMatch';
+import { getConfidenceColor, getConfidenceIcon, getMatchScoreColor } from '@/lib/utils/getConfidence';
 
 export default function JobMatchesPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,38 +53,6 @@ export default function JobMatchesPage() {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to load job matches';
       setError(errorMessage);
-
-      // Set mock data for testing UI
-      setJobMatches([
-        {
-          job_id: '1',
-          job_title: 'Senior Full Stack Developer',
-          company: 'TechCorp Inc.',
-          location: 'San Francisco, CA',
-          match_score: 0.85,
-          matched_skills: ['JavaScript', 'React', 'Node.js', 'Python'],
-          missing_critical_skills: ['AWS', 'Docker'],
-          skill_coverage: 0.8,
-          confidence: 'high',
-          job_url: 'https://example.com/job/1',
-          ai_reasoning:
-            'Strong match based on your full-stack experience and JavaScript expertise.',
-        },
-        {
-          job_id: '2',
-          job_title: 'Frontend Developer',
-          company: 'StartupXYZ',
-          location: 'Remote',
-          match_score: 0.72,
-          matched_skills: ['React', 'TypeScript', 'CSS'],
-          missing_critical_skills: ['Vue.js', 'GraphQL'],
-          skill_coverage: 0.65,
-          confidence: 'medium',
-          job_url: 'https://example.com/job/2',
-          ai_reasoning:
-            'Good match for frontend skills, though missing some modern frameworks.',
-        },
-      ]);
     } finally {
       setLoading(false);
     }
@@ -121,21 +61,10 @@ export default function JobMatchesPage() {
   // Load stats
   const loadStats = async () => {
     try {
-      console.log('Loading stats...');
       const statsData = await apiClient.get<MatchingStats>('/jobs/stats');
-      console.log('Loaded stats:', statsData);
       setStats(statsData);
     } catch (err: unknown) {
       console.error('Error loading stats:', err);
-      // Mock stats for testing
-      setStats({
-        total_matches: 12,
-        average_score: 0.68,
-        high_confidence_matches: 3,
-        medium_confidence_matches: 6,
-        low_confidence_matches: 3,
-        last_updated: new Date().toISOString(),
-      });
     }
   };
 
@@ -157,7 +86,6 @@ export default function JobMatchesPage() {
       // Reload data
       await Promise.all([loadJobMatches(), loadStats()]);
     } catch (err: unknown) {
-      console.error('Error refreshing matches:', err);
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to refresh matches';
       setError(errorMessage);
@@ -177,39 +105,6 @@ export default function JobMatchesPage() {
 
     return matchesSearch && matchesFilter;
   });
-
-  // Helper functions
-  const getConfidenceColor = (confidence: string) => {
-    switch (confidence) {
-      case 'high':
-        return 'bg-green-100 text-green-800 border-green-300';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'low':
-        return 'bg-red-100 text-red-800 border-red-300';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
-  };
-
-  const getConfidenceIcon = (confidence: string) => {
-    switch (confidence) {
-      case 'high':
-        return <CheckCircle2 className="w-4 h-4" />;
-      case 'medium':
-        return <Star className="w-4 h-4" />;
-      case 'low':
-        return <AlertCircle className="w-4 h-4" />;
-      default:
-        return null;
-    }
-  };
-
-  const getMatchScoreColor = (score: number) => {
-    if (score >= 0.8) return 'text-green-600';
-    if (score >= 0.6) return 'text-yellow-600';
-    return 'text-red-600';
-  };
 
   // Loading state
   if (loading && jobMatches.length === 0) {

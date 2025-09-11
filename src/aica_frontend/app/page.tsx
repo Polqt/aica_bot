@@ -6,11 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Sparkles,
-  Target,
-  Zap,
-  TrendingUp,
-  Users,
   ArrowRight,
   Play,
 } from 'lucide-react';

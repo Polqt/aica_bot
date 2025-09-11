@@ -1,14 +1,8 @@
-// Shared data constants for the AICA application
-// This file centralizes all content that appears across multiple pages
-
 import {
   Target,
   Zap,
   TrendingUp,
   Users,
-  GraduationCap,
-  Brain,
-  BookOpen,
   Sparkles,
 } from 'lucide-react';
 
