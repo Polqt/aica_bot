@@ -27,12 +27,14 @@ import Link from 'next/link';
 import { AuthCarouselWrapper } from '@/components/AuthCarousel';
 import { authContent } from '@/lib/constants/app-data';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 interface SignupResponse {
   access_token?: string;
   message?: string;
   detail?: string;
+  email_confirmation_required?: boolean;
 }
 
 interface FormData {
@@ -125,7 +127,24 @@ export default function SignupPage() {
         );
       }
 
-      if (data.access_token) {
+      // Check if email confirmation is required
+      if (data.email_confirmation_required) {
+        setSuccess(
+          'Account created successfully! Please check your email and confirm your account before proceeding.',
+        );
+
+        // Show email confirmation UI and redirect to Gmail
+        setTimeout(() => {
+          // Open Gmail in a new tab
+          window.open('https://mail.google.com', '_blank');
+
+          // Show login page with confirmation message
+          router.push(
+            '/login?message=Please confirm your email and then log in',
+          );
+        }, 2000);
+      } else if (data.access_token) {
+        // User is immediately logged in (email confirmation not required)
         localStorage.setItem('access_token', data.access_token);
         setSuccess(
           'Account created successfully! Redirecting to resume upload...',
@@ -134,12 +153,13 @@ export default function SignupPage() {
           router.push('/upload');
         }, 1500);
       } else {
+        // Fallback case
         setSuccess(
           data.message ||
-            'Account created successfully! Please check your email to confirm your account.',
+            'Account created successfully! Please log in to continue.',
         );
         setTimeout(() => {
-          router.push('/upload');
+          router.push('/login');
         }, 3000);
       }
     } catch (error) {
@@ -163,15 +183,25 @@ export default function SignupPage() {
   return (
     <>
       {/* Left Section - Carousel */}
-      <div className={`hidden lg:block min-h-screen p-4 transition-all duration-500 ease-in-out ${isCarouselCollapsed ? 'w-20' : 'w-1/3'}`}>
-        <AuthCarouselWrapper 
-          className="h-full" 
+      <div
+        className={`hidden lg:block min-h-screen p-4 transition-all duration-500 ease-in-out ${
+          isCarouselCollapsed ? 'w-20' : 'w-1/3'
+        }`}
+      >
+        <AuthCarouselWrapper
+          className="h-full"
           onCollapseChange={setIsCarouselCollapsed}
         />
       </div>
 
       {/* Right Section - Sign Up Form */}
-      <div className={`min-h-screen flex items-center p-4 lg:p-8 transition-all duration-500 ease-in-out ${isCarouselCollapsed ? 'flex-1 justify-center' : 'flex-1 justify-center'}`}>
+      <div
+        className={`min-h-screen flex items-center p-4 lg:p-8 transition-all duration-500 ease-in-out ${
+          isCarouselCollapsed
+            ? 'flex-1 justify-center'
+            : 'flex-1 justify-center'
+        }`}
+      >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -180,7 +210,9 @@ export default function SignupPage() {
         >
           <Card className="glass-card border-0 shadow-2xl">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl text-center">{authContent.signUp.title}</CardTitle>
+              <CardTitle className="text-2xl text-center">
+                {authContent.signUp.title}
+              </CardTitle>
               <CardDescription className="text-center">
                 {authContent.signUp.description}
               </CardDescription>
@@ -247,7 +279,9 @@ export default function SignupPage() {
                     />
                     <button
                       type="button"
-                      onClick={() => togglePasswordVisibility('confirmPassword')}
+                      onClick={() =>
+                        togglePasswordVisibility('confirmPassword')
+                      }
                       className="absolute right-3 top-3 h-5 w-5 text-muted-foreground hover:text-foreground transition-colors z-10"
                       disabled={loading}
                       aria-label="Toggle confirm password visibility"

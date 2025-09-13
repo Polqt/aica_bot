@@ -368,3 +368,54 @@ class JobDatabase:
         except Exception as e:
             print(f"Error getting job by id {job_id}: {e}")
             return None
+
+    def save_user_job_match(self, user_id: str, job_id: str, match_score: float, **kwargs) -> bool:
+        """
+        Save a job match for a user.
+        
+        Args:
+            user_id: The user's ID
+            job_id: The job's ID  
+            match_score: The match score (0-100)
+            **kwargs: Additional fields (ignored for compatibility)
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Prepare the minimal data that matches the current table schema
+            match_data = {
+                "user_id": user_id,
+                "job_id": job_id,
+                "match_score": match_score,
+                "matched_skills": kwargs.get('matching_skills', []),  # Map matching_skills to matched_skills
+                "created_at": datetime.utcnow().isoformat()
+            }
+            
+            response = self.client.table("user_job_matches").insert(match_data).execute()
+            return len(response.data) > 0
+            
+        except Exception as e:
+            print(f"Error saving user job match: {e}")
+            return False
+
+    def get_user_matches(self, user_id: str) -> List[Dict[str, Any]]:
+        """
+        Get all job matches for a user.
+        
+        Args:
+            user_id: The user's ID
+            
+        Returns:
+            List of match dictionaries
+        """
+        try:
+            response = self.client.table("user_job_matches").select(
+                "*, jobs(title, company, location, url)"
+            ).eq("user_id", user_id).order("match_score", desc=True).execute()
+            
+            return response.data or []
+            
+        except Exception as e:
+            print(f"Error getting user matches: {e}")
+            return []

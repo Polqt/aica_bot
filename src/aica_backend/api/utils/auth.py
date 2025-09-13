@@ -50,6 +50,12 @@ def validate_token(token: str) -> Optional[Dict]:
         user_response = supabase.auth.get_user(token)
         
         if not user_response.user:
+            logger.warning("Token validation failed: No user in response")
+            return None
+        
+        # Check if user is confirmed (for email confirmation flow)
+        if hasattr(user_response.user, 'email_confirmed_at') and not user_response.user.email_confirmed_at:
+            logger.warning(f"Token validation failed: User email not confirmed for {user_response.user.email}")
             return None
             
         return {
@@ -71,6 +77,19 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 
     user = validate_token(credentials.credentials)
     if not user:
+        # Check if it's an email confirmation issue
+        try:
+            supabase = get_supabase_client()
+            user_response = supabase.auth.get_user(credentials.credentials)
+            if user_response.user and hasattr(user_response.user, 'email_confirmed_at') and not user_response.user.email_confirmed_at:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Please confirm your email address before accessing this resource",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+        except:
+            pass
+            
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",

@@ -97,6 +97,9 @@ class UserDatabase:
                 "resume_uploaded": False,
                 "resume_processed": False,
                 "profile_completed": False,
+                "processing_step": None,
+                "processing_error": None,
+                "matches_generated": False,
             }
             
             response = self.client.table("user_profiles").insert(data).execute()

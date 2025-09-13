@@ -1,93 +1,114 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion } from 'motion/react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
-  Mail,
-  Lock,
-  ArrowRight,
-  Loader2
-} from 'lucide-react'
-import Link from 'next/link'
-import { AuthCarouselWrapper } from '@/components/AuthCarousel'
-import { authContent } from '@/lib/constants/app-data'
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { AuthCarouselWrapper } from '@/components/AuthCarousel';
+import { authContent } from '@/lib/constants/app-data';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [isCarouselCollapsed, setIsCarouselCollapsed] = useState(false)
-  const router = useRouter()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [isCarouselCollapsed, setIsCarouselCollapsed] = useState(false);
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${
+          process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+        }/auth/login`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            password,
+          }),
         },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      })
+      );
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        setError(data.detail || 'Check your email for the confirmation first!')
+        setError(data.detail || 'Check your email for the confirmation first!');
       } else {
-        localStorage.setItem('access_token', data.access_token)
+        localStorage.setItem('access_token', data.access_token);
         try {
-          const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/auth/profile`, {
-            headers: {
-              'Authorization': `Bearer ${data.access_token}`,
+          const profileResponse = await fetch(
+            `${
+              process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+            }/auth/profile`,
+            {
+              headers: {
+                Authorization: `Bearer ${data.access_token}`,
+              },
             },
-          })
+          );
 
           if (profileResponse.ok) {
-            const profile = await profileResponse.json()
+            const profile = await profileResponse.json();
             if (!profile.resume_uploaded) {
-              router.push('/upload')
+              router.push('/upload');
             } else {
-              router.push('/dashboard')
+              router.push('/dashboard');
             }
           } else {
-            router.push('/dashboard')
+            router.push('/dashboard');
           }
         } catch {
-          router.push('/dashboard')
+          router.push('/dashboard');
         }
       }
     } catch {
-      setError('An unexpected error occurred')
+      setError('An unexpected error occurred');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <>
       {/* Left Section - Carousel */}
-      <div className={`hidden lg:block min-h-screen p-4 transition-all duration-500 ease-in-out ${isCarouselCollapsed ? 'w-20' : 'w-1/3'}`}>
-        <AuthCarouselWrapper 
-          className="h-full" 
+      <div
+        className={`hidden lg:block min-h-screen p-4 transition-all duration-500 ease-in-out ${
+          isCarouselCollapsed ? 'w-20' : 'w-1/3'
+        }`}
+      >
+        <AuthCarouselWrapper
+          className="h-full"
           onCollapseChange={setIsCarouselCollapsed}
         />
       </div>
 
       {/* Right Section - Login Form */}
-      <div className={`min-h-screen flex items-center p-4 lg:p-8 transition-all duration-500 ease-in-out ${isCarouselCollapsed ? 'flex-1 justify-center' : 'flex-1 justify-center'}`}>
+      <div
+        className={`min-h-screen flex items-center p-4 lg:p-8 transition-all duration-500 ease-in-out ${
+          isCarouselCollapsed
+            ? 'flex-1 justify-center'
+            : 'flex-1 justify-center'
+        }`}
+      >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -96,7 +117,9 @@ export default function LoginPage() {
         >
           <Card className="glass-card border-0 shadow-2xl">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl text-center">{authContent.login.title}</CardTitle>
+              <CardTitle className="text-2xl text-center">
+                {authContent.login.title}
+              </CardTitle>
               <CardDescription className="text-center">
                 {authContent.login.description}
               </CardDescription>
@@ -114,7 +137,7 @@ export default function LoginPage() {
                       required
                       placeholder="Email address"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={e => setEmail(e.target.value)}
                       className="pl-10 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-blue-500/50 focus:ring-blue-500/20 relative z-0"
                     />
                   </div>
@@ -124,11 +147,11 @@ export default function LoginPage() {
                     <Input
                       id="password"
                       name="password"
-                      type='password'
+                      type="password"
                       required
                       placeholder="Password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={e => setPassword(e.target.value)}
                       className="pl-10 pr-10 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-blue-500/50 focus:ring-blue-500/20 relative z-0"
                     />
                   </div>
@@ -190,11 +213,17 @@ export default function LoginPage() {
           >
             <p className="text-xs text-muted-foreground">
               By signing in, you agree to our{' '}
-              <Link href="#" className="underline hover:text-foreground transition-colors">
+              <Link
+                href="#"
+                className="underline hover:text-foreground transition-colors"
+              >
                 Terms of Service
               </Link>{' '}
               and{' '}
-              <Link href="#" className="underline hover:text-foreground transition-colors">
+              <Link
+                href="#"
+                className="underline hover:text-foreground transition-colors"
+              >
                 Privacy Policy
               </Link>
             </p>
@@ -202,5 +231,5 @@ export default function LoginPage() {
         </motion.div>
       </div>
     </>
-  )
+  );
 }

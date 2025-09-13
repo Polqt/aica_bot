@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +27,11 @@ import {
 
 import { apiClient } from '@/lib/api-client';
 import { JobMatch, MatchingStats } from '@/types/jobMatch';
-import { getConfidenceColor, getConfidenceIcon, getMatchScoreColor } from '@/lib/utils/getConfidence';
+import {
+  getConfidenceColor,
+  getConfidenceIcon,
+  getMatchScoreColor,
+} from '@/lib/utils/getConfidence';
 
 export default function JobMatchesPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,9 +41,44 @@ export default function JobMatchesPage() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<string | null>(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+
+  // Check processing status - useful when user comes from resume upload
+  const checkProcessingStatus = useCallback(async () => {
+    try {
+      setIsCheckingStatus(true);
+      const status = await apiClient.get<{
+        status: string;
+        message?: string;
+        matches_found?: number;
+      }>('/auth/processing-status');
+
+      setProcessingStatus(status.status);
+
+      // If still processing, we'll show a different UI
+      if (
+        status.status === 'processing' ||
+        status.status === 'parsing' ||
+        status.status === 'matching' ||
+        status.status === 'finalizing'
+      ) {
+        // Auto-refresh when processing completes
+        setTimeout(checkProcessingStatus, 3000);
+      } else if (status.status === 'completed') {
+        // Processing just completed, trigger data loading
+        setProcessingStatus('completed');
+      }
+    } catch {
+      console.log('No processing status available (normal for existing users)');
+      setProcessingStatus('not_processing');
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  }, []);
 
   // Load job matches
-  const loadJobMatches = async () => {
+  const loadJobMatches = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -56,23 +95,35 @@ export default function JobMatchesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Load stats
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const statsData = await apiClient.get<MatchingStats>('/jobs/stats');
       setStats(statsData);
     } catch (err: unknown) {
       console.error('Error loading stats:', err);
     }
-  };
+  }, []);
 
   // Load data on component mount
   useEffect(() => {
-    loadJobMatches();
-    loadStats();
-  }, []);
+    // First check if user is coming from resume processing
+    checkProcessingStatus();
+  }, [checkProcessingStatus]);
+
+  // Load data after processing status is determined
+  useEffect(() => {
+    if (
+      !isCheckingStatus &&
+      (processingStatus === 'completed' ||
+        processingStatus === 'not_processing')
+    ) {
+      loadJobMatches();
+      loadStats();
+    }
+  }, [isCheckingStatus, processingStatus, loadJobMatches, loadStats]);
 
   // Refresh matches
   const refreshMatches = async () => {
@@ -140,6 +191,49 @@ export default function JobMatchesPage() {
             matching algorithms
           </p>
         </div>
+
+        {/* Processing Status Banner */}
+        {isCheckingStatus && (
+          <Card className="mb-6 bg-blue-50 border-blue-200">
+            <CardContent className="flex items-center justify-center py-6">
+              <RefreshCw className="h-5 w-5 animate-spin text-blue-600 mr-3" />
+              <span className="text-blue-700">
+                Checking processing status...
+              </span>
+            </CardContent>
+          </Card>
+        )}
+
+        {(processingStatus === 'processing' ||
+          processingStatus === 'parsing' ||
+          processingStatus === 'matching' ||
+          processingStatus === 'finalizing') && (
+          <Card className="mb-6 bg-amber-50 border-amber-200">
+            <CardContent className="py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <RefreshCw className="h-5 w-5 animate-spin text-amber-600 mr-3" />
+                  <div>
+                    <h3 className="font-semibold text-amber-700">
+                      {processingStatus === 'parsing' &&
+                        'Extracting Skills from Resume...'}
+                      {processingStatus === 'matching' &&
+                        'Finding Job Matches...'}
+                      {processingStatus === 'finalizing' &&
+                        'Finalizing Results...'}
+                      {processingStatus === 'processing' &&
+                        'Processing Resume...'}
+                    </h3>
+                    <p className="text-amber-600 text-sm">
+                      We&apos;re analyzing your resume and finding the best job
+                      matches. This usually takes 1-2 minutes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         {stats && (

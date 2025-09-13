@@ -24,18 +24,24 @@ import {
 const MAX_FILE_SIZE_MB = 10;
 const MAX_POLLS = 30;
 const POLL_INTERVAL_MS = 2000;
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 type ProcessingStatus =
   | 'not_uploaded'
   | 'processing'
+  | 'parsing'
+  | 'matching'
+  | 'finalizing'
   | 'completed'
-  | 'failed'
+  | 'error'
   | 'not_found';
 
 interface StatusResponse {
   status: ProcessingStatus;
   message?: string;
+  step?: string;
+  matches_found?: number;
 }
 
 interface ApiError {
@@ -65,30 +71,6 @@ export default function ResumeUpload() {
     };
   }, []);
 
-  // Handle polling logic
-  useEffect(() => {
-    if (processingStatus === 'processing' && pollCount < MAX_POLLS) {
-      pollIntervalRef.current = setInterval(() => {
-        if (isComponentMountedRef.current) {
-          checkProcessingStatus();
-          setPollCount(prev => prev + 1);
-        }
-      }, POLL_INTERVAL_MS);
-
-      return () => {
-        if (pollIntervalRef.current) {
-          clearInterval(pollIntervalRef.current);
-        }
-      };
-    }
-
-    // Stop polling and handle timeout
-    if (pollCount >= MAX_POLLS && processingStatus === 'processing') {
-      setProcessingStatus('failed');
-      toast.error('Processing timeout. Please try uploading again.');
-    }
-  }, [processingStatus, pollCount]);
-
   const getAuthToken = useCallback((): string | null => {
     if (typeof window === 'undefined') return null;
 
@@ -109,6 +91,7 @@ export default function ResumeUpload() {
     if (!token || !isComponentMountedRef.current) return;
 
     try {
+      console.log('🔍 Checking processing status...');
       const response = await fetch(`${API_BASE_URL}/auth/processing-status`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -121,25 +104,73 @@ export default function ResumeUpload() {
       }
 
       const data: StatusResponse = await response.json();
+      console.log('📊 Status response:', data);
 
       if (!isComponentMountedRef.current) return;
 
-      setProcessingStatus(data.status);
+      // Update status based on step information from backend
+      const newStatus = data.step || data.status;
+
+      // Type-safe status setting
+      const validStatuses: ProcessingStatus[] = [
+        'not_uploaded',
+        'processing',
+        'parsing',
+        'matching',
+        'finalizing',
+        'completed',
+        'error',
+        'not_found',
+      ];
+
+      if (validStatuses.includes(newStatus as ProcessingStatus)) {
+        console.log(`📝 Setting status to: ${newStatus}`);
+        setProcessingStatus(newStatus as ProcessingStatus);
+      } else {
+        console.log(
+          `⚠️ Invalid status received: ${newStatus}, defaulting to processing`,
+        );
+        setProcessingStatus('processing');
+      }
 
       if (data.status === 'completed') {
-        toast.success('Resume processed successfully!');
+        const matchCount = data.matches_found || 0;
+        console.log(`✅ Processing completed! Found ${matchCount} matches`);
+
+        // Stop polling
+        if (pollIntervalRef.current) {
+          console.log('🛑 Stopping polling - processing completed');
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+
+        toast.success(
+          `Resume processed successfully! Found ${matchCount} job matches.`,
+        );
         setTimeout(() => {
           if (isComponentMountedRef.current) {
-            router.push('/dashboard');
+            console.log('🚀 Redirecting to job matches...');
+            router.push('/job-matches');
           }
         }, 1500);
-      } else if (data.status === 'failed') {
-        toast.error('Resume processing failed. Please try again.');
+      } else if (data.status === 'error') {
+        console.log('❌ Processing error:', data.message);
+
+        // Stop polling
+        if (pollIntervalRef.current) {
+          console.log('🛑 Stopping polling - processing error');
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+
+        toast.error(
+          data.message || 'Resume processing failed. Please try again.',
+        );
       }
     } catch (error) {
       console.error('Error checking processing status:', error);
       if (isComponentMountedRef.current) {
-        setProcessingStatus('failed');
+        setProcessingStatus('error');
         toast.error('Failed to check processing status.');
       }
     }
@@ -200,6 +231,8 @@ export default function ResumeUpload() {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
+      console.log('🚀 Uploading to:', `${API_BASE_URL}/auth/upload-resume`);
+
       const response = await fetch(`${API_BASE_URL}/auth/upload-resume`, {
         method: 'POST',
         body: formData,
@@ -231,13 +264,58 @@ export default function ResumeUpload() {
 
       if (!isComponentMountedRef.current) return;
 
+      console.log('✅ Upload successful, starting processing...');
       toast.success('Resume uploaded successfully! Processing...');
+
+      // Ensure state updates happen in the right order
+      setIsUploading(false); // Upload is complete
+      setError(''); // Clear any previous errors
+      setPollCount(0); // Reset poll count
+
+      // Set processing status and start polling directly
+      console.log('📝 Setting processing status to "processing"');
       setProcessingStatus('processing');
-      setPollCount(0);
+
+      // Start immediate polling without relying on useEffect
+      const startPolling = () => {
+        console.log('🔄 Starting direct polling...');
+        let currentPollCount = 0;
+
+        const pollInterval = setInterval(async () => {
+          if (!isComponentMountedRef.current || currentPollCount >= MAX_POLLS) {
+            console.log(
+              '🛑 Stopping polling - component unmounted or max polls reached',
+            );
+            clearInterval(pollInterval);
+            return;
+          }
+
+          console.log(`🔍 Direct polling check #${currentPollCount + 1}`);
+          await checkProcessingStatus();
+          currentPollCount++;
+          setPollCount(currentPollCount);
+        }, POLL_INTERVAL_MS);
+
+        pollIntervalRef.current = pollInterval;
+      };
+
+      // Start polling after a short delay
+      setTimeout(() => {
+        if (isComponentMountedRef.current) {
+          console.log('⏰ Starting first status check...');
+          checkProcessingStatus();
+          startPolling();
+        }
+      }, 1000);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Upload failed.';
-      console.error('Upload error:', error);
+      console.error('❌ Upload error:', error);
+      console.error('❌ Error details:', {
+        message: errorMessage,
+        apiUrl: `${API_BASE_URL}/auth/upload-resume`,
+        hasToken: !!token,
+      });
 
       if (isComponentMountedRef.current) {
         // Handle specific error cases
@@ -252,11 +330,8 @@ export default function ResumeUpload() {
         }
 
         setError(errorMessage);
-        setProcessingStatus('failed');
-      }
-    } finally {
-      if (isComponentMountedRef.current) {
-        setIsUploading(false);
+        setProcessingStatus('error');
+        setIsUploading(false); // Also set here for error cases
       }
     }
   };
@@ -272,9 +347,30 @@ export default function ResumeUpload() {
     setSelectedFile(null);
   };
 
+  // Handle cleanup and timeout logic
+  useEffect(() => {
+    // Handle timeout case
+    if (
+      pollCount >= MAX_POLLS &&
+      processingStatus !== 'completed' &&
+      processingStatus !== 'error'
+    ) {
+      console.log('⏰ Polling timeout reached');
+      setProcessingStatus('error');
+      toast.error('Processing timeout. Please try uploading again.');
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    }
+  }, [pollCount, processingStatus]);
+
   const getStatusIcon = () => {
     switch (processingStatus) {
       case 'processing':
+      case 'parsing':
+      case 'matching':
+      case 'finalizing':
         return (
           <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin" />
         );
@@ -282,7 +378,7 @@ export default function ResumeUpload() {
         return (
           <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
         );
-      case 'failed':
+      case 'error':
         return <AlertCircle className="h-8 w-8 text-red-500" />;
       default:
         return null;
@@ -297,6 +393,26 @@ export default function ResumeUpload() {
           description: "We're analyzing your resume and extracting skills...",
           showProgress: true,
         };
+      case 'parsing':
+        return {
+          title: 'Extracting Skills...',
+          description:
+            "We're reading your resume and identifying your skills...",
+          showProgress: true,
+        };
+      case 'matching':
+        return {
+          title: 'Finding Job Matches...',
+          description:
+            "We're searching for relevant jobs based on your skills...",
+          showProgress: true,
+        };
+      case 'finalizing':
+        return {
+          title: 'Finalizing Results...',
+          description: "We're preparing your personalized job matches...",
+          showProgress: true,
+        };
       case 'completed':
         return {
           title: 'Upload Complete!',
@@ -304,7 +420,7 @@ export default function ResumeUpload() {
             'Your resume has been uploaded and processed successfully!',
           showProgress: false,
         };
-      case 'failed':
+      case 'error':
         return {
           title: 'Processing Failed',
           description: 'Something went wrong. Please try uploading again.',
@@ -432,7 +548,7 @@ export default function ResumeUpload() {
                   )}
                 </div>
 
-                {processingStatus === 'failed' && (
+                {processingStatus === 'error' && (
                   <Button onClick={handleRetry} className="btn-modern">
                     Try Again
                   </Button>

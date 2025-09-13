@@ -44,6 +44,9 @@ class UserProfile(BaseModel):
     linkedin_url: Optional[str] = None
     experience_years: Optional[int] = None
     education_level: Optional[str] = None
+    processing_step: Optional[str] = None
+    processing_error: Optional[str] = None
+    matches_generated: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     
