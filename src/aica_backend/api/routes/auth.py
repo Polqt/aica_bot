@@ -3,7 +3,10 @@ from aica_backend.api.utils.auth import get_supabase_client, get_current_user, g
 from aica_backend.database.models.user_models import UserCreate, UserLogin, TokenResponse, ResumeUploadResponse
 from aica_backend.database.user_db import UserDatabase
 from aica_backend.core.resume_parser import ResumeParser
+from ...database.job_db import JobDatabase
+from ...services.job_matching import JobMatchingService
 from datetime import datetime
+import traceback
 
 router = APIRouter()
 
@@ -39,8 +42,6 @@ async def signup(user: UserCreate):
             print(f"User created in database: {db_user.id}")
         except Exception as db_error:
             print(f"Database user creation failed: {str(db_error)}")
-            # Don't fail the signup if database insertion fails
-            # The user will be created in our database when they first make an authenticated request
 
         # Check if user needs email confirmation
         if response.session is None:
@@ -110,31 +111,24 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
         # If user doesn't exist in our database but exists in Supabase, create them
         if not user:
             try:
-                print(f"Creating missing user in database: {current_user['id']}")
                 user = db.create_user(
                     email=current_user["email"],
                     password_hash="",
                     user_id=current_user["id"]
                 )
                 profile = db.create_user_profile(current_user["id"])
-                print(f"User created successfully: {user.id}")
             except Exception as create_error:
                 # Check if user already exists by email
                 if "duplicate key" in str(create_error) and "email" in str(create_error):
-                    print(f"User already exists with email {current_user['email']}, trying to get existing user")
                     try:
                         user = db.get_user_by_email(current_user["email"])
                         if user:
                             profile = db.get_user_profile(user.id)
-                            print(f"Found existing user: {user.id}")
-                        else:
-                            print(f"Could not find existing user with email {current_user['email']}")
                     except Exception as get_error:
                         print(f"Failed to get existing user: {str(get_error)}")
                 else:
                     print(f"Failed to create missing user: {str(create_error)}")
                 
-                # Fall back to basic user data from token if user creation fails
                 if not user:
                     return {
                         "id": current_user["id"],
@@ -195,7 +189,6 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
     3. Automatically find and store job matches using simple skill-based matching
     4. Update processing status
     """
-    from ...services.job_matching import JobMatchingService
     
     db = UserDatabase()
     
@@ -208,18 +201,24 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
             print(f"User not found in database, cannot process resume: {user_id}")
             return
         
-        # Step 1 & 2: Parse resume and store skills
+        # Parse resume and store skills
         print(f"Step 1: Processing resume for user: {user_id}")
         db.update_user_profile(user_id, {"processing_step": "parsing"})
+        
+        # Small delay to show parsing step
+        import asyncio
+        await asyncio.sleep(2)
         
         parser = ResumeParser()
         await parser.process_and_store_resume(user_id, file_content, file_type)
         print(f"Resume parsed successfully for user: {user_id}")
         
-        # Step 3: Use skill-based job matching (simplified approach)
+        # Use skill-based job matching (simplified approach)
         print(f"Step 2: Starting job matching for user: {user_id}")
         db.update_user_profile(user_id, {"processing_step": "matching"})
         
+        # Small delay to show matching step
+        await asyncio.sleep(2)
         try:
             # Get user skills
             user_skills = db.get_user_skills(user_id)
@@ -230,7 +229,6 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
                 print(f"Found {len(user_skills)} skills for user {user_id}")
                 
                 # Get available jobs
-                from ...database.job_db import JobDatabase
                 job_db = JobDatabase()
                 jobs = job_db.get_jobs_for_matching(limit=100)
                 
@@ -269,11 +267,16 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
                         
         except Exception as matching_error:
             print(f"Job matching failed: {matching_error}")
-            import traceback
             traceback.print_exc()
             matches = []
         
         # Step 4: Mark as completed
+        print(f"Step 3: Finalizing processing for user: {user_id}")
+        db.update_user_profile(user_id, {"processing_step": "finalizing"})
+        
+        # Small delay to show finalizing step
+        await asyncio.sleep(2)
+        
         db.update_user_profile(user_id, {
             "resume_processed": True,
             "processing_step": "completed",
@@ -284,8 +287,7 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
         
     except Exception as e:
         print(f"ERROR: Background processing failed for user {user_id}: {str(e)}")
-        import traceback
-        print(f"Traceback: {traceback.format_exc()}")
+        traceback.print_exc()
         
         try:
             db.update_user_profile(user_id, {
@@ -297,6 +299,7 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
             print(f"Failed to update error status for user {user_id}: {str(update_error)}")
         
         # Don't re-raise the exception as it's a background task
+        
 
 @router.post("/upload-resume", response_model=ResumeUploadResponse)
 async def upload_resume(
@@ -339,7 +342,6 @@ async def upload_resume(
                 )
                 print(f"User created for resume upload: {user.id}")
             except Exception as user_create_error:
-                # Check if user already exists by email (common case)
                 if "duplicate key" in str(user_create_error) and "email" in str(user_create_error):
                     print(f"User already exists with email {current_user['email']}, trying to get existing user")
                     try:
@@ -347,16 +349,12 @@ async def upload_resume(
                         if user:
                             print(f"Found existing user: {user.id}")
                         else:
-                            print(f"Could not find existing user with email {current_user['email']}")
                             raise HTTPException(status_code=500, detail="User exists but cannot be retrieved")
                     except Exception as get_error:
-                        print(f"Failed to get existing user: {str(get_error)}")
                         raise HTTPException(status_code=500, detail="Failed to prepare user for resume upload")
                 else:
-                    print(f"Failed to create user for resume upload: {str(user_create_error)}")
                     raise HTTPException(status_code=500, detail="Failed to prepare user for resume upload")
         
-        # Ensure user profile exists
         try:
             profile = db.get_user_profile(user_id)
             if not profile:
@@ -412,7 +410,6 @@ async def upload_resume(
         success = db.mark_resume_uploaded(user_id, file_path)
 
         if not success:
-            print(f"Failed to mark resume as uploaded for user: {user_id}")
             try:
                 supabase.storage.from_(bucket_name).remove([file_path])
             except:
@@ -488,7 +485,6 @@ async def get_processing_status(current_user: dict = Depends(get_current_user)):
         if profile.resume_processed:
             # Get match count for completed status
             try:
-                from ...database.job_db import JobDatabase
                 job_db = JobDatabase()
                 matches = job_db.get_user_matches(current_user["id"])
                 match_count = len(matches) if matches else 0
@@ -523,7 +519,6 @@ async def get_processing_status(current_user: dict = Depends(get_current_user)):
         
         message = step_messages.get(current_step, "Processing your resume and finding job matches...")
         
-        # If resume is uploaded but not processed, return current step
         return {
             "status": "processing",
             "message": message,

@@ -63,7 +63,11 @@ export default function ResumeUpload() {
 
   // Cleanup on unmount
   useEffect(() => {
+    console.log('🏗️ Component mounted');
+    isComponentMountedRef.current = true;
+
     return () => {
+      console.log('🗑️ Component unmounting');
       isComponentMountedRef.current = false;
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
@@ -232,6 +236,11 @@ export default function ResumeUpload() {
       formData.append('file', selectedFile);
 
       console.log('🚀 Uploading to:', `${API_BASE_URL}/auth/upload-resume`);
+      console.log('📋 Upload details:', {
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        fileType: selectedFile.type,
+      });
 
       const response = await fetch(`${API_BASE_URL}/auth/upload-resume`, {
         method: 'POST',
@@ -241,9 +250,17 @@ export default function ResumeUpload() {
         },
       });
 
+      console.log('📨 Upload response status:', response.status);
+      console.log('📨 Upload response ok:', response.ok);
+
       const responseData = await response.json();
+      console.log('📋 Upload response data:', responseData);
+      console.log('🔍 Component mounted check:', isComponentMountedRef.current);
+      console.log('🔍 Response ok check about to run...');
+      console.log('🔍 Response.ok value:', response.ok, typeof response.ok);
 
       if (!response.ok) {
+        console.log('❌ Response not ok, entering error handling...');
         const errorData = responseData as ApiError;
         const errorMessage =
           errorData.detail || errorData.message || 'Upload failed';
@@ -262,51 +279,45 @@ export default function ResumeUpload() {
         }
       }
 
-      if (!isComponentMountedRef.current) return;
+      try {
+        toast.success('Resume uploaded successfully! Processing...');
 
-      console.log('✅ Upload successful, starting processing...');
-      toast.success('Resume uploaded successfully! Processing...');
+        const startPolling = () => {
+          let currentPollCount = 0;
 
-      // Ensure state updates happen in the right order
-      setIsUploading(false); // Upload is complete
-      setError(''); // Clear any previous errors
-      setPollCount(0); // Reset poll count
+          const pollInterval = setInterval(async () => {
+            if (currentPollCount >= MAX_POLLS) {
+              clearInterval(pollInterval);
+              return;
+            }
 
-      // Set processing status and start polling directly
-      console.log('📝 Setting processing status to "processing"');
-      setProcessingStatus('processing');
+            await checkProcessingStatus();
+            currentPollCount++;
+            setPollCount(currentPollCount);
+          }, POLL_INTERVAL_MS);
 
-      // Start immediate polling without relying on useEffect
-      const startPolling = () => {
-        console.log('🔄 Starting direct polling...');
-        let currentPollCount = 0;
+          pollIntervalRef.current = pollInterval;
+        };
 
-        const pollInterval = setInterval(async () => {
-          if (!isComponentMountedRef.current || currentPollCount >= MAX_POLLS) {
-            console.log(
-              '🛑 Stopping polling - component unmounted or max polls reached',
-            );
-            clearInterval(pollInterval);
-            return;
-          }
+        setIsUploading(false); // Upload is complete
+        setError(''); // Clear any previous errors
+        setPollCount(0); // Reset poll count
 
-          console.log(`🔍 Direct polling check #${currentPollCount + 1}`);
-          await checkProcessingStatus();
-          currentPollCount++;
-          setPollCount(currentPollCount);
-        }, POLL_INTERVAL_MS);
+        // Small delay to ensure upload state is updated before setting processing
+        setTimeout(() => {
+          setProcessingStatus('processing');
 
-        pollIntervalRef.current = pollInterval;
-      };
-
-      // Start polling after a short delay
-      setTimeout(() => {
-        if (isComponentMountedRef.current) {
-          console.log('⏰ Starting first status check...');
-          checkProcessingStatus();
-          startPolling();
-        }
-      }, 1000);
+          // Small delay to ensure processing state is updated
+          setTimeout(() => {
+            console.log('⏰ Starting first status check...');
+            checkProcessingStatus();
+            startPolling();
+          }, 500);
+        }, 100);
+      } catch (successError) {
+        console.error('❌ Error in success handling:', successError);
+        throw successError;
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Upload failed.';
@@ -432,6 +443,26 @@ export default function ResumeUpload() {
   };
 
   const statusContent = getStatusContent();
+
+  // Debug logging for render state
+  console.log('🎨 Render state check:', {
+    isUploading,
+    processingStatus,
+    pollCount,
+    hasSelectedFile: !!selectedFile,
+    error,
+  });
+
+  // Expose debug function for manual testing
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).debugUpload = () => {
+        console.log('🔧 Manual state transition test...');
+        setIsUploading(false);
+        setProcessingStatus('processing');
+      };
+    }
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
