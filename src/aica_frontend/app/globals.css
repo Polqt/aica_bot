@@ -1,6 +1,6 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @plugin "daisyui";
-@import "tw-animate-css";
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -197,7 +197,8 @@
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px);
   }
   50% {
@@ -208,4 +209,112 @@
 /* Modern focus styles */
 .focus-modern:focus-visible {
   @apply outline-none ring-2 ring-blue-500/50 ring-offset-2 ring-offset-background;
+}
+
+/* Enhanced Sidebar Styles */
+.sidebar-nav-item {
+  @apply relative overflow-hidden;
+}
+
+.sidebar-nav-item::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-r from-violet-500/5 to-purple-500/5 opacity-0 transition-opacity duration-300;
+}
+
+.sidebar-nav-item:hover::before {
+  @apply opacity-100;
+}
+
+.sidebar-nav-item.active::before {
+  @apply opacity-100 from-violet-500/10 to-purple-500/10;
+}
+
+/* Grid Pattern Background */
+.bg-grid-slate-100\/50 {
+  background-image: linear-gradient(
+      rgba(148, 163, 184, 0.1) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
+}
+
+.dark .bg-grid-slate-700\/25 {
+  background-image: linear-gradient(rgba(51, 65, 85, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(51, 65, 85, 0.15) 1px, transparent 1px);
+}
+
+/* Enhanced Drawer Animations */
+.drawer-side .min-h-full {
+  @apply transition-all duration-300 ease-out;
+}
+
+/* Scrollbar Styling */
+.sidebar-scroll::-webkit-scrollbar {
+  @apply w-2;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  @apply bg-slate-300/50 dark:bg-slate-600/50 rounded-full;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400/70 dark:bg-slate-500/70;
+}
+
+/* Glass morphism effect for mobile sidebar */
+@supports (backdrop-filter: blur(10px)) {
+  .mobile-sidebar-glass {
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+  }
+}
+
+/* Enhanced animations for active states */
+@keyframes sidebar-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
+  }
+}
+
+.sidebar-active-glow {
+  animation: sidebar-glow 2s ease-in-out infinite;
+}
+
+/* Custom DaisyUI Component Overrides */
+.drawer-content {
+  @apply transition-all duration-300;
+}
+
+.menu li > *:active,
+.menu li > *.active,
+.menu li > *:focus {
+  @apply bg-gradient-to-r from-violet-500/10 to-purple-500/10 text-violet-700 dark:text-violet-300;
+}
+
+/* Button enhancements */
+.btn-gradient {
+  @apply bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white border-none shadow-lg shadow-violet-500/25;
+}
+
+.btn-gradient:hover {
+  @apply shadow-xl shadow-violet-500/30 scale-105;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Card enhancements */
+.card-glass {
+  @apply bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50;
+}
+
+.card-glass:hover {
+  @apply bg-white/90 dark:bg-slate-800/90 shadow-xl shadow-slate-200/20 dark:shadow-slate-900/20;
+  transition: all 0.3s ease-out;
 }

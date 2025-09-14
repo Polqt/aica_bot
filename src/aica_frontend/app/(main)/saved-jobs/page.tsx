@@ -3,13 +3,153 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
-import { Filter, Search } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Search,
+  Filter,
+  BookmarkMinus,
+  ExternalLink,
+  MapPin,
+  Building,
+  Clock,
+  DollarSign,
+  Star,
+  TrendingUp,
+  Calendar,
+  Target,
+} from 'lucide-react';
+
+const savedJobs = [
+  {
+    id: 1,
+    title: 'Senior Frontend Developer',
+    company: 'TechCorp Inc.',
+    location: 'San Francisco, CA',
+    salary: '$120k - $150k',
+    savedDate: '2 days ago',
+    type: 'Full-time',
+    matchScore: 94,
+    tags: ['React', 'TypeScript', 'Next.js'],
+    description:
+      "Join our innovative team to build cutting-edge web applications using modern technologies. You'll work on scalable solutions that impact millions of users worldwide.",
+    requirements: [
+      '5+ years React experience',
+      'TypeScript proficiency',
+      'Team leadership skills',
+    ],
+  },
+  {
+    id: 2,
+    title: 'Full Stack Engineer',
+    company: 'StartupXYZ',
+    location: 'Remote',
+    salary: '$100k - $130k',
+    savedDate: '1 week ago',
+    type: 'Full-time',
+    matchScore: 89,
+    tags: ['Node.js', 'React', 'MongoDB'],
+    description:
+      "Be part of a fast-growing startup where you'll have the opportunity to shape the product from the ground up using cutting-edge technologies.",
+    requirements: [
+      'Full-stack development experience',
+      'Node.js proficiency',
+      'Startup experience preferred',
+    ],
+  },
+  {
+    id: 3,
+    title: 'React Developer',
+    company: 'Design Studio LLC',
+    location: 'New York, NY',
+    salary: '$90k - $120k',
+    savedDate: '2 weeks ago',
+    type: 'Full-time',
+    matchScore: 87,
+    tags: ['React', 'CSS', 'UI/UX'],
+    description:
+      'Create beautiful and responsive user interfaces for our diverse clientele. Work closely with designers to bring creative visions to life.',
+    requirements: [
+      '3+ years React experience',
+      'Strong CSS skills',
+      'UI/UX understanding',
+    ],
+  },
+  {
+    id: 4,
+    title: 'DevOps Engineer',
+    company: 'CloudTech Solutions',
+    location: 'Austin, TX',
+    salary: '$110k - $140k',
+    savedDate: '3 weeks ago',
+    type: 'Full-time',
+    matchScore: 82,
+    tags: ['AWS', 'Docker', 'Kubernetes'],
+    description:
+      'Help us scale our infrastructure and implement best practices for deployment, monitoring, and security in a cloud-native environment.',
+    requirements: [
+      'AWS certification preferred',
+      'Container orchestration experience',
+      'CI/CD expertise',
+    ],
+  },
+  {
+    id: 5,
+    title: 'Backend Engineer',
+    company: 'FinTech Innovations',
+    location: 'Boston, MA',
+    salary: '$105k - $135k',
+    savedDate: '1 month ago',
+    type: 'Full-time',
+    matchScore: 85,
+    tags: ['Python', 'Django', 'PostgreSQL'],
+    description:
+      'Build robust and secure backend systems for financial applications. Work with cutting-edge fintech solutions that handle millions of transactions.',
+    requirements: [
+      'Python/Django expertise',
+      'Database optimization skills',
+      'Security best practices',
+    ],
+  },
+];
 
 export default function SavedJobsPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedJob, setSelectedJob] = useState(savedJobs[0]);
+  const [filterType, setFilterType] = useState('all');
+
+  const filteredJobs = savedJobs.filter(job => {
+    const matchesSearch =
+      searchTerm === '' ||
+      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.tags.some(tag =>
+        tag.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
+
+    const matchesFilter =
+      filterType === 'all' ||
+      job.type.toLowerCase() === filterType.toLowerCase();
+
+    return matchesSearch && matchesFilter;
+  });
+
+  const getMatchScoreColor = (score: number) => {
+    if (score >= 90) return 'text-emerald-600 dark:text-emerald-400';
+    if (score >= 80) return 'text-blue-600 dark:text-blue-400';
+    if (score >= 70) return 'text-amber-600 dark:text-amber-400';
+    return 'text-slate-600 dark:text-slate-400';
+  };
 
   return (
-    <div className="min-h-screen p-6 space-y-8">
+    <div className="space-y-8">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -17,287 +157,316 @@ export default function SavedJobsPage() {
         className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
       >
         <div>
-          <h1 className="text-3xl lg:text-4xl font-bold gradient-text">
+          <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+            <Star className="w-8 h-8 text-amber-500" />
             Saved Jobs
           </h1>
-          <p className="text-muted-foreground mt-2">
-            Filter jobs saved for later • Keep track of opportunities
-            you&apos;re interested in
+          <p className="text-slate-600 dark:text-slate-400 mt-2">
+            Keep track of opportunities that caught your interest
           </p>
         </div>
 
         <div className="flex gap-3">
-          <Button variant="outline" className="btn-modern">
+          <Button
+            variant="outline"
+            className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800"
+          >
             <Filter className="w-4 h-4 mr-2" />
-            Sort by
+            Sort by Date
           </Button>
-          <Button className="btn-modern bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+          <Button className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-500/25">
             <Search className="w-4 h-4 mr-2" />
-            Find New Jobs
+            Find More Jobs
           </Button>
         </div>
       </motion.div>
 
+      {/* Stats */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
-        className="relative max-w-md"
+        className="grid grid-cols-1 md:grid-cols-3 gap-6"
       >
-        <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground z-10" />
-        <input
-          type="text"
-          placeholder="Search saved jobs..."
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 bg-background/50 backdrop-blur-sm border border-border/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 relative z-0"
-        />
+        <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                  Total Saved
+                </p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                  {savedJobs.length}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center">
+                <Star className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                  Avg. Match Score
+                </p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                  {Math.round(
+                    savedJobs.reduce((acc, job) => acc + job.matchScore, 0) /
+                      savedJobs.length,
+                  )}
+                  %
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                <Target className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                  This Week
+                </p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                  3
+                </p>
+                <div className="flex items-center mt-1">
+                  <TrendingUp className="w-4 h-4 text-emerald-500 mr-1" />
+                  <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                    +2 from last week
+                  </span>
+                </div>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </motion.div>
 
-      <div className="space-y-6"></div>
-
-      {/* Two-Section Layout: Saved Jobs Left + Job Details Right */}
+      {/* Search */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        className="max-w-7xl mx-auto grid grid-cols-5 gap-6 h-[calc(100vh-200px)]"
+        className="flex flex-col sm:flex-row gap-4"
       >
-        {/* Left Column - Saved Jobs List */}
-        <div className="col-span-2 rounded-[25px] glass-card overflow-y-auto p-6">
-          {/* Saved Jobs List */}
-          <div className="space-y-4">
-            <div className="p-4 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50 cursor-pointer hover:bg-background/70 transition-all duration-300 hover:shadow-md">
-              <h3 className="text-lg font-medium text-foreground mb-2">
-                Frontend Developer
-              </h3>
-              <p className="text-muted-foreground mb-2">Design Studio LLC</p>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                  Saved 2 days ago
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  $65,000 - $90,000
-                </span>
-              </div>
-            </div>
-
-            <div className="p-4 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50 cursor-pointer hover:bg-background/70 transition-all duration-300 hover:shadow-md">
-              <h3 className="text-lg font-medium text-foreground mb-2">
-                Senior Software Engineer
-              </h3>
-              <p className="text-muted-foreground mb-2">
-                Tech Innovations Inc.
-              </p>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                  Saved 1 week ago
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  $80,000 - $120,000
-                </span>
-              </div>
-            </div>
-
-            <div className="p-4 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50 cursor-pointer hover:bg-background/70 transition-all duration-300 hover:shadow-md">
-              <h3 className="text-lg font-medium text-foreground mb-2">
-                Full Stack Developer
-              </h3>
-              <p className="text-muted-foreground mb-2">StartupXYZ</p>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                  Saved 1 week ago
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  $70,000 - $100,000
-                </span>
-              </div>
-            </div>
-
-            <div className="p-4 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50 cursor-pointer hover:bg-background/70 transition-all duration-300 hover:shadow-md">
-              <h3 className="text-lg font-medium text-foreground mb-2">
-                DevOps Engineer
-              </h3>
-              <p className="text-muted-foreground mb-2">Infrastructure Corp</p>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                  Saved 2 weeks ago
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  $85,000 - $125,000
-                </span>
-              </div>
-            </div>
-
-            <div className="p-4 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50 cursor-pointer hover:bg-background/70 transition-all duration-300 hover:shadow-md">
-              <h3 className="text-lg font-medium text-foreground mb-2">
-                Backend Engineer
-              </h3>
-              <p className="text-muted-foreground mb-2">CloudTech Solutions</p>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                  Saved 3 weeks ago
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  $75,000 - $110,000
-                </span>
-              </div>
-            </div>
-          </div>
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search saved jobs..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+          />
         </div>
 
-        {/* Right Column - Job Description/Details */}
-        <div className="col-span-3 border border-border/30 rounded-[25px] glass-card shadow-lg p-6 overflow-y-auto">
-          <div className="space-y-6">
-            {/* Job Header */}
-            <div className="border-b border-border/50 pb-4">
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                Frontend Developer
-              </h2>
-              <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
-                <span className="flex items-center gap-2">
-                  🏢 Design Studio LLC
-                </span>
-                <span className="flex items-center gap-2">📍 New York, NY</span>
-                <span className="flex items-center gap-2">
-                  💰 $65,000 - $90,000
-                </span>
-                <span className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-medium">
-                  💾 Saved 2 days ago
-                </span>
-              </div>
-            </div>
+        <select
+          value={filterType}
+          onChange={e => setFilterType(e.target.value)}
+          className="px-4 py-3 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+        >
+          <option value="all">All Types</option>
+          <option value="full-time">Full-time</option>
+          <option value="part-time">Part-time</option>
+          <option value="contract">Contract</option>
+        </select>
+      </motion.div>
 
-            {/* Job Description */}
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3">
-                Job Description
-              </h3>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                Join our creative team as a Frontend Developer where you&apos;ll
-                bring beautiful designs to life. You&apos;ll work with modern
-                frameworks and collaborate with designers and backend developers
-                to create exceptional user experiences that delight our
-                customers.
-              </p>
-              <p className="text-muted-foreground leading-relaxed">
-                We&apos;re looking for someone passionate about clean code,
-                responsive design, and staying up-to-date with the latest
-                frontend technologies. This is a great opportunity to work on
-                exciting projects in a collaborative environment.
-              </p>
-            </div>
+      {/* Main Content */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+        className="grid lg:grid-cols-5 gap-8 h-[calc(100vh-400px)]"
+      >
+        {/* Job List */}
+        <div className="lg:col-span-2 space-y-4 overflow-y-auto">
+          {filteredJobs.map((job, index) => (
+            <motion.div
+              key={job.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 * index }}
+            >
+              <Card
+                className={`cursor-pointer transition-all duration-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg ${
+                  selectedJob.id === job.id
+                    ? 'ring-2 ring-violet-500 shadow-lg shadow-violet-500/10'
+                    : ''
+                }`}
+                onClick={() => setSelectedJob(job)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-slate-900 dark:text-white mb-1 line-clamp-1">
+                        {job.title}
+                      </h3>
+                      <div className="flex items-center text-sm text-slate-600 dark:text-slate-400 mb-2">
+                        <Building className="w-4 h-4 mr-1" />
+                        {job.company}
+                      </div>
+                    </div>
+                    <Badge className="bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
+                      {job.matchScore}% match
+                    </Badge>
+                  </div>
 
-            {/* Requirements */}
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3">
-                Requirements
-              </h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 mt-1">✓</span>
-                  3+ years of experience with React and modern JavaScript
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 mt-1">✓</span>
-                  Strong knowledge of CSS, HTML5, and responsive design
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 mt-1">✓</span>
-                  Experience with version control (Git) and build tools
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 mt-1">✓</span>
-                  Understanding of UX/UI principles and design systems
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 mt-1">✓</span>
-                  Excellent communication and teamwork skills
-                </li>
-              </ul>
-            </div>
+                  <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                    <div className="flex items-center">
+                      <MapPin className="w-4 h-4 mr-2 text-slate-400" />
+                      {job.location}
+                    </div>
+                    <div className="flex items-center">
+                      <DollarSign className="w-4 h-4 mr-2 text-slate-400" />
+                      {job.salary}
+                    </div>
+                    <div className="flex items-center">
+                      <Clock className="w-4 h-4 mr-2 text-slate-400" />
+                      Saved {job.savedDate}
+                    </div>
+                  </div>
 
-            {/* Skills Assessment */}
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3">
-                Skills Assessment
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">React</span>
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                      90%
+                  <div className="flex flex-wrap gap-1 mt-3">
+                    {job.tags.slice(0, 2).map((tag, tagIndex) => (
+                      <Badge
+                        key={tagIndex}
+                        variant="secondary"
+                        className="text-xs"
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                    {job.tags.length > 2 && (
+                      <Badge variant="secondary" className="text-xs">
+                        +{job.tags.length - 2}
+                      </Badge>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Job Details */}
+        <div className="lg:col-span-3">
+          <Card className="h-full bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
+            <CardHeader className="border-b border-slate-200/50 dark:border-slate-700/50">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-2xl text-slate-900 dark:text-white mb-2">
+                    {selectedJob.title}
+                  </CardTitle>
+                  <CardDescription className="flex flex-wrap items-center gap-4 text-slate-600 dark:text-slate-400">
+                    <span className="flex items-center">
+                      <Building className="w-4 h-4 mr-1" />
+                      {selectedJob.company}
                     </span>
-                  </div>
-                  <div className="w-full bg-background/50 rounded-full h-2">
-                    <div
-                      className="bg-green-500 h-2 rounded-full"
-                      style={{ width: '90%' }}
-                    ></div>
-                  </div>
+                    <span className="flex items-center">
+                      <MapPin className="w-4 h-4 mr-1" />
+                      {selectedJob.location}
+                    </span>
+                    <span className="flex items-center">
+                      <DollarSign className="w-4 h-4 mr-1" />
+                      {selectedJob.salary}
+                    </span>
+                    <span className="flex items-center">
+                      <Clock className="w-4 h-4 mr-1" />
+                      Saved {selectedJob.savedDate}
+                    </span>
+                  </CardDescription>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      CSS/HTML
-                    </span>
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                      95%
-                    </span>
-                  </div>
-                  <div className="w-full bg-background/50 rounded-full h-2">
+                <div className="flex items-center gap-2">
+                  <div className="text-center">
                     <div
-                      className="bg-green-500 h-2 rounded-full"
-                      style={{ width: '95%' }}
-                    ></div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      JavaScript
-                    </span>
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                      88%
-                    </span>
-                  </div>
-                  <div className="w-full bg-background/50 rounded-full h-2">
-                    <div
-                      className="bg-green-500 h-2 rounded-full"
-                      style={{ width: '88%' }}
-                    ></div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      UI/UX Design
-                    </span>
-                    <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                      70%
-                    </span>
-                  </div>
-                  <div className="w-full bg-background/50 rounded-full h-2">
-                    <div
-                      className="bg-orange-500 h-2 rounded-full"
-                      style={{ width: '70%' }}
-                    ></div>
+                      className={`text-2xl font-bold ${getMatchScoreColor(
+                        selectedJob.matchScore,
+                      )}`}
+                    >
+                      {selectedJob.matchScore}%
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      match
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </CardHeader>
 
-            {/* Action Buttons */}
-            <div className="flex gap-4 pt-4">
-              <Button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white">
-                Apply Now
-              </Button>
-              <Button variant="destructive" className="px-6 py-3">
-                Remove from Saved
-              </Button>
-            </div>
-          </div>
+            <CardContent className="p-6 space-y-6 overflow-y-auto">
+              {/* Job Description */}
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">
+                  Job Description
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                  {selectedJob.description}
+                </p>
+              </div>
+
+              {/* Requirements */}
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">
+                  Requirements
+                </h3>
+                <ul className="space-y-2">
+                  {selectedJob.requirements.map((req, index) => (
+                    <li
+                      key={index}
+                      className="flex items-start gap-2 text-slate-600 dark:text-slate-400"
+                    >
+                      <span className="text-emerald-500 mt-1">✓</span>
+                      {req}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Skills */}
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">
+                  Required Skills
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedJob.tags.map((tag, index) => (
+                    <Badge
+                      key={index}
+                      className="bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-4 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
+                <Button className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Apply Now
+                </Button>
+                <Button
+                  variant="outline"
+                  className="bg-white/50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700"
+                >
+                  <BookmarkMinus className="w-4 h-4 mr-2" />
+                  Remove
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </motion.div>
     </div>
