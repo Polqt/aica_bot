@@ -1,9 +1,9 @@
 import {
   ProcessingStatusResponse,
-  UserProfile,
   SkillsResponse,
   UploadResponse,
-} from '@/types/processing';
+} from '@/types/api';
+import { UserProfile } from '@/types/user';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';

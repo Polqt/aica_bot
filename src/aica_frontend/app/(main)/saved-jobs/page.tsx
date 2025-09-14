@@ -3,10 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
-import {
-  Filter,
-  Search,
-} from 'lucide-react';
+import { Filter, Search } from 'lucide-react';
 
 export default function SavedJobsPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -74,9 +71,7 @@ export default function SavedJobsPage() {
               <h3 className="text-lg font-medium text-foreground mb-2">
                 Frontend Developer
               </h3>
-              <p className="text-muted-foreground mb-2">
-                Design Studio LLC
-              </p>
+              <p className="text-muted-foreground mb-2">Design Studio LLC</p>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
                   Saved 2 days ago
@@ -86,7 +81,7 @@ export default function SavedJobsPage() {
                 </span>
               </div>
             </div>
-            
+
             <div className="p-4 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50 cursor-pointer hover:bg-background/70 transition-all duration-300 hover:shadow-md">
               <h3 className="text-lg font-medium text-foreground mb-2">
                 Senior Software Engineer
@@ -103,14 +98,12 @@ export default function SavedJobsPage() {
                 </span>
               </div>
             </div>
-            
+
             <div className="p-4 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50 cursor-pointer hover:bg-background/70 transition-all duration-300 hover:shadow-md">
               <h3 className="text-lg font-medium text-foreground mb-2">
                 Full Stack Developer
               </h3>
-              <p className="text-muted-foreground mb-2">
-                StartupXYZ
-              </p>
+              <p className="text-muted-foreground mb-2">StartupXYZ</p>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
                   Saved 1 week ago
@@ -120,14 +113,12 @@ export default function SavedJobsPage() {
                 </span>
               </div>
             </div>
-            
+
             <div className="p-4 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50 cursor-pointer hover:bg-background/70 transition-all duration-300 hover:shadow-md">
               <h3 className="text-lg font-medium text-foreground mb-2">
                 DevOps Engineer
               </h3>
-              <p className="text-muted-foreground mb-2">
-                Infrastructure Corp
-              </p>
+              <p className="text-muted-foreground mb-2">Infrastructure Corp</p>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
                   Saved 2 weeks ago
@@ -137,14 +128,12 @@ export default function SavedJobsPage() {
                 </span>
               </div>
             </div>
-            
+
             <div className="p-4 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50 cursor-pointer hover:bg-background/70 transition-all duration-300 hover:shadow-md">
               <h3 className="text-lg font-medium text-foreground mb-2">
                 Backend Engineer
               </h3>
-              <p className="text-muted-foreground mb-2">
-                CloudTech Solutions
-              </p>
+              <p className="text-muted-foreground mb-2">CloudTech Solutions</p>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
                   Saved 3 weeks ago
@@ -169,9 +158,7 @@ export default function SavedJobsPage() {
                 <span className="flex items-center gap-2">
                   🏢 Design Studio LLC
                 </span>
-                <span className="flex items-center gap-2">
-                  📍 New York, NY
-                </span>
+                <span className="flex items-center gap-2">📍 New York, NY</span>
                 <span className="flex items-center gap-2">
                   💰 $65,000 - $90,000
                 </span>
@@ -187,10 +174,17 @@ export default function SavedJobsPage() {
                 Job Description
               </h3>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                Join our creative team as a Frontend Developer where you'll bring beautiful designs to life. You'll work with modern frameworks and collaborate with designers and backend developers to create exceptional user experiences that delight our customers.
+                Join our creative team as a Frontend Developer where you&apos;ll
+                bring beautiful designs to life. You&apos;ll work with modern
+                frameworks and collaborate with designers and backend developers
+                to create exceptional user experiences that delight our
+                customers.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                We're looking for someone passionate about clean code, responsive design, and staying up-to-date with the latest frontend technologies. This is a great opportunity to work on exciting projects in a collaborative environment.
+                We&apos;re looking for someone passionate about clean code,
+                responsive design, and staying up-to-date with the latest
+                frontend technologies. This is a great opportunity to work on
+                exciting projects in a collaborative environment.
               </p>
             </div>
 
@@ -232,37 +226,63 @@ export default function SavedJobsPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">React</span>
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">90%</span>
+                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                      90%
+                    </span>
                   </div>
                   <div className="w-full bg-background/50 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{width: '90%'}}></div>
+                    <div
+                      className="bg-green-500 h-2 rounded-full"
+                      style={{ width: '90%' }}
+                    ></div>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">CSS/HTML</span>
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">95%</span>
+                    <span className="text-sm text-muted-foreground">
+                      CSS/HTML
+                    </span>
+                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                      95%
+                    </span>
                   </div>
                   <div className="w-full bg-background/50 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{width: '95%'}}></div>
+                    <div
+                      className="bg-green-500 h-2 rounded-full"
+                      style={{ width: '95%' }}
+                    ></div>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">JavaScript</span>
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">88%</span>
+                    <span className="text-sm text-muted-foreground">
+                      JavaScript
+                    </span>
+                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                      88%
+                    </span>
                   </div>
                   <div className="w-full bg-background/50 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{width: '88%'}}></div>
+                    <div
+                      className="bg-green-500 h-2 rounded-full"
+                      style={{ width: '88%' }}
+                    ></div>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">UI/UX Design</span>
-                    <span className="text-sm font-medium text-orange-600 dark:text-orange-400">70%</span>
+                    <span className="text-sm text-muted-foreground">
+                      UI/UX Design
+                    </span>
+                    <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                      70%
+                    </span>
                   </div>
                   <div className="w-full bg-background/50 rounded-full h-2">
-                    <div className="bg-orange-500 h-2 rounded-full" style={{width: '70%'}}></div>
+                    <div
+                      className="bg-orange-500 h-2 rounded-full"
+                      style={{ width: '70%' }}
+                    ></div>
                   </div>
                 </div>
               </div>
