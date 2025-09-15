@@ -202,7 +202,6 @@ class ResumeParser:
         return text.strip()
 
     async def extract_personal_info(self, text: str) -> PersonalInfo:
-        # If LLM is not available, use fallback directly
         if self.llm is None:
             logger.info("LLM not available, using fallback info extraction")
             return self._fallback_info_extraction(text)

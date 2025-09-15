@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from .embedder import VectorJobStore, TextEmbedder
 from .resume_parser import ResumeParser, ParsedResume
 
+from ..database.user_db import UserDatabase
+from ..database.job_db import JobDatabase
 
 class MatchResult(BaseModel):
     is_match: bool = Field(description="Whether the candidate matches the job")
@@ -31,15 +33,11 @@ class JobMatcher:
         self.llm = ChatAnthropic(model="claude-3-haiku-20240307", temperature=0)
         self.parser = PydanticOutputParser(pydantic_object=MatchResult)
 
-        # Try to initialize vector store, but don't fail if it doesn't work
         try:
             self.embedder = TextEmbedder()
             self.vector_store = VectorJobStore(self.embedder)
             self.use_vector_search = True
-            print("✅ Vector store initialized successfully")
         except Exception as e:
-            print(f"⚠️  Vector store initialization failed: {e}")
-            print("📋 Will use direct database matching instead")
             self.embedder = None
             self.vector_store = None
             self.use_vector_search = False
@@ -68,17 +66,12 @@ class JobMatcher:
         self.vector_store.add_job(job_id, job_content, metadata)
     
     async def find_matching_jobs(self, resume_text: str, top_k: int = 20) -> List[JobMatch]:
-        """
-        Find jobs that match the resume text.
-        Uses vector search if available, otherwise falls back to direct database matching.
-        """
         if self.use_vector_search and self.vector_store:
             return await self._find_matching_jobs_vector(resume_text, top_k)
         else:
             return await self._find_matching_jobs_direct(resume_text, top_k)
     
     async def _find_matching_jobs_vector(self, resume_text: str, top_k: int = 20) -> List[JobMatch]:
-        """Find jobs using vector similarity search."""
         # Create search text optimized for job matching
         # For skills-based text, use it directly; for full resume, extract key terms
         search_text = self._create_search_text_from_resume_text(resume_text)
@@ -111,19 +104,13 @@ class JobMatcher:
         return job_matches
     
     async def _find_matching_jobs_direct(self, resume_text: str, top_k: int = 20) -> List[JobMatch]:
-        """Find jobs using direct database search (fallback method)."""
-        from ..database.job_db import JobDatabase
-        
         job_db = JobDatabase()
         
         # Get all available jobs
         all_jobs = job_db.get_all_jobs(limit=top_k * 2)  # Get more to filter
         
         if not all_jobs:
-            print("❌ No jobs found in database")
             return []
-        
-        print(f"📋 Found {len(all_jobs)} jobs in database, evaluating matches...")
         
         job_matches = []
         for job in all_jobs:
@@ -153,32 +140,21 @@ class JobMatcher:
                     job_matches.append(job_match)
                     
             except Exception as e:
-                print(f"❌ Error evaluating job {job.id}: {e}")
                 continue
         
         # Sort by match score and limit results
         job_matches.sort(key=lambda x: x.match_result.match_score, reverse=True)
-        print(f"✅ Found {len(job_matches)} viable job matches")
         
         return job_matches[:top_k]
 
     async def find_matches_for_user(self, user_id: str, top_k: int = 20) -> List[JobMatch]:
-        """
-        Find job matches for a specific user based on their stored resume and skills.
-        This method integrates with the database to get user data and store matches.
-        """
-        try:
-            # Import database classes
-            from ..database.user_db import UserDatabase
-            from ..database.job_db import JobDatabase
-            
+        try: 
             user_db = UserDatabase()
             job_db = JobDatabase()
             
             # Get user's resume content (if stored) or skills
             user_skills = user_db.get_user_skills(user_id)
             if not user_skills:
-                print(f"No skills found for user {user_id}")
                 return []
             
             # Create a resume-like text from user skills for matching
@@ -199,15 +175,12 @@ class JobMatcher:
                 except Exception as save_error:
                     print(f"Failed to save match for user {user_id}, job {match.job_id}: {save_error}")
             
-            print(f"Successfully processed {len(job_matches)} matches for user {user_id}")
             return job_matches
             
         except Exception as e:
-            print(f"Error in find_matches_for_user for user {user_id}: {str(e)}")
             return []
     
     def _create_skills_text(self, user_skills) -> str:
-        """Convert user skills to a text format suitable for job matching"""
         skills_by_category = {}
         
         for skill in user_skills:
@@ -234,7 +207,6 @@ class JobMatcher:
         return "\n".join(text_parts)
     
     def _calculate_confidence(self, match_score: float) -> str:
-        """Calculate confidence level based on match score"""
         if match_score >= 80:
             return "high"
         elif match_score >= 60:
@@ -255,7 +227,6 @@ class JobMatcher:
         return self.parser.parse(response.content)
     
     def _create_resume_summary(self, parsed_resume: ParsedResume) -> str:
-        """Create a comprehensive summary of the resume for matching."""
         skills = parsed_resume.skills
         
         summary_parts = [
@@ -403,7 +374,6 @@ class JobMatcher:
         }
     
     def _create_search_text_from_resume_text(self, resume_text: str) -> str:
-        """Create optimized search text from resume or skills text"""
         # For skills-based text (from user profiles), use directly
         # For full resume text, extract key terms
         if len(resume_text) < 500:  # Likely skills text
@@ -418,7 +388,6 @@ class JobMatcher:
             return ' '.join(key_terms[:10])  # Limit to top terms
     
     async def _evaluate_text_based_match(self, resume_text: str, job_content: str) -> MatchResult:
-        """Evaluate match between resume/skills text and job content"""
         try:
             prompt = ChatPromptTemplate.from_messages([
                 ("system", """
@@ -454,8 +423,6 @@ class JobMatcher:
             return self.parser.parse(response.content)
             
         except Exception as e:
-            print(f"Error in text-based match evaluation: {e}")
-            # Fallback: simple text similarity
             return MatchResult(
                 match_score=50.0,
                 is_match=True,
