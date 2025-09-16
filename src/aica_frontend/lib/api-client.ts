@@ -155,6 +155,18 @@ export class ApiClient {
 
     return this.handleResponse<T>(response);
   }
+
+  async getSavedJobs(): Promise<unknown[]> {
+    return this.get<unknown[]>(`/saved-jobs`);
+  }
+
+  async saveJob(jobId: string): Promise<unknown> {
+    return this.post<unknown>(`/saved-jobs/${jobId}`);
+  }
+
+  async removeSavedJob(jobId: string): Promise<unknown> {
+    return this.delete<unknown>(`/saved-jobs/${jobId}`);
+  }
 }
 
 export const apiClient = new ApiClient();

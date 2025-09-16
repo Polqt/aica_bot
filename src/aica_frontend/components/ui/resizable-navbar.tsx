@@ -8,8 +8,6 @@ import {
   useMotionValueEvent,
 } from "motion/react";
 import Image from "next/image";
-import { appInfo } from '@/lib/constants/app-data';
-
 import React, { useRef, useState } from "react";
 
 
@@ -243,7 +241,6 @@ export const NavbarLogo = () => {
         width={30}
         height={30}
       />
-      <span className="font-medium text-black dark:text-white">{appInfo.name}</span>
     </a>
   );
 };

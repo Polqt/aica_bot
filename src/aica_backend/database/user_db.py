@@ -8,7 +8,7 @@ from datetime import datetime
 
 from .models.user_models import (
     User, UserProfile, UserSkill, UserSkillCreate,
-    UserJobMatch, SkillsResponse
+    UserJobMatch, SkillsResponse, UserSavedJob
 )
 
 logger = logging.getLogger(__name__)
@@ -18,6 +18,42 @@ class DatabaseError(Exception):
     pass
 
 class UserDatabase:
+    def save_user_job(self, user_id: str, job_id: str) -> 'UserSavedJob':
+        try:
+            data = {
+                "user_id": user_id,
+                "job_id": job_id
+            }
+            response = self.client.table("user_saved_jobs").insert(data).execute()
+            self._handle_db_response(response, "save user job")
+            if not response.data:
+                raise DatabaseError("No saved job data returned after creation")
+            return UserSavedJob(**response.data[0])
+        except Exception as e:
+            raise DatabaseError(f"Failed to save user job: {str(e)}")
+
+    def remove_user_saved_job(self, user_id: str, job_id: str) -> bool:
+        try:
+            response = self.client.table("user_saved_jobs").delete().eq("user_id", user_id).eq("job_id", job_id).execute()
+            self._handle_db_response(response, "remove user saved job")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to remove saved job: {str(e)}")
+            return False
+
+    def get_user_saved_jobs(self, user_id: str, limit: int = 50) -> List['UserSavedJob']:
+        try:
+            response = (self.client.table("user_saved_jobs")
+                       .select("*")
+                       .eq("user_id", user_id)
+                       .order("saved_at", desc=True)
+                       .limit(limit)
+                       .execute())
+            self._handle_db_response(response, "get user saved jobs")
+            return [UserSavedJob(**item) for item in response.data] if response.data else []
+        except Exception as e:
+            logger.error(f"Failed to get user saved jobs: {str(e)}")
+            return []
     def __init__(self, client: Client = None):
         if client is None:
             url = os.getenv("SUPABASE_URL")

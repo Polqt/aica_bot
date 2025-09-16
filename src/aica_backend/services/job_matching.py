@@ -26,6 +26,20 @@ class JobMatchResult:
 
 
 class JobMatchingService:
+    async def save_user_job(self, user_id: str, job_id: str):
+        return self.user_db.save_user_job(user_id, job_id)
+
+    async def remove_user_saved_job(self, user_id: str, job_id: str):
+        return self.user_db.remove_user_saved_job(user_id, job_id)
+
+    async def get_user_saved_jobs(self, user_id: str, limit: int = 50):
+        saved_jobs = self.user_db.get_user_saved_jobs(user_id, limit)
+        jobs = []
+        for saved in saved_jobs:
+            job = self.job_db.get_job_by_id(saved.job_id)
+            if job:
+                jobs.append(job)
+        return jobs
     def __init__(self, user_db: UserDatabase = None, job_db: JobDatabase = None):
         self.user_db = user_db or UserDatabase()
         self.job_db = job_db or JobDatabase()

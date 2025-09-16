@@ -6,7 +6,6 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 from typing import List, Optional
 
-
 class TextEmbedder:
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
         self.embeddings = HuggingFaceEmbeddings(

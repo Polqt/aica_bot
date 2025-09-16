@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
-import { appInfo } from '@/lib/constants/app-data';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
-// import Footer from '@/components/Footer';
+import Footer from '@/components/Footer';
+import { cn } from '@/lib/utils';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -19,8 +19,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: `${appInfo.name} - ${appInfo.fullName}`,
-  description: appInfo.description,
+  title: 'AICA - AI Career Assistant',
+  description:
+    'AICA is an AI-powered career assistant that helps you find your dream tech job by analyzing your resume and matching you with the best opportunities.',
   keywords: 'AI, job matching, resume, tech jobs, career, recruitment',
   authors: [{ name: 'AICA Team' }],
   viewport: 'width=device-width, initial-scale=1',
@@ -47,14 +48,17 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <div className="min-h-screen flex flex-col relative">
-            <div className="fixed inset-0 bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 -z-10" />
-            <div className="fixed inset-0 overflow-hidden -z-10">
-              <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl animate-pulse" />
-              <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-600/20 rounded-full blur-3xl animate-pulse delay-1000" />
-            </div>
-
+            <div
+              className={cn(
+                'absolute inset-0 z-0',
+                '[background-size:40px_40px]',
+                '[background-image:linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)]',
+                'dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]',
+              )}
+            />
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/90 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)] dark:bg-black/90"></div>
             <main className="flex-1 relative z-10">{children}</main>
-            {/* <Footer /> */}
+            <Footer />
           </div>
 
           <Toaster
@@ -68,8 +72,10 @@ export default function RootLayout({
                 title: 'font-semibold',
                 description: 'text-sm opacity-90',
                 error: 'border-red-500/50 bg-red-50/50 dark:bg-red-950/50',
-                success: 'border-green-500/50 bg-green-50/50 dark:bg-green-950/50',
-                warning: 'border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/50',
+                success:
+                  'border-green-500/50 bg-green-50/50 dark:bg-green-950/50',
+                warning:
+                  'border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/50',
                 info: 'border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/50',
               },
             }}

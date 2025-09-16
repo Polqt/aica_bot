@@ -20,6 +20,7 @@ import {
   Target,
   Zap,
   BookmarkPlus,
+  BookmarkCheck,
   Sparkles,
   TrendingUp,
   Clock,
@@ -32,8 +33,11 @@ import {
   getConfidenceIcon,
   getMatchScoreColor,
 } from '@/lib/utils/getConfidence';
+import { useSavedJobs } from '@/hooks/useSavedJobs';
 
 export default function JobMatchesPage() {
+  const { savedJobIds, savingJobId, saveJob, refreshSavedJobs } =
+    useSavedJobs();
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [jobMatches, setJobMatches] = useState<JobMatch[]>([]);
@@ -106,7 +110,8 @@ export default function JobMatchesPage() {
   useEffect(() => {
     // First check if user is coming from resume processing
     checkProcessingStatus();
-  }, [checkProcessingStatus]);
+    refreshSavedJobs();
+  }, [checkProcessingStatus, refreshSavedJobs]);
 
   // Load data after processing status is determined
   useEffect(() => {
@@ -117,8 +122,15 @@ export default function JobMatchesPage() {
     ) {
       loadJobMatches();
       loadStats();
+      refreshSavedJobs();
     }
-  }, [isCheckingStatus, processingStatus, loadJobMatches, loadStats]);
+  }, [
+    isCheckingStatus,
+    processingStatus,
+    loadJobMatches,
+    loadStats,
+    refreshSavedJobs,
+  ]);
 
   // Refresh matches
   const refreshMatches = async () => {
@@ -538,11 +550,27 @@ export default function JobMatchesPage() {
                     View Job
                   </Button>
                   <Button
-                    variant="outline"
-                    className="bg-white/50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700"
+                    variant={
+                      savedJobIds.includes(selectedJob.job_id)
+                        ? 'default'
+                        : 'outline'
+                    }
+                    className={
+                      savedJobIds.includes(selectedJob.job_id)
+                        ? 'flex-1 bg-gradient-to-r from-emerald-500 to-emerald-700 text-white'
+                        : 'bg-white/50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700'
+                    }
+                    disabled={savingJobId === selectedJob.job_id}
+                    onClick={() => saveJob(selectedJob.job_id)}
                   >
-                    <BookmarkPlus className="w-4 h-4 mr-2" />
-                    Save
+                    {savedJobIds.includes(selectedJob.job_id) ? (
+                      <BookmarkCheck className="w-4 h-4 mr-2" />
+                    ) : (
+                      <BookmarkPlus className="w-4 h-4 mr-2" />
+                    )}
+                    {savedJobIds.includes(selectedJob.job_id)
+                      ? 'Saved'
+                      : 'Save'}
                   </Button>
                 </div>
               </CardContent>

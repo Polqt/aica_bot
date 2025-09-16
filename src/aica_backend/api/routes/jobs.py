@@ -1,11 +1,13 @@
+import logging
+
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict, Any
-import logging
 
 from ...api.dependencies import get_current_user
 from ...database.models.user_models import User, UserJobMatch
 from ...services.job_matching import JobMatchingService, JobMatchResult
-from pydantic import BaseModel
+from ...database.models.user_models import UserSavedJob
 
 logger = logging.getLogger(__name__)
 
@@ -195,7 +197,14 @@ async def get_matching_stats(
             detail=f"Error retrieving matching stats: {str(e)}"
         )
 
-
+class SavedJobResponse(BaseModel):
+    job_id: str
+    saved_at: str = ""
+    title: str = ""
+    company: str = ""
+    location: str = ""
+    url: str = ""
+    description: str = ""
 @router.delete("/matches")
 async def clear_job_matches(
     current_user: User = Depends(get_current_user)
@@ -213,3 +222,41 @@ async def clear_job_matches(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error clearing job matches: {str(e)}"
         )
+@router.post("/saved-jobs/{job_id}", response_model=SavedJobResponse)
+async def save_job(job_id: str, current_user: User = Depends(get_current_user)):
+    matching_service = JobMatchingService()
+    saved = await matching_service.save_user_job(current_user.id, job_id)
+    job = matching_service.job_db.get_job_by_id(job_id)
+    return SavedJobResponse(
+        job_id=job_id,
+        saved_at=str(saved.saved_at) if saved.saved_at else "",
+        title=job.title if job else "",
+        company=job.company if job else "",
+        location=job.location if job else "",
+        url=job.url if job else "",
+        description=job.description if job else ""
+    )
+
+@router.delete("/saved-jobs/{job_id}")
+async def remove_saved_job(job_id: str, current_user: User = Depends(get_current_user)):
+    matching_service = JobMatchingService()
+    success = await matching_service.remove_user_saved_job(current_user.id, job_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to remove saved job")
+    return {"message": "Saved job removed"}
+
+@router.get("/saved-jobs", response_model=List[SavedJobResponse])
+async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: int = 50):
+    matching_service = JobMatchingService()
+    jobs = await matching_service.get_user_saved_jobs(current_user.id, limit)
+    responses = []
+    for job in jobs:
+        responses.append(SavedJobResponse(
+            job_id=job.id,
+            title=job.title,
+            company=job.company,
+            location=job.location or "",
+            url=job.url,
+            description=job.description or ""
+        ))
+    return responses

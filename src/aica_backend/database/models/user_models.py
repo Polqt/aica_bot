@@ -112,6 +112,13 @@ class UserJobMatch(BaseModel):
             raise ValueError('Match score must be between 0.0 and 1.0')
         return v
     
+
+class UserSavedJob(BaseModel):
+    id: Optional[str] = None
+    user_id: str
+    job_id: str
+    saved_at: Optional[datetime] = None
+
 class ResumeUploadResponse(BaseModel):
     message: str
     file_path: str
@@ -124,7 +131,7 @@ class SkillsResponse(BaseModel):
     job_titles: List[str] = Field(default_factory=list)
     education_level: Optional[str] = None
     industries: List[str] = Field(default_factory=list)
-    
+
 class ProfileSummary(BaseModel):
     user_info: dict
     skills: SkillsResponse
@@ -133,7 +140,7 @@ class ProfileSummary(BaseModel):
 class ProcessingStatusResponse(BaseModel):
     status: str
     message: Optional[str] = None
-    
+
     @validator('status')
     def validate_status(cls, v):
         allowed_statuses = ['not_uploaded', 'processing', 'completed', 'failed', 'not_found']
