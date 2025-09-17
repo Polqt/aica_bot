@@ -3,7 +3,6 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
-import Footer from '@/components/Footer';
 import { cn } from '@/lib/utils';
 
 const inter = Inter({
@@ -58,7 +57,6 @@ export default function RootLayout({
             />
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/90 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)] dark:bg-black/90"></div>
             <main className="flex-1 relative z-10">{children}</main>
-            <Footer />
           </div>
 
           <Toaster

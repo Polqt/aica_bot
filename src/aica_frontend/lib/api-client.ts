@@ -4,9 +4,8 @@ import {
   UploadResponse,
 } from '@/types/api';
 import { UserProfile } from '@/types/user';
+import { API_BASE_URL, API_ENDPOINTS } from '@/lib/constants/api';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 export class ApiClient {
   private getAuthToken(): string | null {
@@ -51,7 +50,7 @@ export class ApiClient {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_BASE_URL}/auth/upload-resume`, {
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.UPLOAD_RESUME}`, {
       method: 'POST',
       body: formData,
       headers: {
@@ -63,7 +62,7 @@ export class ApiClient {
   }
 
   async getProcessingStatus(): Promise<ProcessingStatusResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/processing-status`, {
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.PROCESSING_STATUS}`, {
       headers: this.getHeaders(),
     });
 
@@ -71,7 +70,7 @@ export class ApiClient {
   }
 
   async getUserProfile(): Promise<UserProfile> {
-    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.PROFILE}`, {
       headers: this.getHeaders(),
     });
 
@@ -79,7 +78,7 @@ export class ApiClient {
   }
 
   async getUserSkills(category?: string): Promise<SkillsResponse> {
-    const url = new URL(`${API_BASE_URL}/auth/skills`);
+    const url = new URL(`${API_BASE_URL}${API_ENDPOINTS.AUTH.SKILLS}`);
     if (category) {
       url.searchParams.append('category', category);
     }
@@ -95,7 +94,7 @@ export class ApiClient {
     email: string,
     password: string,
   ): Promise<{ access_token?: string; message?: string }> {
-    const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.SIGNUP}`, {
       method: 'POST',
       headers: this.getHeaders(false),
       body: JSON.stringify({ email, password }),
@@ -108,7 +107,7 @@ export class ApiClient {
     email: string,
     password: string,
   ): Promise<{ access_token?: string; message?: string }> {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.LOGIN}`, {
       method: 'POST',
       headers: this.getHeaders(false),
       body: JSON.stringify({ email, password }),
@@ -157,16 +156,17 @@ export class ApiClient {
   }
 
   async getSavedJobs(): Promise<unknown[]> {
-    return this.get<unknown[]>(`/saved-jobs`);
+    return this.get<unknown[]>(API_ENDPOINTS.JOBS.SAVED_JOBS);
   }
 
   async saveJob(jobId: string): Promise<unknown> {
-    return this.post<unknown>(`/saved-jobs/${jobId}`);
+    return this.post<unknown>(`${API_ENDPOINTS.JOBS.SAVED_JOBS}/${jobId}`);
   }
 
   async removeSavedJob(jobId: string): Promise<unknown> {
-    return this.delete<unknown>(`/saved-jobs/${jobId}`);
+    return this.delete<unknown>(`${API_ENDPOINTS.JOBS.SAVED_JOBS}/${jobId}`);
   }
 }
 
 export const apiClient = new ApiClient();
+

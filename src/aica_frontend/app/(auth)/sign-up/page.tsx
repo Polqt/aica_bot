@@ -20,32 +20,17 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  CheckCircle,
-  AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { AuthCarouselWrapper } from '@/components/AuthCarousel';
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-
-interface SignupResponse {
-  access_token?: string;
-  message?: string;
-  detail?: string;
-  email_confirmation_required?: boolean;
-}
-
-interface FormData {
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
+import { SignupResponse, SignupFormData } from '@/types/auth';
+import { API_BASE_URL } from '@/lib/constants/api';
+import { validateEmail, validatePassword } from '@/lib/utils/errorHandler';
 
 type ValidationError = string | null;
 
 export default function SignupPage() {
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<SignupFormData>({
     email: '',
     password: '',
     confirmPassword: '',
@@ -65,13 +50,13 @@ export default function SignupPage() {
       return 'All fields are required';
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
+    if (!validateEmail(email)) {
       return 'Please enter a valid email address';
     }
 
-    if (password.length < 6) {
-      return 'Password must be at least 6 characters long';
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return passwordError;
     }
 
     if (password !== confirmPassword) {
@@ -88,7 +73,6 @@ export default function SignupPage() {
       [name]: value,
     }));
 
-    // Clear errors when user starts typing
     if (error) setError('');
     if (success) setSuccess('');
   };
@@ -132,27 +116,22 @@ export default function SignupPage() {
           'Account created successfully! Please check your email and confirm your account before proceeding.',
         );
 
-        // Show email confirmation UI and redirect to Gmail
         setTimeout(() => {
-          // Open Gmail in a new tab
           window.open('https://mail.google.com', '_blank');
 
-          // Show login page with confirmation message
           router.push(
             '/login?message=Please confirm your email and then log in',
           );
         }, 2000);
       } else if (data.access_token) {
-        // User is immediately logged in (email confirmation not required)
         localStorage.setItem('access_token', data.access_token);
         setSuccess(
-          'Account created successfully! Redirecting to resume upload...',
+          'Account created successfully! Redirecting to choice...',
         );
         setTimeout(() => {
-          router.push('/upload');
+          router.push('/choice');
         }, 1500);
       } else {
-        // Fallback case
         setSuccess(
           data.message ||
             'Account created successfully! Please log in to continue.',
@@ -181,7 +160,6 @@ export default function SignupPage() {
 
   return (
     <>
-      {/* Left Section - Carousel */}
       <div
         className={`hidden lg:block min-h-screen p-4 transition-all duration-500 ease-in-out ${
           isCarouselCollapsed ? 'w-20' : 'w-1/3'
@@ -207,101 +185,120 @@ export default function SignupPage() {
           transition={{ duration: 0.6 }}
           className="w-full max-w-md"
         >
-          <Card className="glass-card border-0 shadow-2xl">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl text-center">
-              </CardTitle>
-              <CardDescription className="text-center">
-              </CardDescription>
-            </CardHeader>
+          <div className="relative group">
+            <Card className="relative bg-white dark:bg-gray-900 border-4 border-black dark:border-violet-300 rounded-none shadow-none transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1">
+              <CardHeader className="space-y-6 p-8">
+                <div className="text-center space-y-3">
+                  <div className="inline-block">
+                    <div className="bg-violet-600 text-white px-4 py-2 transform -rotate-2 font-black text-sm tracking-wider">
+                      SIGN UP
+                    </div>
+                  </div>
+                  <CardTitle className="text-3xl font-black tracking-tight text-black dark:text-white">
+                    CREATE ACCOUNT
+                  </CardTitle>
+                  <CardDescription className="text-base font-medium text-gray-700 dark:text-gray-300">
+                    Join us to get started
+                  </CardDescription>
+                </div>
+              </CardHeader>
 
-            <CardContent>
+              <CardContent className="p-8 pt-0">
               <form onSubmit={handleSignup} className="space-y-6">
-                <div className="space-y-4">
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground z-10" />
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      required
-                      placeholder="Email address"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="pl-10 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-purple-500/50 focus:ring-purple-500/20 relative z-0"
-                      disabled={loading}
-                    />
+                <div className="space-y-6">
+                  <div className="relative group">
+                    <div className="absolute -inset-0.5 bg-violet-400 rounded-none opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-4 h-5 w-5 text-gray-600 dark:text-gray-400 z-10" />
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        required
+                        placeholder="EMAIL ADDRESS"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className="pl-12 h-14 bg-gray-50 dark:bg-gray-800 border-3 border-black dark:border-violet-300 rounded-none focus:border-violet-600 dark:focus:border-violet-400 focus:ring-0 font-bold placeholder:font-bold placeholder:text-gray-500 text-black dark:text-white transition-all duration-300"
+                        disabled={loading}
+                      />
+                    </div>
                   </div>
 
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground z-10" />
-                    <Input
-                      id="password"
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      placeholder="Password (min. 6 characters)"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className="pl-10 pr-10 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-purple-500/50 focus:ring-purple-500/20 relative z-0"
-                      disabled={loading}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => togglePasswordVisibility('password')}
-                      className="absolute right-3 top-3 h-5 w-5 text-muted-foreground hover:text-foreground transition-colors z-10"
-                      disabled={loading}
-                      aria-label="Toggle password visibility"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
-                    </button>
+                  <div className="relative group">
+                    <div className="absolute -inset-0.5 bg-violet-400 rounded-none opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-4 h-5 w-5 text-gray-600 dark:text-gray-400 z-10" />
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        placeholder="PASSWORD"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        className="pl-12 pr-12 h-14 bg-gray-50 dark:bg-gray-800 border-3 border-black dark:border-violet-300 rounded-none focus:border-violet-600 dark:focus:border-violet-400 focus:ring-0 font-bold placeholder:font-bold placeholder:text-gray-500 text-black dark:text-white transition-all duration-300"
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('password')}
+                        className="absolute right-4 top-4 h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors z-10"
+                        disabled={loading}
+                        aria-label="Toggle password visibility"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground z-10" />
-                    <Input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      required
-                      placeholder="Confirm Password"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      className="pl-10 pr-10 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-purple-500/50 focus:ring-purple-500/20 relative z-0"
-                      disabled={loading}
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        togglePasswordVisibility('confirmPassword')
-                      }
-                      className="absolute right-3 top-3 h-5 w-5 text-muted-foreground hover:text-foreground transition-colors z-10"
-                      disabled={loading}
-                      aria-label="Toggle confirm password visibility"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
-                    </button>
+                  <div className="relative group">
+                    <div className="absolute -inset-0.5 bg-violet-400 rounded-none opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-4 h-5 w-5 text-gray-600 dark:text-gray-400 z-10" />
+                      <Input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        required
+                        placeholder="CONFIRM PASSWORD"
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        className="pl-12 pr-12 h-14 bg-gray-50 dark:bg-gray-800 border-3 border-black dark:border-violet-300 rounded-none focus:border-violet-600 dark:focus:border-violet-400 focus:ring-0 font-bold placeholder:font-bold placeholder:text-gray-500 text-black dark:text-white transition-all duration-300"
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          togglePasswordVisibility('confirmPassword')
+                        }
+                        className="absolute right-4 top-4 h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors z-10"
+                        disabled={loading}
+                        aria-label="Toggle confirm password visibility"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {error && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="p-4 bg-red-50/50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-lg"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="relative"
                   >
-                    <div className="flex items-center space-x-2">
-                      <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
-                      <p className="text-red-600 dark:text-red-400 text-sm">
-                        {error}
+                    <div className="absolute -inset-1 bg-red-500 rotate-1"></div>
+                    <div className="relative bg-red-50 dark:bg-red-950 border-2 border-red-600 p-4 text-center">
+                      <p className="text-red-700 dark:text-red-300 font-bold text-sm tracking-wide">
+                        {error.toUpperCase()}
                       </p>
                     </div>
                   </motion.div>
@@ -309,56 +306,86 @@ export default function SignupPage() {
 
                 {success && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="p-4 bg-green-50/50 dark:bg-green-950/50 border border-green-200 dark:border-green-800 rounded-lg"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="relative"
                   >
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
-                      <p className="text-green-600 dark:text-green-400 text-sm">
-                        {success}
+                    <div className="absolute -inset-1 bg-green-500 rotate-1"></div>
+                    <div className="relative bg-green-50 dark:bg-green-950 border-2 border-green-600 p-4 text-center">
+                      <p className="text-green-700 dark:text-green-300 font-bold text-sm tracking-wide">
+                        {success.toUpperCase()}
                       </p>
                     </div>
                   </motion.div>
                 )}
 
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-12 btn-modern group bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                  size="lg"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Creating account...
-                    </>
-                  ) : (
-                    <>
-                      Create Account
-                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </>
-                  )}
-                </Button>
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-black rotate-2 group-hover:rotate-1 transition-transform duration-300"></div>
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="relative w-full h-14 bg-violet-600 hover:bg-violet-700 border-3 border-black text-white font-black text-base tracking-widest rounded-none transition-all duration-300 transform hover:-translate-y-1 disabled:hover:translate-y-0"
+                    size="lg"
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center space-x-3">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>CREATING ACCOUNT...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center space-x-3 group">
+                        <span>CREATE ACCOUNT</span>
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
+                      </div>
+                    )}
+                  </Button>
+                </div>
               </form>
 
-              <Separator className="my-6" />
+              <div className="mt-8 relative">
+                <Separator className="border-2 border-black dark:border-violet-300" />
+              </div>
 
-              <div className="text-center space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Already have an account?{' '}
+              <div className="text-center mt-8">
+                <p className="text-base font-bold text-gray-700 dark:text-gray-300">
+                  ALREADY HAVE AN ACCOUNT?{' '}
                   <Link
                     href="/login"
-                    className="font-medium text-purple-600 hover:text-purple-500 dark:text-purple-400 dark:hover:text-purple-300 transition-colors"
+                    className="text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 transition-colors duration-300 underline decoration-2 underline-offset-4 hover:decoration-4"
                   >
-                    Sign in here
+                    SIGN IN
                   </Link>
                 </p>
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+          className="mt-8 text-center"
+        >
+          <p className="text-xs font-bold text-gray-600 dark:text-gray-400 tracking-wider">
+            BY SIGNING UP, YOU AGREE TO OUR{' '}
+            <Link
+              href="#"
+              className="text-violet-600 hover:text-violet-700 underline decoration-2"
+            >
+              TERMS
+            </Link>{' '}
+            AND{' '}
+            <Link
+              href="#"
+              className="text-violet-600 hover:text-violet-700 underline decoration-2"
+            >
+              PRIVACY
+            </Link>
+          </p>
         </motion.div>
-      </div>
-    </>
-  );
+      </motion.div>
+    </div>
+  </>
+);
 }

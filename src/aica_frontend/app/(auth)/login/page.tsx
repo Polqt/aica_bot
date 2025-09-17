@@ -16,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { AuthCarouselWrapper } from '@/components/AuthCarousel';
+import { API_BASE_URL } from '@/lib/constants/api';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -31,21 +32,16 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-        }/auth/login`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      );
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
 
       const data = await response.json();
 
@@ -53,31 +49,7 @@ export default function LoginPage() {
         setError(data.detail || 'Check your email for the confirmation first!');
       } else {
         localStorage.setItem('access_token', data.access_token);
-        try {
-          const profileResponse = await fetch(
-            `${
-              process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-            }/auth/profile`,
-            {
-              headers: {
-                Authorization: `Bearer ${data.access_token}`,
-              },
-            },
-          );
-
-          if (profileResponse.ok) {
-            const profile = await profileResponse.json();
-            if (!profile.resume_uploaded) {
-              router.push('/upload');
-            } else {
-              router.push('/dashboard');
-            }
-          } else {
-            router.push('/dashboard');
-          }
-        } catch {
-          router.push('/dashboard');
-        }
+        router.push('/choice');
       }
     } catch {
       setError('An unexpected error occurred');
@@ -88,9 +60,8 @@ export default function LoginPage() {
 
   return (
     <>
-      {/* Left Section - Carousel */}
       <div
-        className={`hidden lg:block min-h-screen p-4 transition-all duration-500 ease-in-out ${
+        className={`hidden lg:block min-h-screen p-6 transition-all duration-500 ease-in-out ${
           isCarouselCollapsed ? 'w-20' : 'w-1/3'
         }`}
       >
@@ -99,129 +70,152 @@ export default function LoginPage() {
           onCollapseChange={setIsCarouselCollapsed}
         />
       </div>
-
-      {/* Right Section - Login Form */}
       <div
-        className={`min-h-screen flex items-center p-4 lg:p-8 transition-all duration-500 ease-in-out ${
+        className={`min-h-screen flex items-center p-6 lg:p-12 transition-all duration-500 ease-in-out ${
           isCarouselCollapsed
             ? 'flex-1 justify-center'
             : 'flex-1 justify-center'
         }`}
       >
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="w-full max-w-md"
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full max-w-lg"
         >
-          <Card className="glass-card border-0 shadow-2xl">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl text-center">
-              </CardTitle>
-              <CardDescription className="text-center">
-              </CardDescription>
-            </CardHeader>
+          <div className="relative group">
+            <Card className="relative bg-white dark:bg-gray-900 border-4 border-black dark:border-violet-300 rounded-none shadow-none transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1">
+              <CardHeader className="space-y-6 p-8">
+                <div className="text-center space-y-3">
+                  <div className="inline-block">
+                    <div className="bg-violet-600 text-white px-4 py-2 transform -rotate-2 font-black text-sm tracking-wider">
+                      SIGN IN
+                    </div>
+                  </div>
+                  <CardTitle className="text-3xl font-black tracking-tight text-black dark:text-white">
+                    WELCOME BACK
+                  </CardTitle>
+                  <CardDescription className="text-base font-medium text-gray-700 dark:text-gray-300">
+                    Access your account
+                  </CardDescription>
+                </div>
+              </CardHeader>
 
-            <CardContent>
-              <form onSubmit={handleLogin} className="space-y-6">
-                <div className="space-y-4">
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground z-10" />
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      required
-                      placeholder="Email address"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      className="pl-10 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-blue-500/50 focus:ring-blue-500/20 relative z-0"
-                    />
+              <CardContent className="p-8 pt-0">
+                <form onSubmit={handleLogin} className="space-y-8">
+                  <div className="space-y-6">
+                    <div className="relative group">
+                      <div className="absolute -inset-0.5 bg-violet-400 rounded-none opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-4 h-5 w-5 text-gray-600 dark:text-gray-400 z-10" />
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          required
+                          placeholder="EMAIL ADDRESS"
+                          value={email}
+                          onChange={e => setEmail(e.target.value)}
+                          className="pl-12 h-14 bg-gray-50 dark:bg-gray-800 border-3 border-black dark:border-violet-300 rounded-none focus:border-violet-600 dark:focus:border-violet-400 focus:ring-0 font-bold placeholder:font-bold placeholder:text-gray-500 text-black dark:text-white transition-all duration-300"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="relative group">
+                      <div className="absolute -inset-0.5 bg-violet-400 rounded-none opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-4 h-5 w-5 text-gray-600 dark:text-gray-400 z-10" />
+                        <Input
+                          id="password"
+                          name="password"
+                          type="password"
+                          required
+                          placeholder="PASSWORD"
+                          value={password}
+                          onChange={e => setPassword(e.target.value)}
+                          className="pl-12 h-14 bg-gray-50 dark:bg-gray-800 border-3 border-black dark:border-violet-300 rounded-none focus:border-violet-600 dark:focus:border-violet-400 focus:ring-0 font-bold placeholder:font-bold placeholder:text-gray-500 text-black dark:text-white transition-all duration-300"
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground z-10" />
-                    <Input
-                      id="password"
-                      name="password"
-                      type="password"
-                      required
-                      placeholder="Password"
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      className="pl-10 pr-10 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-blue-500/50 focus:ring-blue-500/20 relative z-0"
-                    />
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="relative"
+                    >
+                      <div className="absolute -inset-1 bg-red-500 rotate-1"></div>
+                      <div className="relative bg-red-50 dark:bg-red-950 border-2 border-red-600 p-4 text-center">
+                        <p className="text-red-700 dark:text-red-300 font-bold text-sm tracking-wide">
+                          {error.toUpperCase()}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  <div className="relative group">
+                    <div className="absolute -inset-1 bg-black rotate-2 group-hover:rotate-1 transition-transform duration-300"></div>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="relative w-full h-14 bg-violet-600 hover:bg-violet-700 border-3 border-black text-white font-black text-base tracking-widest rounded-none transition-all duration-300 transform hover:-translate-y-1 disabled:hover:translate-y-0"
+                      size="lg"
+                    >
+                      {loading ? (
+                        <div className="flex items-center justify-center space-x-3">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>SIGNING IN...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center space-x-3 group">
+                          <span>SIGN IN</span>
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
+                        </div>
+                      )}
+                    </Button>
                   </div>
+                </form>
+
+                <div className="mt-8 relative">
+                  <Separator className="border-2 border-black dark:border-violet-300" />
                 </div>
 
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="p-4 bg-red-50/50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-lg"
-                  >
-                    <p className="text-red-600 dark:text-red-400 text-sm text-center">
-                      {error}
-                    </p>
-                  </motion.div>
-                )}
-
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-12 btn-modern group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                  size="lg"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    <>
-                      Sign In
-                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </>
-                  )}
-                </Button>
-              </form>
-
-              <Separator className="my-6" />
-
-              <div className="text-center space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Don&apos;t have an account?{' '}
-                  <Link
-                    href="/sign-up"
-                    className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                  >
-                    Sign up for free
-                  </Link>
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="text-center mt-8">
+                  <p className="text-base font-bold text-gray-700 dark:text-gray-300">
+                    DON&apos;T HAVE AN ACCOUNT?{' '}
+                    <Link
+                      href="/sign-up"
+                      className="text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 transition-colors duration-300 underline decoration-2 underline-offset-4 hover:decoration-4"
+                    >
+                      SIGN UP FREE
+                    </Link>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
+            transition={{ delay: 1 }}
             className="mt-8 text-center"
           >
-            <p className="text-xs text-muted-foreground">
-              By signing in, you agree to our{' '}
+            <p className="text-xs font-bold text-gray-600 dark:text-gray-400 tracking-wider">
+              BY SIGNING IN, YOU AGREE TO OUR{' '}
               <Link
                 href="#"
-                className="underline hover:text-foreground transition-colors"
+                className="text-violet-600 hover:text-violet-700 underline decoration-2"
               >
-                Terms of Service
+                TERMS
               </Link>{' '}
-              and{' '}
+              AND{' '}
               <Link
                 href="#"
-                className="underline hover:text-foreground transition-colors"
+                className="text-violet-600 hover:text-violet-700 underline decoration-2"
               >
-                Privacy Policy
+                PRIVACY
               </Link>
             </p>
           </motion.div>

@@ -105,7 +105,6 @@ export default function Home() {
                 </Button>
               </div>
 
-              {/* Social Proof */}
               <div className="flex items-center gap-8 pt-8">
                 <div className="flex -space-x-4">
                   {[...Array(4)].map((_, i) => (
@@ -131,7 +130,7 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Right Side - Dashboard Mock */}
+            {/* Demo Video */}
             <motion.div
               initial={{ opacity: 0, x: 60 }}
               animate={{ opacity: 1, x: 0 }}
