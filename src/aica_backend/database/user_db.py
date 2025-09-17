@@ -13,47 +13,8 @@ from .models.user_models import (
 
 logger = logging.getLogger(__name__)
 
-class DatabaseError(Exception):
-    """Custom database error"""
-    pass
-
 class UserDatabase:
-    def save_user_job(self, user_id: str, job_id: str) -> 'UserSavedJob':
-        try:
-            data = {
-                "user_id": user_id,
-                "job_id": job_id
-            }
-            response = self.client.table("user_saved_jobs").insert(data).execute()
-            self._handle_db_response(response, "save user job")
-            if not response.data:
-                raise DatabaseError("No saved job data returned after creation")
-            return UserSavedJob(**response.data[0])
-        except Exception as e:
-            raise DatabaseError(f"Failed to save user job: {str(e)}")
 
-    def remove_user_saved_job(self, user_id: str, job_id: str) -> bool:
-        try:
-            response = self.client.table("user_saved_jobs").delete().eq("user_id", user_id).eq("job_id", job_id).execute()
-            self._handle_db_response(response, "remove user saved job")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to remove saved job: {str(e)}")
-            return False
-
-    def get_user_saved_jobs(self, user_id: str, limit: int = 50) -> List['UserSavedJob']:
-        try:
-            response = (self.client.table("user_saved_jobs")
-                       .select("*")
-                       .eq("user_id", user_id)
-                       .order("saved_at", desc=True)
-                       .limit(limit)
-                       .execute())
-            self._handle_db_response(response, "get user saved jobs")
-            return [UserSavedJob(**item) for item in response.data] if response.data else []
-        except Exception as e:
-            logger.error(f"Failed to get user saved jobs: {str(e)}")
-            return []
     def __init__(self, client: Client = None):
         if client is None:
             url = os.getenv("SUPABASE_URL")
@@ -69,8 +30,7 @@ class UserDatabase:
     def _handle_db_response(self, response, operation: str):
         if hasattr(response, 'error') and response.error:
             error_msg = f"Database {operation} failed: {response.error}"
-            logger.error(error_msg)
-            raise DatabaseError(error_msg)
+            raise ValueError(error_msg)
         return response
 
     def create_user(self, email: str, password_hash: str, user_id: str = None) -> User:
@@ -86,12 +46,11 @@ class UserDatabase:
             self._handle_db_response(response, "user creation")
             
             if not response.data:
-                raise DatabaseError("No user data returned after creation")
+                raise ValueError("No user data returned after creation")
                 
             return User(**response.data[0])
         except Exception as e:
-            logger.error(f"Failed to create user: {str(e)}")
-            raise DatabaseError(f"Failed to create user: {str(e)}")
+            raise ValueError(f"Failed to create user: {str(e)}")
 
     def get_user_by_email(self, email: str) -> Optional[User]:
         try:
@@ -102,7 +61,6 @@ class UserDatabase:
                 return User(**response.data[0])
             return None
         except Exception as e:
-            logger.error(f"Failed to get user by email: {str(e)}")
             return None
 
     def get_user_by_id(self, user_id: str) -> Optional[User]:
@@ -114,7 +72,6 @@ class UserDatabase:
                 return User(**response.data[0])
             return None
         except Exception as e:
-            logger.error(f"Failed to get user by id: {str(e)}")
             return None
 
     def user_exists(self, email: str) -> bool:
@@ -142,12 +99,11 @@ class UserDatabase:
             self._handle_db_response(response, "create user profile")
             
             if not response.data:
-                raise DatabaseError("No profile data returned after creation")
+                raise ValueError("No profile data returned after creation")
                 
             return UserProfile(**response.data[0])
         except Exception as e:
-            logger.error(f"Failed to create user profile: {str(e)}")
-            raise DatabaseError(f"Failed to create user profile: {str(e)}")
+            raise ValueError(f"Failed to create user profile: {str(e)}")
     
     def get_user_profile(self, user_id: str) -> Optional[UserProfile]:
         try:
@@ -158,7 +114,6 @@ class UserDatabase:
                 return UserProfile(**response.data[0])
             return None
         except Exception as e:
-            logger.error(f"Failed to get user profile: {str(e)}")
             return None
 
     def update_user_profile(self, user_id: str, update_data: dict) -> Optional[UserProfile]:
@@ -171,8 +126,7 @@ class UserDatabase:
                 return UserProfile(**response.data[0])
             return None
         except Exception as e:
-            logger.error(f"Failed to update user profile: {str(e)}")
-            raise DatabaseError(f"Failed to update user profile: {str(e)}")
+            raise ValueError(f"Failed to update user profile: {str(e)}")
 
     def mark_resume_uploaded(self, user_id: str, file_path: str) -> bool:
         try:
@@ -186,7 +140,6 @@ class UserDatabase:
             
             return len(response.data) > 0
         except Exception as e:
-            logger.error(f"Failed to mark resume uploaded: {str(e)}")
             return False
     
     def mark_resume_processed(self, user_id: str) -> bool:
@@ -200,7 +153,6 @@ class UserDatabase:
             
             return len(response.data) > 0
         except Exception as e:
-            logger.error(f"Failed to mark resume processed: {str(e)}")
             return False
 
     def add_user_skill(self, user_id: str, skill: UserSkillCreate) -> UserSkill:
@@ -216,11 +168,11 @@ class UserDatabase:
             self._handle_db_response(response, "add user skill")
             
             if not response.data:
-                raise DatabaseError("No skill data returned after creation")
+                raise ValueError("No skill data returned after creation")
                 
             return UserSkill(**response.data[0])
         except Exception as e:
-            raise DatabaseError(f"Failed to add user skill: {str(e)}")
+            raise ValueError(f"Failed to add user skill: {str(e)}")
 
     def add_user_skills_batch(self, user_id: str, skills: List[UserSkillCreate]) -> List[UserSkill]:
         if not skills:
@@ -242,7 +194,7 @@ class UserDatabase:
             
             return [UserSkill(**item) for item in response.data] if response.data else []
         except Exception as e:
-            raise DatabaseError(f"Failed to add user skills batch: {str(e)}")
+            raise ValueError(f"Failed to add user skills batch: {str(e)}")
     
     def get_user_skills(self, user_id: str) -> List[UserSkill]:
         try:
@@ -264,7 +216,6 @@ class UserDatabase:
             
             return [UserSkill(**skill_data) for skill_data in response.data] if response.data else []
         except Exception as e:
-            logger.error(f"Failed to get user skills by category: {str(e)}")
             return []
 
     def clear_user_skills(self, user_id: str) -> bool:
@@ -293,7 +244,6 @@ class UserDatabase:
                 return UserSkill(**response.data[0])
             return None
         except Exception as e:
-            logger.error(f"Failed to update user skill: {str(e)}")
             return None
     
     def save_job_match(self, user_id: str, job_id: str, match_score: float, matched_skills: List[str]) -> UserJobMatch:
@@ -308,13 +258,13 @@ class UserDatabase:
             self._handle_db_response(response, "save job match")
             
             if not response.data:
-                raise DatabaseError("No job match data returned after creation")
+                raise ValueError("No job match data returned after creation")
                 
             match_data = response.data[0]
             match_data["matched_skills"] = json.loads(match_data["matched_skills"])
             return UserJobMatch(**match_data)
         except Exception as e:
-            raise DatabaseError(f"Failed to save job match: {str(e)}")
+            raise ValueError(f"Failed to save job match: {str(e)}")
 
     def get_user_job_matches(self, user_id: str, limit: int = 50) -> List[UserJobMatch]:
         try:
@@ -359,7 +309,6 @@ class UserDatabase:
                 "best_match_score": matches[0].match_score if matches else 0.0
             }
         except Exception as e:
-            logger.error(f"Failed to get user stats: {str(e)}")
             return {
                 "profile_completed": False,
                 "resume_uploaded": False,
@@ -394,3 +343,38 @@ class UserDatabase:
                 industries=[]
             )
             
+    def save_user_job(self, user_id: str, job_id: str) -> 'UserSavedJob':
+        try:
+            data = {
+                "user_id": user_id,
+                "job_id": job_id
+            }
+            response = self.client.table("user_saved_jobs").insert(data).execute()
+            self._handle_db_response(response, "save user job")
+            if not response.data:
+                raise ValueError("No saved job data returned after creation")
+            return UserSavedJob(**response.data[0])
+        except Exception as e:
+            raise ValueError(f"Failed to save user job: {str(e)}")
+
+    def remove_user_saved_job(self, user_id: str, job_id: str) -> bool:
+        try:
+            response = self.client.table("user_saved_jobs").delete().eq("user_id", user_id).eq("job_id", job_id).execute()
+            self._handle_db_response(response, "remove user saved job")
+            return True
+        except Exception as e:
+            return False
+
+    def get_user_saved_jobs(self, user_id: str, limit: int = 50) -> List['UserSavedJob']:
+        try:
+            response = (self.client.table("user_saved_jobs")
+                       .select("*")
+                       .eq("user_id", user_id)
+                       .order("saved_at", desc=True)
+                       .limit(limit)
+                       .execute())
+            self._handle_db_response(response, "get user saved jobs")
+            return [UserSavedJob(**item) for item in response.data] if response.data else []
+        except Exception as e:
+            return []
+        

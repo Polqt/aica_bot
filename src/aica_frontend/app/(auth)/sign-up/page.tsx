@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { AuthCarouselWrapper } from '@/components/AuthCarousel';
-import { authContent } from '@/lib/constants/app-data';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
@@ -211,10 +210,8 @@ export default function SignupPage() {
           <Card className="glass-card border-0 shadow-2xl">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center">
-                {authContent.signUp.title}
               </CardTitle>
               <CardDescription className="text-center">
-                {authContent.signUp.description}
               </CardDescription>
             </CardHeader>
 

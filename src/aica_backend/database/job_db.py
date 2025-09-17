@@ -28,8 +28,6 @@ class JobDatabase:
                 {"url": url, "last_checked": None}
             ).execute()
         except Exception as e:
-            print(f"Error saving job source: {e}")
-            # If RLS is the issue, try with service role key
             raise
 
     def delete_job_source(self, url: str) -> None:
@@ -40,7 +38,6 @@ class JobDatabase:
             response = self.client.table("job_sources").select("*").execute()
             return [JobSource(**source) for source in response.data]
         except Exception as e:
-            print(f"Error getting job sources: {e}")
             return []
 
     def update_job_source_stats(self, url: str, job_count: int, error_occurred: bool = False) -> None:
@@ -111,20 +108,6 @@ class JobDatabase:
                     raise Exception("No data returned from insert operation")
                     
         except Exception as e:
-            print(f"Error saving job '{job.title}': {e}")
-            # If it's an RLS error, provide more specific guidance
-            if "row-level security policy" in str(e).lower():
-                print("RLS Error Fix Instructions:")
-                print("1. Go to your Supabase dashboard")
-                print("2. Navigate to Authentication > Policies")
-                print("3. For the 'jobs' table, create a policy like:")
-                print("   Policy name: 'Allow all operations'")
-                print("   Policy command: ALL")
-                print("   Policy role: authenticated")
-                print("   Policy using expression: true")
-                print("4. Or disable RLS entirely: ALTER TABLE jobs DISABLE ROW LEVEL SECURITY;")
-            
-            # Try to return a placeholder ID to continue processing
             return str(uuid.uuid4())
 
     def get_job(self, job_id: str) -> Optional[Job]:
@@ -137,7 +120,6 @@ class JobDatabase:
             job_data = response.data[0]
             return self._deserialize_job(job_data)
         except Exception as e:
-            print(f"Error getting job {job_id}: {e}")
             return None
 
     def get_job_by_url(self, url: str) -> Optional[Job]:
@@ -150,7 +132,6 @@ class JobDatabase:
             job_data = response.data[0]
             return self._deserialize_job(job_data)
         except Exception as e:
-            print(f"Error getting job by URL {url}: {e}")
             return None
     
     def get_jobs_for_indexing(self, limit: int = 100) -> List[Job]:
@@ -158,7 +139,6 @@ class JobDatabase:
             response = self.client.table("jobs").select("*").eq("is_indexed", False).limit(limit).execute()
             return [self._deserialize_job(job_data) for job_data in response.data]
         except Exception as e:
-            print(f"Error getting jobs for indexing: {e}")
             return []
         
     def mark_job_as_indexed(self, job_id: str, content_embedding: List[float] = None, skills_embedding: List[float] = None) -> None:
@@ -206,7 +186,6 @@ class JobDatabase:
                 page_size=page_size
             )
         except Exception as e:
-            print(f"Error searching jobs: {e}")
             return JobListings(jobs=[], total_count=0, page=page, page_size=page_size)
         
     def get_job_content(self, job_id: str) -> Optional[str]:
@@ -248,7 +227,6 @@ class JobDatabase:
                 "total_sources": len(sources_data)
             }
         except Exception as e:
-            print(f"Error getting job statistics: {e}")
             return {
                 "total_jobs": 0,
                 "indexed_jobs": 0,
@@ -294,8 +272,6 @@ class JobDatabase:
                     
             return Job(**job_data)
         except Exception as e:
-            print(f"Error deserializing job data: {e}")
-            # Return a minimal job object
             return Job(
                 id=job_data.get('id'),
                 title=job_data.get('title', 'Unknown'),
@@ -308,16 +284,6 @@ class JobDatabase:
             )
 
     def get_jobs_for_matching(self, limit: int = 100, min_skills: int = 1) -> List[Job]:
-        """
-        Get jobs suitable for matching against user skills.
-        
-        Args:
-            limit: Maximum number of jobs to return
-            min_skills: Minimum number of skills required for a job to be included
-            
-        Returns:
-            List of Job objects suitable for matching
-        """
         try:
             # Query jobs that have skills and are suitable for matching
             response = (self.client.table("jobs")
@@ -338,25 +304,14 @@ class JobDatabase:
                     if job.skills and len(job.skills) >= min_skills:
                         jobs.append(job)
                 except Exception as e:
-                    print(f"Error processing job for matching: {e}")
                     continue
             
             return jobs
             
         except Exception as e:
-            print(f"Error getting jobs for matching: {e}")
             return []
 
     def get_job_by_id(self, job_id: str) -> Optional[Job]:
-        """
-        Get a single job by its ID.
-        
-        Args:
-            job_id: The job's ID
-            
-        Returns:
-            Job object if found, None otherwise
-        """
         try:
             response = self.client.table("jobs").select("*").eq("id", job_id).execute()
             
@@ -366,24 +321,10 @@ class JobDatabase:
             return self._deserialize_job(response.data[0])
             
         except Exception as e:
-            print(f"Error getting job by id {job_id}: {e}")
             return None
 
     def save_user_job_match(self, user_id: str, job_id: str, match_score: float, **kwargs) -> bool:
-        """
-        Save a job match for a user.
-        
-        Args:
-            user_id: The user's ID
-            job_id: The job's ID  
-            match_score: The match score (0-100)
-            **kwargs: Additional fields (ignored for compatibility)
-            
-        Returns:
-            True if successful, False otherwise
-        """
         try:
-            # Prepare the minimal data that matches the current table schema
             match_data = {
                 "user_id": user_id,
                 "job_id": job_id,
@@ -396,19 +337,9 @@ class JobDatabase:
             return len(response.data) > 0
             
         except Exception as e:
-            print(f"Error saving user job match: {e}")
             return False
 
     def get_user_matches(self, user_id: str) -> List[Dict[str, Any]]:
-        """
-        Get all job matches for a user.
-        
-        Args:
-            user_id: The user's ID
-            
-        Returns:
-            List of match dictionaries
-        """
         try:
             response = self.client.table("user_job_matches").select(
                 "*, jobs(title, company, location, url)"
@@ -417,5 +348,5 @@ class JobDatabase:
             return response.data or []
             
         except Exception as e:
-            print(f"Error getting user matches: {e}")
             return []
+        

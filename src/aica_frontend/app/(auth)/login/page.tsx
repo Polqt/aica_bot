@@ -16,7 +16,6 @@ import { Separator } from '@/components/ui/separator';
 import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { AuthCarouselWrapper } from '@/components/AuthCarousel';
-import { authContent } from '@/lib/constants/app-data';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -118,10 +117,8 @@ export default function LoginPage() {
           <Card className="glass-card border-0 shadow-2xl">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center">
-                {authContent.login.title}
               </CardTitle>
               <CardDescription className="text-center">
-                {authContent.login.description}
               </CardDescription>
             </CardHeader>
 

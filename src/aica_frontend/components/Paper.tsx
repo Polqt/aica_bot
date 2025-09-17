@@ -36,8 +36,6 @@ export default function Paper() {
         >
           <Card className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl shadow-gray-900/10 dark:shadow-black/40 border border-gray-200 dark:border-gray-800 overflow-hidden mb-12">
             <CardHeader className="bg-gradient-to-br from-violet-600 to-purple-700 text-white p-12 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
 
               <div className="relative">
                 <div className="flex items-center gap-3 mb-8">
@@ -63,7 +61,6 @@ export default function Paper() {
                     </p>
                   </div>
 
-                  {/* Meta Information */}
                   <div className="flex flex-wrap gap-4">
                     <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/20">
                       <Calendar className="h-5 w-5 text-yellow-300" />
@@ -82,10 +79,8 @@ export default function Paper() {
               </div>
             </CardHeader>
 
-            {/* Actions Section */}
             <CardContent className="p-12">
               <div className="space-y-8">
-                {/* Abstract */}
                 <div className="bg-gradient-to-r from-gray-50 to-violet-50 dark:from-gray-800 dark:to-violet-900/20 rounded-2xl p-8 border-2 border-gray-200 dark:border-gray-700">
                   <h4 className="text-xl font-black text-gray-900 dark:text-white mb-4 uppercase tracking-wide">
                     Abstract
@@ -159,6 +154,19 @@ export default function Paper() {
                   >
                     <EyeOff className="w-5 h-5" />
                   </motion.button>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div
+                  className="w-full bg-gray-100 dark:bg-gray-800"
+                  style={{ height: '800px' }}
+                >
+                  <iframe
+                    src="/aica-research-paper.pdf"
+                    className="w-full h-full"
+                    title="AICA Research Paper"
+                  />
                 </div>
               </div>
             </Card>
