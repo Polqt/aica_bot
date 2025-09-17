@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,9 +12,47 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Upload, FileText, ArrowRight } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
+import { UserProfile } from '@/types/user';
+import { ProcessingStatusResponse } from '@/types/api';
 
 export default function ChoicePage() {
   const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
+  const [shouldShowChoice, setShouldShowChoice] = useState(false);
+
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+          setIsChecking(false);
+          setShouldShowChoice(true);
+          return;
+        }
+
+        const profile: UserProfile = await apiClient.getUserProfile();
+
+        const processingStatus: ProcessingStatusResponse = await apiClient.getProcessingStatus();
+
+        if (profile.resume_uploaded || processingStatus.status === 'completed') {
+          router.push('/dashboard');
+          return;
+        }
+
+        // Show choice page if neither condition is met
+        setShouldShowChoice(true);
+      } catch (error) {
+        console.error('Error checking user status:', error);
+        // If there's an error (e.g., no auth), show the choice page
+        setShouldShowChoice(true);
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    checkUserStatus();
+  }, [router]);
 
   const handleUploader = () => {
     router.push('/upload');
@@ -22,6 +61,34 @@ export default function ChoicePage() {
   const handleProfileBuilder = () => {
     router.push('/(onboarding)/profile');
   };
+
+  // Show loading state while checking
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+            Checking your status...
+          </h3>
+          <p className="text-slate-600 dark:text-slate-400">
+            Please wait while we check your account setup.
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Don't render choice page if user should be redirected
+  if (!shouldShowChoice) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
@@ -53,7 +120,6 @@ export default function ChoicePage() {
 
             <CardContent className="p-12 pt-0">
               <div className="grid md:grid-cols-2 gap-8">
-                {/* Resume Uploader Option */}
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -90,7 +156,6 @@ export default function ChoicePage() {
                   </div>
                 </motion.div>
 
-                {/* Profile Builder Option */}
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}

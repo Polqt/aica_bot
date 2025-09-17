@@ -23,12 +23,17 @@ export const metadata: Metadata = {
     'AICA is an AI-powered career assistant that helps you find your dream tech job by analyzing your resume and matching you with the best opportunities.',
   keywords: 'AI, job matching, resume, tech jobs, career, recruitment',
   authors: [{ name: 'AICA Team' }],
-  viewport: 'width=device-width, initial-scale=1',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
-  ],
 };
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
+
+export const themeColor = [
+  { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+  { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
+];
 
 export default function RootLayout({
   children,
