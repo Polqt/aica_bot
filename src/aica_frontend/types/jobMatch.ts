@@ -20,3 +20,20 @@ export interface MatchingStats {
   low_confidence_matches: number;
   last_updated: string | null;
 }
+
+export interface SavedJob {
+  job_id: string;
+  saved_at: string;
+  title: string;
+  company: string;
+  location: string;
+  url: string;
+  description: string;
+  // Optional fields for enhanced UI
+  tags?: string[];
+  matchScore?: number;
+  requirements?: string[];
+  salary?: string;
+  savedDate?: string;
+  type?: string;
+}

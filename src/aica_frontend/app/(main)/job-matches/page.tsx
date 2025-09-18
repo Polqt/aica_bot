@@ -17,15 +17,12 @@ import {
   Building,
   ExternalLink,
   RefreshCw,
-  Target,
   Zap,
   BookmarkPlus,
   BookmarkCheck,
   Sparkles,
-  TrendingUp,
   Clock,
 } from 'lucide-react';
-
 import { apiClient } from '@/lib/api-client';
 import { JobMatch, MatchingStats } from '@/types/jobMatch';
 import {
@@ -41,7 +38,7 @@ export default function JobMatchesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [jobMatches, setJobMatches] = useState<JobMatch[]>([]);
-  const [stats, setStats] = useState<MatchingStats | null>(null);
+  const [, setStats] = useState<MatchingStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [, setError] = useState<string | null>(null);
@@ -49,7 +46,6 @@ export default function JobMatchesPage() {
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
   const [selectedJob, setSelectedJob] = useState<JobMatch | null>(null);
 
-  // Check processing status
   const checkProcessingStatus = useCallback(async () => {
     try {
       setIsCheckingStatus(true);
@@ -106,14 +102,12 @@ export default function JobMatchesPage() {
     }
   }, []);
 
-  // Load data on component mount
   useEffect(() => {
-    // First check if user is coming from resume processing
     checkProcessingStatus();
     refreshSavedJobs();
   }, [checkProcessingStatus, refreshSavedJobs]);
 
-  // Load data after processing status is determined
+
   useEffect(() => {
     if (
       !isCheckingStatus &&
@@ -132,14 +126,11 @@ export default function JobMatchesPage() {
     refreshSavedJobs,
   ]);
 
-  // Refresh matches
   const refreshMatches = async () => {
     try {
       setRefreshing(true);
       setError(null);
       await apiClient.post('/jobs/find-matches');
-
-      // Reload data
       await Promise.all([loadJobMatches(), loadStats()]);
     } catch (err: unknown) {
       const errorMessage =
@@ -150,7 +141,6 @@ export default function JobMatchesPage() {
     }
   };
 
-  // Select first job match by default
   useEffect(() => {
     if (jobMatches.length > 0 && !selectedJob) {
       setSelectedJob(jobMatches[0]);
@@ -169,7 +159,6 @@ export default function JobMatchesPage() {
     return matchesSearch && matchesFilter;
   });
 
-  // Loading state
   if (loading && jobMatches.length === 0) {
     return (
       <div className="space-y-8">
@@ -196,7 +185,6 @@ export default function JobMatchesPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header & Stats */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -227,7 +215,6 @@ export default function JobMatchesPage() {
         </Button>
       </motion.div>
 
-      {/* Processing Status Banner */}
       {isCheckingStatus && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -279,72 +266,6 @@ export default function JobMatchesPage() {
           </Card>
         </motion.div>
       )}
-
-      {/* Stats Cards */}
-      {stats && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6"
-        >
-          <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                    Total Matches
-                  </p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-                    {stats.total_matches}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                  <Target className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                    Avg. Match Score
-                  </p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-                    {(stats.average_score * 100).toFixed(0)}%
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                    Last Updated
-                  </p>
-                  <p className="text-sm text-slate-900 dark:text-white mt-1">
-                    {stats.last_updated
-                      ? new Date(stats.last_updated).toLocaleDateString()
-                      : 'Never'}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-
-      {/* Search & Filter */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -373,14 +294,12 @@ export default function JobMatchesPage() {
         </select>
       </motion.div>
 
-      {/* Main Content */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3 }}
         className="grid lg:grid-cols-5 gap-8 h-[calc(100vh-400px)]"
       >
-        {/* Job List */}
         <div className="lg:col-span-2 space-y-4 overflow-y-auto">
           {filteredMatches.map((match, index) => (
             <motion.div
@@ -438,7 +357,6 @@ export default function JobMatchesPage() {
                     )}
                     <div className="flex items-center">
                       <Clock className="w-4 h-4 mr-2 text-slate-400" />
-                      {/* If you have a saved/created date, show it here */}
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1 mt-3">
@@ -462,7 +380,7 @@ export default function JobMatchesPage() {
             </motion.div>
           ))}
         </div>
-        {/* Job Details */}
+
         <div className="lg:col-span-3">
           {selectedJob ? (
             <Card className="h-full bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
@@ -483,7 +401,6 @@ export default function JobMatchesPage() {
                           {selectedJob.location}
                         </span>
                       )}
-                      {/* If you have salary, show it here */}
                       <Badge
                         className={`border ${getConfidenceColor(
                           selectedJob.confidence,
@@ -514,7 +431,6 @@ export default function JobMatchesPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-6 space-y-6 overflow-y-auto">
-                {/* Job Description */}
                 {selectedJob.ai_reasoning && (
                   <div>
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">
@@ -525,7 +441,6 @@ export default function JobMatchesPage() {
                     </p>
                   </div>
                 )}
-                {/* Skills */}
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">
                     Matched Skills
@@ -552,8 +467,8 @@ export default function JobMatchesPage() {
                   <Button
                     variant={
                       savedJobIds.includes(selectedJob.job_id)
-                        ? 'default'
-                        : 'outline'
+                        ? 'reverse'
+                        : 'neutral'
                     }
                     className={
                       savedJobIds.includes(selectedJob.job_id)

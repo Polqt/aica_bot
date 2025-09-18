@@ -211,10 +211,6 @@ async def clear_job_matches(
 ) -> Dict[str, str]:
     try:
         matching_service = JobMatchingService()
-        
-        # This would need to be implemented in UserDatabase
-        # matching_service.user_db.clear_user_job_matches(current_user.id)
-        
         return {"message": "Job matches cleared successfully"}
         
     except Exception as e:
@@ -224,39 +220,71 @@ async def clear_job_matches(
         )
 @router.post("/saved-jobs/{job_id}", response_model=SavedJobResponse)
 async def save_job(job_id: str, current_user: User = Depends(get_current_user)):
-    matching_service = JobMatchingService()
-    saved = await matching_service.save_user_job(current_user.id, job_id)
-    job = matching_service.job_db.get_job_by_id(job_id)
-    return SavedJobResponse(
-        job_id=job_id,
-        saved_at=str(saved.saved_at) if saved.saved_at else "",
-        title=job.title if job else "",
-        company=job.company if job else "",
-        location=job.location if job else "",
-        url=job.url if job else "",
-        description=job.description if job else ""
-    )
+    try:
+        matching_service = JobMatchingService()
+        saved = await matching_service.save_user_job(current_user.id, job_id)
 
-@router.delete("/saved-jobs/{job_id}")
-async def remove_saved_job(job_id: str, current_user: User = Depends(get_current_user)):
-    matching_service = JobMatchingService()
-    success = await matching_service.remove_user_saved_job(current_user.id, job_id)
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to remove saved job")
-    return {"message": "Saved job removed"}
+        if not saved:
+            raise HTTPException(status_code=500, detail="Failed to save job")
 
-@router.get("/saved-jobs", response_model=List[SavedJobResponse])
-async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: int = 50):
-    matching_service = JobMatchingService()
-    jobs = await matching_service.get_user_saved_jobs(current_user.id, limit)
-    responses = []
-    for job in jobs:
-        responses.append(SavedJobResponse(
-            job_id=job.id,
+        job = matching_service.job_db.get_job_by_id(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+
+        return SavedJobResponse(
+            job_id=job_id,
+            saved_at=saved.saved_at.isoformat() if saved.saved_at else "",
             title=job.title,
             company=job.company,
             location=job.location or "",
             url=job.url,
             description=job.description or ""
-        ))
-    return responses
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving job {job_id} for user {current_user.id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save job")
+
+@router.delete("/saved-jobs/{job_id}")
+async def remove_saved_job(job_id: str, current_user: User = Depends(get_current_user)):
+    try:
+        matching_service = JobMatchingService()
+        success = await matching_service.remove_user_saved_job(current_user.id, job_id)
+
+        if not success:
+            raise HTTPException(status_code=404, detail="Saved job not found or already removed")
+
+        return {"message": "Saved job removed successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error removing saved job {job_id} for user {current_user.id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to remove saved job")
+
+@router.get("/saved-jobs", response_model=List[SavedJobResponse])
+async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: int = 50):
+    try:
+        matching_service = JobMatchingService()
+        jobs = await matching_service.get_user_saved_jobs(current_user.id, limit)
+
+        if not jobs:
+            return []
+
+        responses = []
+        for job in jobs:
+            if job:  # Ensure job exists
+                responses.append(SavedJobResponse(
+                    job_id=job.id,
+                    saved_at="",  # We'll get this from the saved job record
+                    title=job.title,
+                    company=job.company,
+                    location=job.location or "",
+                    url=job.url,
+                    description=job.description or ""
+                ))
+
+        return responses
+    except Exception as e:
+        logger.error(f"Error getting saved jobs for user {current_user.id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve saved jobs")

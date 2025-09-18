@@ -4,6 +4,7 @@ import {
   UploadResponse,
 } from '@/types/api';
 import { UserProfile } from '@/types/user';
+import { SavedJob } from '@/types/jobMatch';
 import { API_BASE_URL, API_ENDPOINTS } from '@/lib/constants/api';
 
 
@@ -155,16 +156,16 @@ export class ApiClient {
     return this.handleResponse<T>(response);
   }
 
-  async getSavedJobs(): Promise<unknown[]> {
-    return this.get<unknown[]>(API_ENDPOINTS.JOBS.SAVED_JOBS);
+  async getSavedJobs(): Promise<SavedJob[]> {
+    return this.get<SavedJob[]>(API_ENDPOINTS.JOBS.SAVED_JOBS);
   }
 
-  async saveJob(jobId: string): Promise<unknown> {
-    return this.post<unknown>(`${API_ENDPOINTS.JOBS.SAVED_JOBS}/${jobId}`);
+  async saveJob(jobId: string): Promise<SavedJob> {
+    return this.post<SavedJob>(`${API_ENDPOINTS.JOBS.SAVED_JOBS}/${jobId}`);
   }
 
-  async removeSavedJob(jobId: string): Promise<unknown> {
-    return this.delete<unknown>(`${API_ENDPOINTS.JOBS.SAVED_JOBS}/${jobId}`);
+  async removeSavedJob(jobId: string): Promise<{ message: string }> {
+    return this.delete<{ message: string }>(`${API_ENDPOINTS.JOBS.SAVED_JOBS}/${jobId}`);
   }
 }
 
