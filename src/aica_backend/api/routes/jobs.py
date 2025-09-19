@@ -2,7 +2,7 @@ import logging
 
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from ...api.dependencies import get_current_user
 from ...database.models.user_models import User, UserJobMatch
@@ -205,7 +205,12 @@ class SavedJobResponse(BaseModel):
     location: str = ""
     url: str = ""
     description: str = ""
-    match_score: float = None
+    match_score: Optional[float] = None
+    confidence: str = ""
+    ai_reasoning: str = ""
+    matched_skills: List[str] = []
+    missing_critical_skills: List[str] = []
+    skill_coverage: float = 0.0
 @router.delete("/matches")
 async def clear_job_matches(
     current_user: User = Depends(get_current_user)
@@ -232,6 +237,47 @@ async def save_job(job_id: str, current_user: User = Depends(get_current_user)):
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
 
+        # Try to get match data using the new method
+        match_data = matching_service.user_db.get_user_saved_job_with_match_data(current_user.id, job_id)
+
+        if match_data:
+            # Use data from the joined query
+            match_score = match_data.get("match_score")
+            matched_skills = match_data.get("matched_skills", [])
+            missing_critical_skills = match_data.get("missing_critical_skills", [])
+            skill_coverage = match_data.get("skill_coverage", 0.0)
+            ai_reasoning = match_data.get("ai_reasoning", "")
+            confidence = match_data.get("confidence", "")
+        else:
+            # Fallback: try separate query if join didn't work
+            match_score = None
+            matched_skills = []
+            missing_critical_skills = []
+            skill_coverage = 0.0
+            ai_reasoning = ""
+            confidence = ""
+
+            try:
+                match = matching_service.user_db.client.table("user_job_matches").select("*").eq("user_id", current_user.id).eq("job_id", job_id).execute()
+                if match.data and len(match.data) > 0:
+                    match_data = match.data[0]
+                    match_score = match_data.get("match_score")
+                    matched_skills = match_data.get("matched_skills", [])
+                    missing_critical_skills = match_data.get("missing_critical_skills", [])
+                    skill_coverage = match_data.get("skill_coverage", 0.0)
+                    ai_reasoning = match_data.get("ai_reasoning", "")
+
+                    # Calculate confidence if not provided
+                    if not confidence and match_score is not None:
+                        if match_score >= 0.8:
+                            confidence = "high"
+                        elif match_score >= 0.6:
+                            confidence = "medium"
+                        else:
+                            confidence = "low"
+            except Exception as e:
+                logger.warning(f"Could not get match data for job {job_id}: {str(e)}")
+
         return SavedJobResponse(
             job_id=job_id,
             saved_at=saved.saved_at.isoformat() if saved.saved_at else "",
@@ -239,7 +285,13 @@ async def save_job(job_id: str, current_user: User = Depends(get_current_user)):
             company=job.company,
             location=job.location or "",
             url=job.url,
-            description=job.description or ""
+            description=job.description or "",
+            match_score=match_score,
+            confidence=confidence or "",
+            ai_reasoning=ai_reasoning or "",
+            matched_skills=matched_skills or [],
+            missing_critical_skills=missing_critical_skills or [],
+            skill_coverage=skill_coverage or 0.0
         )
     except HTTPException:
         raise
@@ -267,7 +319,7 @@ async def remove_saved_job(job_id: str, current_user: User = Depends(get_current
 async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: int = 50):
     try:
         matching_service = JobMatchingService()
-        # Get both jobs and their saved records
+        # Get basic saved jobs first
         saved_jobs = matching_service.user_db.get_user_saved_jobs(current_user.id, limit)
 
         if not saved_jobs:
@@ -277,14 +329,46 @@ async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: 
         for saved in saved_jobs:
             job = matching_service.job_db.get_job_by_id(saved.job_id)
             if job:
-                # Get match score from user_job_matches table
-                match_score = None
-                try:
-                    match = matching_service.user_db.client.table("user_job_matches").select("match_score").eq("user_id", current_user.id).eq("job_id", saved.job_id).execute()
-                    if match.data and len(match.data) > 0:
-                        match_score = match.data[0]["match_score"]
-                except Exception as e:
-                    logger.warning(f"Could not get match score for job {saved.job_id}: {str(e)}")
+                # Try to get match data using the new method
+                match_data = matching_service.user_db.get_user_saved_job_with_match_data(current_user.id, saved.job_id)
+
+                if match_data:
+                    # Use data from the joined query
+                    match_score = match_data.get("match_score")
+                    matched_skills = match_data.get("matched_skills", [])
+                    missing_critical_skills = match_data.get("missing_critical_skills", [])
+                    skill_coverage = match_data.get("skill_coverage", 0.0)
+                    ai_reasoning = match_data.get("ai_reasoning", "")
+                    confidence = match_data.get("confidence", "")
+                else:
+                    # Fallback: try separate query if join didn't work
+                    match_score = None
+                    matched_skills = []
+                    missing_critical_skills = []
+                    skill_coverage = 0.0
+                    ai_reasoning = ""
+                    confidence = ""
+
+                    try:
+                        match = matching_service.user_db.client.table("user_job_matches").select("*").eq("user_id", current_user.id).eq("job_id", saved.job_id).execute()
+                        if match.data and len(match.data) > 0:
+                            match_data = match.data[0]
+                            match_score = match_data.get("match_score")
+                            matched_skills = match_data.get("matched_skills", [])
+                            missing_critical_skills = match_data.get("missing_critical_skills", [])
+                            skill_coverage = match_data.get("skill_coverage", 0.0)
+                            ai_reasoning = match_data.get("ai_reasoning", "")
+
+                            # Calculate confidence if not provided
+                            if not confidence and match_score is not None:
+                                if match_score >= 0.8:
+                                    confidence = "high"
+                                elif match_score >= 0.6:
+                                    confidence = "medium"
+                                else:
+                                    confidence = "low"
+                    except Exception as e:
+                        logger.warning(f"Could not get match data for job {saved.job_id}: {str(e)}")
 
                 responses.append(SavedJobResponse(
                     job_id=saved.job_id,
@@ -294,7 +378,12 @@ async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: 
                     location=job.location or "",
                     url=job.url,
                     description=job.description or "",
-                    match_score=match_score
+                    match_score=match_score,
+                    confidence=confidence or "",
+                    ai_reasoning=ai_reasoning or "",
+                    matched_skills=matched_skills or [],
+                    missing_critical_skills=missing_critical_skills or [],
+                    skill_coverage=skill_coverage or 0.0
                 ))
 
         return responses

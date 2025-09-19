@@ -22,7 +22,13 @@ export function useSavedJobs() {
       setError(errorMessage);
       setSavedJobs([]);
       setSavedJobIds([]);
-      toast.error('Failed to load saved jobs');
+
+      // Check if it's an authentication error
+      if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+        toast.error('Session expired. Please log in again.');
+      } else {
+        toast.error('Failed to load saved jobs');
+      }
     } finally {
       setLoading(false);
     }

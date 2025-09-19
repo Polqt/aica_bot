@@ -33,7 +33,7 @@ import {
 import { useSavedJobs } from '@/hooks/useSavedJobs';
 
 export default function JobMatchesPage() {
-  const { savedJobIds, savingJobId, saveJob, refreshSavedJobs } =
+  const { savedJobIds, savingJobId, saveJob, removeJob, refreshSavedJobs } =
     useSavedJobs();
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
@@ -465,18 +465,16 @@ export default function JobMatchesPage() {
                     View Job
                   </Button>
                   <Button
-                    variant={
-                      savedJobIds.includes(selectedJob.job_id)
-                        ? 'reverse'
-                        : 'neutral'
-                    }
-                    className={
-                      savedJobIds.includes(selectedJob.job_id)
-                        ? 'flex-1 bg-gradient-to-r from-emerald-500 to-emerald-700 text-white'
-                        : 'bg-white/50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700'
-                    }
+                    variant="neutral"
+                    className="flex-1 bg-white/50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700"
                     disabled={savingJobId === selectedJob.job_id}
-                    onClick={() => saveJob(selectedJob.job_id)}
+                    onClick={() => {
+                      if (savedJobIds.includes(selectedJob.job_id)) {
+                        removeJob(selectedJob.job_id);
+                      } else {
+                        saveJob(selectedJob.job_id);
+                      }
+                    }}
                   >
                     {savedJobIds.includes(selectedJob.job_id) ? (
                       <BookmarkCheck className="w-4 h-4 mr-2" />
@@ -484,7 +482,7 @@ export default function JobMatchesPage() {
                       <BookmarkPlus className="w-4 h-4 mr-2" />
                     )}
                     {savedJobIds.includes(selectedJob.job_id)
-                      ? 'Saved'
+                      ? 'Unsave'
                       : 'Save'}
                   </Button>
                 </div>

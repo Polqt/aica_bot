@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -28,18 +28,30 @@ import {
 } from 'lucide-react';
 import { useSavedJobs } from '@/hooks/useSavedJobs';
 import { SavedJob } from '@/types/jobMatch';
-import { getMatchScoreColor } from '@/lib/utils/getConfidence';
+import {
+  getConfidenceColor,
+  getConfidenceIcon,
+  getMatchScoreColor,
+} from '@/lib/utils/getConfidence';
+import { useAuth } from '@/hooks/useAuth';
+import { useEffect } from 'react';
 
 export default function SavedJobsPage() {
   const { savedJobs, loading, error, removeJob, refreshSavedJobs } = useSavedJobs();
+  const { getAuthToken } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedJob, setSelectedJob] = useState<SavedJob | null>(null);
   const [filterType, setFilterType] = useState('all');
+  const [removingJobId, setRemovingJobId] = useState<string | null>(null);
 
-  // Load saved jobs on component mount
+  // Check authentication on component mount
   useEffect(() => {
+    const token = getAuthToken();
+    if (!token) {
+      return;
+    }
     refreshSavedJobs();
-  }, [refreshSavedJobs]);
+  }, [getAuthToken, refreshSavedJobs]);
 
   // Set first job as selected when jobs load
   useEffect(() => {
@@ -47,6 +59,28 @@ export default function SavedJobsPage() {
       setSelectedJob(savedJobs[0]);
     }
   }, [savedJobs, selectedJob]);
+
+  // Handle job removal with proper UI updates
+  const handleRemoveJob = async (jobId: string) => {
+    setRemovingJobId(jobId);
+    try {
+      await removeJob(jobId);
+
+      // If the removed job was selected, select the next available job or clear selection
+      if (selectedJob?.job_id === jobId) {
+        const remainingJobs = savedJobs.filter(job => job.job_id !== jobId);
+        if (remainingJobs.length > 0) {
+          setSelectedJob(remainingJobs[0]);
+        } else {
+          setSelectedJob(null);
+        }
+      }
+    } catch {
+      // Error is handled in the hook
+    } finally {
+      setRemovingJobId(null);
+    }
+  };
 
   const filteredJobs = savedJobs.filter(job => {
     const matchesSearch =
@@ -157,7 +191,7 @@ export default function SavedJobsPage() {
         transition={{ duration: 0.6, delay: 0.1 }}
         className="grid grid-cols-1 md:grid-cols-3 gap-6"
       >
-        <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
+        <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/10">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -168,14 +202,14 @@ export default function SavedJobsPage() {
                   {savedJobs.length}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/25">
                 <Star className="w-6 h-6 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
+        <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -190,14 +224,14 @@ export default function SavedJobsPage() {
                   %
                 </p>
               </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
                 <Target className="w-6 h-6 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
+        <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -214,7 +248,7 @@ export default function SavedJobsPage() {
                   </span>
                 </div>
               </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/25">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
             </div>
@@ -278,17 +312,20 @@ export default function SavedJobsPage() {
               </div>
             </div>
           ) : (
-            filteredJobs.map((job, index) => (
-            <motion.div
-              key={job.job_id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 * index }}
-            >
+            <AnimatePresence mode="popLayout">
+              {filteredJobs.map((job, index) => (
+              <motion.div
+                key={job.job_id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20, scale: 0.95 }}
+                transition={{ delay: 0.1 * index, duration: 0.3 }}
+                layout
+              >
               <Card
-                className={`cursor-pointer transition-all duration-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg ${
+                className={`cursor-pointer transition-all duration-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50 hover:shadow-xl hover:shadow-violet-500/10 hover:-translate-y-1 hover:bg-white/80 dark:hover:bg-slate-800/80 ${
                   selectedJob?.job_id === job.job_id
-                    ? 'ring-2 ring-violet-500 shadow-lg shadow-violet-500/10'
+                    ? 'ring-2 ring-violet-500 shadow-lg shadow-violet-500/10 bg-white/90 dark:bg-slate-800/90'
                     : ''
                 }`}
                 onClick={() => setSelectedJob(job)}
@@ -297,7 +334,7 @@ export default function SavedJobsPage() {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <h3 className="font-semibold text-slate-900 dark:text-white mb-1 line-clamp-1">
-                        {job.title}
+                        {job.title || 'Job Title'}
                       </h3>
                       <div className="flex items-center text-sm text-slate-600 dark:text-slate-400 mb-2">
                         <Building className="w-4 h-4 mr-1" />
@@ -305,7 +342,24 @@ export default function SavedJobsPage() {
                       </div>
                     </div>
                     <Badge className="bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
-                      {job.match_score ? (job.match_score * 100).toFixed(0) : 0}% match
+                      <span
+                        className={`border ${getConfidenceColor(
+                          job.confidence || 'unknown',
+                        )} flex items-center gap-1 px-2 py-1 rounded-md`}
+                      >
+                        {getConfidenceIcon(job.confidence || 'unknown')}
+                        <span className="font-medium ml-1">
+                          {(job.confidence || 'unknown').charAt(0).toUpperCase() +
+                            (job.confidence || 'unknown').slice(1)}
+                        </span>
+                      </span>
+                      <span
+                        className={`ml-2 font-bold ${getMatchScoreColor(
+                          job.match_score || job.matchScore || 0,
+                        )}`}
+                      >
+                        {((job.match_score || job.matchScore || 0) * 100).toFixed(0)}% match
+                      </span>
                     </Badge>
                   </div>
 
@@ -327,7 +381,7 @@ export default function SavedJobsPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-1 mt-3">
-                    {job.tags && job.tags.slice(0, 2).map((tag, tagIndex) => (
+                    {job.matched_skills && job.matched_skills.slice(0, 2).map((tag, tagIndex) => (
                       <Badge
                         key={tagIndex}
                         variant="secondary"
@@ -336,16 +390,17 @@ export default function SavedJobsPage() {
                         {tag}
                       </Badge>
                     ))}
-                    {job.tags && job.tags.length > 2 && (
+                    {job.matched_skills && job.matched_skills.length > 2 && (
                       <Badge variant="secondary" className="text-xs">
-                        +{job.tags.length - 2}
+                        +{job.matched_skills.length - 2}
                       </Badge>
                     )}
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
-            ))
+            ))}
+            </AnimatePresence>
           )}
         </div>
 
@@ -379,26 +434,46 @@ export default function SavedJobsPage() {
                       </span>
                     </CardDescription>
                   </div>
-                  {(selectedJob.match_score || selectedJob.matchScore) && (
-                    <div className="flex items-center gap-2">
-                      <div className="text-center">
-                        <div
-                          className={`text-2xl font-bold ${getMatchScoreColor(
-                            selectedJob.match_score || selectedJob.matchScore || 0,
-                          )}`}
-                        >
-                          {(selectedJob.match_score || selectedJob.matchScore || 0) * 100}%
-                        </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                          match
-                        </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-center">
+                      <div
+                        className={`text-2xl font-bold ${getMatchScoreColor(
+                          selectedJob.match_score || selectedJob.matchScore || 0,
+                        )}`}
+                      >
+                        {((selectedJob.match_score || selectedJob.matchScore || 0) * 100).toFixed(0)}%
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        match
                       </div>
                     </div>
-                  )}
+                    <Badge
+                      className={`border ${getConfidenceColor(
+                        selectedJob.confidence || 'unknown',
+                      )} flex items-center gap-1 px-2 py-1 rounded-md`}
+                    >
+                      {getConfidenceIcon(selectedJob.confidence || 'unknown')}
+                      <span className="font-medium ml-1">
+                        {(selectedJob.confidence || 'unknown').charAt(0).toUpperCase() +
+                          (selectedJob.confidence || 'unknown').slice(1)}
+                      </span>
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
 
               <CardContent className="p-6 space-y-6 overflow-y-auto">
+                {selectedJob.ai_reasoning && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">
+                      AI Reasoning
+                    </h3>
+                    <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                      {selectedJob.ai_reasoning}
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">
                     Job Description
@@ -407,6 +482,24 @@ export default function SavedJobsPage() {
                     {selectedJob.description}
                   </p>
                 </div>
+
+                {selectedJob.matched_skills && selectedJob.matched_skills.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">
+                      Matched Skills
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedJob.matched_skills.map((tag, index) => (
+                        <Badge
+                          key={index}
+                          className="bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {selectedJob.requirements && selectedJob.requirements.length > 0 && (
                   <div>
@@ -456,9 +549,14 @@ export default function SavedJobsPage() {
                   <Button
                     variant="neutral"
                     className="bg-white/50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700"
-                    onClick={() => selectedJob && removeJob(selectedJob.job_id)}
+                    onClick={() => handleRemoveJob(selectedJob.job_id)}
+                    disabled={removingJobId === selectedJob.job_id}
                   >
-                    <BookmarkMinus className="w-4 h-4 mr-2" />
+                    {removingJobId === selectedJob.job_id ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <BookmarkMinus className="w-4 h-4 mr-2" />
+                    )}
                     Remove
                   </Button>
                 </div>

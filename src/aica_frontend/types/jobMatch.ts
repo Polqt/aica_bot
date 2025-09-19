@@ -30,7 +30,11 @@ export interface SavedJob {
   url: string;
   description: string;
   match_score?: number;
-  // Optional fields for enhanced UI
+  confidence?: string;
+  ai_reasoning?: string;
+  matched_skills?: string[];
+  missing_critical_skills?: string[];
+  skill_coverage?: number;
   tags?: string[];
   matchScore?: number; // Keep for backward compatibility
   requirements?: string[];

@@ -353,9 +353,47 @@ class UserDatabase:
             self._handle_db_response(response, "save user job")
             if not response.data:
                 raise ValueError("No saved job data returned after creation")
-            return UserSavedJob(**response.data[0])
+            saved_job = UserSavedJob(**response.data[0])
+
+            # Ensure match data exists for this job
+            self.ensure_job_match_exists(user_id, job_id)
+
+            return saved_job
         except Exception as e:
             raise ValueError(f"Failed to save user job: {str(e)}")
+
+    def ensure_job_match_exists(self, user_id: str, job_id: str) -> bool:
+        """Ensure a job has match data, create basic match if none exists"""
+        try:
+            # Check if match data exists
+            response = (self.client.table("user_job_matches")
+                        .select("id")
+                        .eq("user_id", user_id)
+                        .eq("job_id", job_id)
+                        .execute())
+
+            if response.data and len(response.data) > 0:
+                return True  # Match data already exists
+
+            # Create basic match data if none exists
+            match_data = {
+                "user_id": user_id,
+                "job_id": job_id,
+                "match_score": 0.5,  # Default medium match
+                "matched_skills": json.dumps([]),
+                "missing_critical_skills": json.dumps([]),
+                "skill_coverage": 0.0,
+                "confidence": "medium",
+                "ai_reasoning": "Job saved before detailed matching was performed"
+            }
+
+            response = self.client.table("user_job_matches").insert(match_data).execute()
+            self._handle_db_response(response, "create basic job match")
+            return True
+
+        except Exception as e:
+            logger.warning(f"Could not ensure job match exists for user {user_id}, job {job_id}: {str(e)}")
+            return False
 
     def remove_user_saved_job(self, user_id: str, job_id: str) -> bool:
         try:
@@ -368,13 +406,53 @@ class UserDatabase:
     def get_user_saved_jobs(self, user_id: str, limit: int = 50) -> List['UserSavedJob']:
         try:
             response = (self.client.table("user_saved_jobs")
-                       .select("*")
-                       .eq("user_id", user_id)
-                       .order("saved_at", desc=True)
-                       .limit(limit)
-                       .execute())
+                        .select("*")
+                        .eq("user_id", user_id)
+                        .order("saved_at", desc=True)
+                        .limit(limit)
+                        .execute())
             self._handle_db_response(response, "get user saved jobs")
             return [UserSavedJob(**item) for item in response.data] if response.data else []
         except Exception as e:
             return []
+
+    def get_user_saved_job_with_match_data(self, user_id: str, job_id: str) -> Optional[Dict[str, Any]]:
+        """Get saved job with its match data"""
+        try:
+            # First get the saved job
+            saved_response = (self.client.table("user_saved_jobs")
+                            .select("*")
+                            .eq("user_id", user_id)
+                            .eq("job_id", job_id)
+                            .execute())
+
+            if not saved_response.data or len(saved_response.data) == 0:
+                return None
+
+            saved_data = saved_response.data[0]
+
+            # Then get the match data separately
+            match_response = (self.client.table("user_job_matches")
+                            .select("*")
+                            .eq("user_id", user_id)
+                            .eq("job_id", job_id)
+                            .execute())
+
+            # Merge the data
+            if match_response.data and len(match_response.data) > 0:
+                match_data = match_response.data[0]
+
+                # Parse JSON fields
+                if isinstance(match_data.get("matched_skills"), str):
+                    match_data["matched_skills"] = json.loads(match_data["matched_skills"])
+                if isinstance(match_data.get("missing_critical_skills"), str):
+                    match_data["missing_critical_skills"] = json.loads(match_data["missing_critical_skills"])
+
+                # Merge match data into saved data
+                saved_data.update(match_data)
+
+            return saved_data
+        except Exception as e:
+            logger.warning(f"Could not get saved job with match data for user {user_id}, job {job_id}: {str(e)}")
+            return None
         
