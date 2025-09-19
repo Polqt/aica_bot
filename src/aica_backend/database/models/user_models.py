@@ -104,12 +104,29 @@ class UserJobMatch(BaseModel):
     job_id: str
     match_score: float
     matched_skills: List[str] = Field(default_factory=list)
+    missing_critical_skills: List[str] = Field(default_factory=list)
+    skill_coverage: float = 0.0
+    confidence: str = "medium"
+    ai_reasoning: str = ""
     created_at: Optional[datetime] = None
-    
+
     @validator('match_score')
     def validate_match_score(cls, v):
         if v < 0.0 or v > 1.0:
             raise ValueError('Match score must be between 0.0 and 1.0')
+        return v
+
+    @validator('skill_coverage')
+    def validate_skill_coverage(cls, v):
+        if v < 0.0 or v > 1.0:
+            raise ValueError('Skill coverage must be between 0.0 and 1.0')
+        return v
+
+    @validator('confidence')
+    def validate_confidence(cls, v):
+        allowed_confidences = ['high', 'medium', 'low']
+        if v not in allowed_confidences:
+            raise ValueError(f'Confidence must be one of: {", ".join(allowed_confidences)}')
         return v
     
 

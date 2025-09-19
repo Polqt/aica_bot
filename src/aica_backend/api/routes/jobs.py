@@ -247,7 +247,7 @@ async def save_job(job_id: str, current_user: User = Depends(get_current_user)):
             missing_critical_skills = match_data.get("missing_critical_skills", [])
             skill_coverage = match_data.get("skill_coverage", 0.0)
             ai_reasoning = match_data.get("ai_reasoning", "")
-            confidence = match_data.get("confidence", "")
+            confidence = match_data.get("confidence") or "medium"
         else:
             # Fallback: try separate query if join didn't work
             match_score = None
@@ -255,7 +255,7 @@ async def save_job(job_id: str, current_user: User = Depends(get_current_user)):
             missing_critical_skills = []
             skill_coverage = 0.0
             ai_reasoning = ""
-            confidence = ""
+            confidence = "medium"
 
             try:
                 match = matching_service.user_db.client.table("user_job_matches").select("*").eq("user_id", current_user.id).eq("job_id", job_id).execute()
@@ -267,7 +267,8 @@ async def save_job(job_id: str, current_user: User = Depends(get_current_user)):
                     skill_coverage = match_data.get("skill_coverage", 0.0)
                     ai_reasoning = match_data.get("ai_reasoning", "")
 
-                    # Calculate confidence if not provided
+                    # Get confidence from database or calculate if not provided
+                    confidence = match_data.get("confidence") or "medium"
                     if not confidence and match_score is not None:
                         if match_score >= 0.8:
                             confidence = "high"
@@ -287,7 +288,7 @@ async def save_job(job_id: str, current_user: User = Depends(get_current_user)):
             url=job.url,
             description=job.description or "",
             match_score=match_score,
-            confidence=confidence or "",
+            confidence=confidence or "medium",
             ai_reasoning=ai_reasoning or "",
             matched_skills=matched_skills or [],
             missing_critical_skills=missing_critical_skills or [],
@@ -339,7 +340,7 @@ async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: 
                     missing_critical_skills = match_data.get("missing_critical_skills", [])
                     skill_coverage = match_data.get("skill_coverage", 0.0)
                     ai_reasoning = match_data.get("ai_reasoning", "")
-                    confidence = match_data.get("confidence", "")
+                    confidence = match_data.get("confidence") or "medium"
                 else:
                     # Fallback: try separate query if join didn't work
                     match_score = None
@@ -347,7 +348,7 @@ async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: 
                     missing_critical_skills = []
                     skill_coverage = 0.0
                     ai_reasoning = ""
-                    confidence = ""
+                    confidence = "medium"
 
                     try:
                         match = matching_service.user_db.client.table("user_job_matches").select("*").eq("user_id", current_user.id).eq("job_id", saved.job_id).execute()
@@ -359,7 +360,8 @@ async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: 
                             skill_coverage = match_data.get("skill_coverage", 0.0)
                             ai_reasoning = match_data.get("ai_reasoning", "")
 
-                            # Calculate confidence if not provided
+                            # Get confidence from database or calculate if not provided
+                            confidence = match_data.get("confidence") or "medium"
                             if not confidence and match_score is not None:
                                 if match_score >= 0.8:
                                     confidence = "high"
@@ -379,7 +381,7 @@ async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: 
                     url=job.url,
                     description=job.description or "",
                     match_score=match_score,
-                    confidence=confidence or "",
+                    confidence=confidence or "medium",
                     ai_reasoning=ai_reasoning or "",
                     matched_skills=matched_skills or [],
                     missing_critical_skills=missing_critical_skills or [],

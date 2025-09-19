@@ -246,22 +246,30 @@ class UserDatabase:
         except Exception as e:
             return None
     
-    def save_job_match(self, user_id: str, job_id: str, match_score: float, matched_skills: List[str]) -> UserJobMatch:
+    def save_job_match(self, user_id: str, job_id: str, match_score: float, matched_skills: List[str],
+                       missing_critical_skills: List[str] = None, skill_coverage: float = 0.0,
+                       confidence: str = "medium", ai_reasoning: str = "") -> UserJobMatch:
         try:
             data = {
                 "user_id": user_id,
                 "job_id": job_id,
                 "match_score": match_score,
-                "matched_skills": json.dumps(matched_skills)
+                "matched_skills": json.dumps(matched_skills),
+                "missing_critical_skills": json.dumps(missing_critical_skills or []),
+                "skill_coverage": skill_coverage,
+                "confidence": confidence,
+                "ai_reasoning": ai_reasoning
             }
             response = self.client.table("user_job_matches").insert(data).execute()
             self._handle_db_response(response, "save job match")
-            
+
             if not response.data:
                 raise ValueError("No job match data returned after creation")
-                
+
             match_data = response.data[0]
-            match_data["matched_skills"] = json.loads(match_data["matched_skills"])
+            # Parse JSON fields
+            match_data["matched_skills"] = json.loads(match_data.get("matched_skills", "[]"))
+            match_data["missing_critical_skills"] = json.loads(match_data.get("missing_critical_skills", "[]"))
             return UserJobMatch(**match_data)
         except Exception as e:
             raise ValueError(f"Failed to save job match: {str(e)}")
@@ -269,22 +277,26 @@ class UserDatabase:
     def get_user_job_matches(self, user_id: str, limit: int = 50) -> List[UserJobMatch]:
         try:
             response = (self.client.table("user_job_matches")
-                       .select("*")
-                       .eq("user_id", user_id)
-                       .order("match_score", desc=True)
-                       .limit(limit)
-                       .execute())
+                        .select("*")
+                        .eq("user_id", user_id)
+                        .order("match_score", desc=True)
+                        .limit(limit)
+                        .execute())
             self._handle_db_response(response, "get user job matches")
-            
+
             matches = []
             for match_data in response.data if response.data else []:
                 try:
+                    # Parse JSON fields
                     match_data["matched_skills"] = json.loads(match_data.get("matched_skills", "[]"))
+                    match_data["missing_critical_skills"] = json.loads(match_data.get("missing_critical_skills", "[]"))
                     matches.append(UserJobMatch(**match_data))
                 except (json.JSONDecodeError, TypeError):
+                    # Fallback for malformed JSON
                     match_data["matched_skills"] = []
+                    match_data["missing_critical_skills"] = []
                     matches.append(UserJobMatch(**match_data))
-            
+
             return matches
         except Exception as e:
             return []
@@ -380,8 +392,8 @@ class UserDatabase:
                 "user_id": user_id,
                 "job_id": job_id,
                 "match_score": 0.5,  # Default medium match
-                "matched_skills": json.dumps([]),
-                "missing_critical_skills": json.dumps([]),
+                "matched_skills": [],
+                "missing_critical_skills": [],
                 "skill_coverage": 0.0,
                 "confidence": "medium",
                 "ai_reasoning": "Job saved before detailed matching was performed"

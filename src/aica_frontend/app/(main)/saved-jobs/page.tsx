@@ -13,7 +13,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import {
   Search,
-  Filter,
   BookmarkMinus,
   ExternalLink,
   MapPin,
@@ -21,9 +20,6 @@ import {
   Clock,
   DollarSign,
   Star,
-  TrendingUp,
-  Calendar,
-  Target,
   RefreshCw,
 } from 'lucide-react';
 import { useSavedJobs } from '@/hooks/useSavedJobs';
@@ -60,13 +56,11 @@ export default function SavedJobsPage() {
     }
   }, [savedJobs, selectedJob]);
 
-  // Handle job removal with proper UI updates
   const handleRemoveJob = async (jobId: string) => {
     setRemovingJobId(jobId);
     try {
       await removeJob(jobId);
 
-      // If the removed job was selected, select the next available job or clear selection
       if (selectedJob?.job_id === jobId) {
         const remainingJobs = savedJobs.filter(job => job.job_id !== jobId);
         if (remainingJobs.length > 0) {
@@ -75,8 +69,6 @@ export default function SavedJobsPage() {
           setSelectedJob(null);
         }
       }
-    } catch {
-      // Error is handled in the hook
     } finally {
       setRemovingJobId(null);
     }
@@ -169,94 +161,8 @@ export default function SavedJobsPage() {
             Keep track of opportunities that caught your interest
           </p>
         </div>
-
-        <div className="flex gap-3">
-          <Button
-            variant="neutral"
-            className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800"
-          >
-            <Filter className="w-4 h-4 mr-2" />
-            Sort by Date
-          </Button>
-          <Button className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-500/25">
-            <Search className="w-4 h-4 mr-2" />
-            Find More Jobs
-          </Button>
-        </div>
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-6"
-      >
-        <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/10">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Total Saved
-                </p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-                  {savedJobs.length}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/25">
-                <Star className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Avg. Match Score
-                </p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-                  {savedJobs.length > 0 ? Math.round(
-                    savedJobs.reduce((acc, job) => acc + ((job.match_score || job.matchScore || 0) * 100), 0) /
-                      savedJobs.length,
-                  ) : 0}
-                  %
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                <Target className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  This Week
-                </p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-                  3
-                </p>
-                <div className="flex items-center mt-1">
-                  <TrendingUp className="w-4 h-4 text-emerald-500 mr-1" />
-                  <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
-                    +2 from last week
-                  </span>
-                </div>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/25">
-                <Calendar className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Search */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -344,13 +250,13 @@ export default function SavedJobsPage() {
                     <Badge className="bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
                       <span
                         className={`border ${getConfidenceColor(
-                          job.confidence || 'unknown',
+                          job.confidence && job.confidence.trim() ? job.confidence : 'Unknown',
                         )} flex items-center gap-1 px-2 py-1 rounded-md`}
                       >
-                        {getConfidenceIcon(job.confidence || 'unknown')}
+                        {getConfidenceIcon(job.confidence && job.confidence.trim() ? job.confidence : 'Unknown')}
                         <span className="font-medium ml-1">
-                          {(job.confidence || 'unknown').charAt(0).toUpperCase() +
-                            (job.confidence || 'unknown').slice(1)}
+                          {(job.confidence && job.confidence.trim() ? job.confidence : 'Unknown').charAt(0).toUpperCase() +
+                            (job.confidence && job.confidence.trim() ? job.confidence : 'Unknown').slice(1)}
                         </span>
                       </span>
                       <span
@@ -428,36 +334,29 @@ export default function SavedJobsPage() {
                           {selectedJob.salary}
                         </span>
                       )}
+                      <Badge className={`border ${getConfidenceColor(selectedJob.confidence && selectedJob.confidence.trim() ? selectedJob.confidence : 'Unknown')} flex items-center gap-1 px-2 py-1 rounded-md`}>
+                        {getConfidenceIcon(selectedJob.confidence && selectedJob.confidence.trim() ? selectedJob.confidence : 'Unknown')}
+                        <span className="font-medium ml-1">
+                          {(selectedJob.confidence && selectedJob.confidence.trim() ? selectedJob.confidence : 'Unknown').charAt(0).toUpperCase() + (selectedJob.confidence && selectedJob.confidence.trim() ? selectedJob.confidence : 'Unknown').slice(1)}
+                        </span>
+                      </Badge>
                       <span className="flex items-center">
                         <Clock className="w-4 h-4 mr-1" />
                         Saved {selectedJob.savedDate || selectedJob.saved_at}
                       </span>
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-center">
-                      <div
-                        className={`text-2xl font-bold ${getMatchScoreColor(
-                          selectedJob.match_score || selectedJob.matchScore || 0,
-                        )}`}
-                      >
-                        {((selectedJob.match_score || selectedJob.matchScore || 0) * 100).toFixed(0)}%
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        match
-                      </div>
-                    </div>
-                    <Badge
-                      className={`border ${getConfidenceColor(
-                        selectedJob.confidence || 'unknown',
-                      )} flex items-center gap-1 px-2 py-1 rounded-md`}
+                  <div className="text-center">
+                    <div
+                      className={`text-2xl font-bold ${getMatchScoreColor(
+                        selectedJob.match_score || selectedJob.matchScore || 0,
+                      )}`}
                     >
-                      {getConfidenceIcon(selectedJob.confidence || 'unknown')}
-                      <span className="font-medium ml-1">
-                        {(selectedJob.confidence || 'unknown').charAt(0).toUpperCase() +
-                          (selectedJob.confidence || 'unknown').slice(1)}
-                      </span>
-                    </Badge>
+                      {((selectedJob.match_score || selectedJob.matchScore || 0) * 100).toFixed(0)}%
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      match
+                    </div>
                   </div>
                 </div>
               </CardHeader>

@@ -601,7 +601,7 @@ class JobMatchingService:
 
     async def save_job_matches(self, user_id: str, matches: List[JobMatchResult]) -> List[UserJobMatch]:
         saved_matches = []
-        
+
         try:
             for match in matches:
                 try:
@@ -609,16 +609,20 @@ class JobMatchingService:
                         user_id=user_id,
                         job_id=match.job.id,
                         match_score=match.match_score,
-                        matched_skills=match.matched_skills
+                        matched_skills=match.matched_skills,
+                        missing_critical_skills=match.missing_critical_skills,
+                        skill_coverage=match.skill_coverage,
+                        confidence=match.confidence,
+                        ai_reasoning=match.ai_reasoning
                     )
                     saved_matches.append(user_job_match)
                 except Exception as e:
                     logger.error(f"Error saving AI match for job {match.job.id}: {str(e)}")
                     continue
-            
+
             logger.info(f"Saved {len(saved_matches)} AI-analyzed job matches for user {user_id}")
             return saved_matches
-            
+
         except Exception as e:
             logger.error(f"Error saving AI job matches for user {user_id}: {str(e)}")
             return []
