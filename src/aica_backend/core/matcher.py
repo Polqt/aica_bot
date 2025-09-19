@@ -166,12 +166,39 @@ class JobMatcher:
             # Store matches in database
             for match in job_matches:
                 try:
-                    user_db.save_job_match(
-                        user_id=user_id,
-                        job_id=match.job_id,
-                        match_score=match.match_result.match_score,
-                        matched_skills=match.match_result.matching_skills
-                    )
+                    # Get detailed compatibility analysis
+                    job_db = JobDatabase()
+                    job = job_db.get_job_by_id(match.job_id)
+                    if job:
+                        user_skills = user_db.get_user_skills(user_id)
+                        user_skill_names = [skill.skill_name for skill in user_skills]
+
+                        # Calculate detailed compatibility with AI reasoning
+                        compatibility = await self.calculate_compatibility(
+                            user_skill_names,
+                            job.skills or [],
+                            job.title,
+                            job.company
+                        )
+
+                        user_db.save_job_match(
+                            user_id=user_id,
+                            job_id=match.job_id,
+                            match_score=compatibility["compatibility_score"],
+                            matched_skills=compatibility["matched_skills"],
+                            missing_critical_skills=compatibility["missing_skills"],
+                            skill_coverage=compatibility["skill_coverage"],
+                            confidence=compatibility["confidence"],
+                            ai_reasoning=compatibility["ai_reasoning"]
+                        )
+                    else:
+                        # Fallback to basic match
+                        user_db.save_job_match(
+                            user_id=user_id,
+                            job_id=match.job_id,
+                            match_score=match.match_result.match_score,
+                            matched_skills=match.match_result.matching_skills
+                        )
                 except Exception as save_error:
                     print(f"Failed to save match for user {user_id}, job {match.job_id}: {save_error}")
             
@@ -256,14 +283,28 @@ class JobMatcher:
             Job Requirements: {job_skills_text}
             Position: {job_title} at {company}
 
-            Provide a comprehensive analysis including:
-            1. Overall compatibility score (0-100)
-            2. Matching skills and their relevance
-            3. Missing critical skills and their impact
-            4. Skill gaps that can be bridged with training
-            5. Overall assessment reasoning
+            IMPORTANT: When analyzing skills, consider these common variations and equivalencies:
+            - CSS frameworks: "tailwind css", "tailwindcss", "tailwind-css" are the same
+            - JavaScript: "js", "javascript", "java script" are the same
+            - React: "react.js", "reactjs", "react" are the same
+            - Node.js: "nodejs", "node.js", "node js" are the same
+            - Python: "python", "py" are the same
+            - Database: "mongodb", "mongo", "postgresql", "postgres", "mysql", "sql" variations
+            - Cloud: "aws", "amazon web services", "gcp", "google cloud", "azure" variations
+            - Version control: "git", "github", "gitlab", "bitbucket" are related
+            - Testing: "jest", "testing", "unit testing", "tdd" are related
 
-            Be precise and professional in your assessment.
+            Provide a comprehensive analysis including:
+            1. Overall compatibility score (0-100) considering skill equivalencies
+            2. Matching skills and their relevance to this specific role (include variations)
+            3. Missing critical skills and their impact on job performance
+            4. Skill gaps that can be bridged with training or experience
+            5. Specific recommendations for the candidate to improve their fit
+            6. Overall assessment reasoning with actionable insights
+
+            Focus on practical, actionable advice. Be specific about which skills are most important for this role and why.
+            Consider skill variations and equivalencies when determining matches and gaps.
+            Keep the analysis concise but informative - aim for 150-250 words.
             """
 
             # Get AI response
@@ -331,32 +372,65 @@ class JobMatcher:
     def _skills_match(self, user_skill: str, job_skill: str) -> bool:
         user_skill = user_skill.lower().strip()
         job_skill = job_skill.lower().strip()
-        
+
         # Exact match
         if user_skill == job_skill:
             return True
-        
-        # Check if one skill contains the other
-        if user_skill in job_skill or job_skill in user_skill:
+
+        # Handle spacing variations (e.g., "tailwind css" vs "tailwindcss")
+        user_skill_normalized = user_skill.replace(' ', '').replace('-', '').replace('_', '')
+        job_skill_normalized = job_skill.replace(' ', '').replace('-', '').replace('_', '')
+
+        if user_skill_normalized == job_skill_normalized:
             return True
-        
-        # Common skill mappings
+
+        # Check if one skill contains the other (with and without spaces)
+        if (user_skill in job_skill or
+            job_skill in user_skill or
+            user_skill_normalized in job_skill_normalized or
+            job_skill_normalized in user_skill_normalized):
+            return True
+
+        # Common skill mappings with spacing variations
         skill_mappings = {
-            'js': 'javascript',
-            'ts': 'typescript',
-            'react.js': 'react',
-            'node.js': 'nodejs',
-            'vue.js': 'vue',
-            'mongodb': 'mongo',
-            'postgresql': 'postgres',
-            'mysql': 'sql',
+            'js': ['javascript', 'java script'],
+            'ts': ['typescript', 'type script'],
+            'react.js': ['react', 'reactjs'],
+            'node.js': ['nodejs', 'node', 'node js'],
+            'vue.js': ['vue', 'vuejs'],
+            'mongodb': ['mongo', 'mongo db'],
+            'postgresql': ['postgres', 'postgre sql'],
+            'mysql': ['sql', 'my sql'],
+            'tailwindcss': ['tailwind css', 'tailwind', 'tailwind-css'],
+            'nextjs': ['next.js', 'next js', 'next'],
+            'expressjs': ['express.js', 'express js', 'express'],
+            'aws': ['amazon web services', 'amazonwebservices'],
+            'docker': ['containerization', 'container'],
+            'kubernetes': ['k8s', 'kube'],
+            'html': ['html5', 'hypertext markup language'],
+            'css': ['css3', 'cascading style sheets'],
+            'sass': ['scss', 'syntactically awesome style sheets'],
+            'git': ['github', 'gitlab', 'version control'],
+            'api': ['rest api', 'restful api', 'web api'],
+            'testing': ['unit testing', 'integration testing', 'test'],
         }
-        
-        # Normalize using mappings
-        normalized_user = skill_mappings.get(user_skill, user_skill)
-        normalized_job = skill_mappings.get(job_skill, job_skill)
-        
-        return normalized_user == normalized_job or normalized_user in normalized_job or normalized_job in normalized_user
+
+        # Check mappings for both original and normalized versions
+        for main_skill, variations in skill_mappings.items():
+            if (user_skill in variations or user_skill == main_skill or
+                job_skill in variations or job_skill == main_skill or
+                user_skill_normalized in variations or user_skill_normalized == main_skill or
+                job_skill_normalized in variations or job_skill_normalized == main_skill):
+                return True
+
+        # Check reverse mappings
+        for main_skill, variations in skill_mappings.items():
+            if user_skill == main_skill and job_skill in variations:
+                return True
+            if job_skill == main_skill and user_skill in variations:
+                return True
+
+        return False
 
     def get_match_statistics(self, job_matches: List[JobMatch]) -> Dict:
         if not job_matches:

@@ -89,10 +89,11 @@ async def get_job_matches(
                     location=job.location or "Not specified",
                     match_score=match.match_score,
                     matched_skills=match.matched_skills,
-                    missing_critical_skills=[],  # Not stored in DB, would need to recalculate
-                    skill_coverage=0.0,  # Not stored in DB, would need to recalculate
-                    confidence="medium" if match.match_score > 0.6 else "low",
-                    job_url=job.url
+                    missing_critical_skills=match.missing_critical_skills,
+                    skill_coverage=match.skill_coverage,
+                    confidence=match.confidence,
+                    job_url=job.url,
+                    ai_reasoning=match.ai_reasoning
                 )
                 responses.append(response)
                 
