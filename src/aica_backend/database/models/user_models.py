@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, EmailStr, validator
 from typing import Optional, List
 from datetime import datetime
+from dateutil.parser import parse
 
 class User(BaseModel):
     id: Optional[str] = None
@@ -163,5 +164,109 @@ class ProcessingStatusResponse(BaseModel):
         allowed_statuses = ['not_uploaded', 'processing', 'completed', 'failed', 'not_found']
         if v not in allowed_statuses:
             raise ValueError(f'Status must be one of: {", ".join(allowed_statuses)}')
+        return v
+
+
+class UserEducation(BaseModel):
+    id: Optional[str] = None
+    user_id: str
+    institution_name: str
+    degree_type: Optional[str] = None
+    field_of_study: Optional[str] = None
+    start_date: Optional[str] = None  # ISO date string
+    end_date: Optional[str] = None    # ISO date string
+    is_current: bool = False
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    @validator('institution_name')
+    def validate_institution_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Institution name cannot be empty')
+        return v.strip()
+
+    @validator('start_date', 'end_date')
+    def validate_dates(cls, v):
+        if v is not None:
+            try:
+                parse(v)
+            except:
+                raise ValueError('Date must be in ISO format (YYYY-MM-DD)')
+        return v
+
+
+class UserEducationCreate(BaseModel):
+    institution_name: str
+    degree_type: Optional[str] = None
+    field_of_study: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    is_current: bool = False
+
+    @validator('institution_name')
+    def validate_institution_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Institution name cannot be empty')
+        return v.strip()
+
+
+class UserExperience(BaseModel):
+    id: Optional[str] = None
+    user_id: str
+    company_name: str
+    job_title: str
+    employment_type: Optional[str] = None
+    start_date: Optional[str] = None  # ISO date string
+    end_date: Optional[str] = None    # ISO date string
+    is_current: bool = False
+    description: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    @validator('company_name', 'job_title')
+    def validate_required_fields(cls, v):
+        if not v or not v.strip():
+            raise ValueError('This field cannot be empty')
+        return v.strip()
+
+    @validator('employment_type')
+    def validate_employment_type(cls, v):
+        if v is not None:
+            allowed_types = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance', 'Volunteer']
+            if v not in allowed_types:
+                raise ValueError(f'Employment type must be one of: {", ".join(allowed_types)}')
+        return v
+
+    @validator('start_date', 'end_date')
+    def validate_dates(cls, v):
+        if v is not None:
+            try:
+                parse(v)
+            except:
+                raise ValueError('Date must be in ISO format (YYYY-MM-DD)')
+        return v
+
+
+class UserExperienceCreate(BaseModel):
+    company_name: str
+    job_title: str
+    employment_type: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    is_current: bool = False
+    description: Optional[str] = None
+
+    @validator('company_name', 'job_title')
+    def validate_required_fields(cls, v):
+        if not v or not v.strip():
+            raise ValueError('This field cannot be empty')
+        return v.strip()
+
+    @validator('employment_type')
+    def validate_employment_type(cls, v):
+        if v is not None:
+            allowed_types = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance', 'Volunteer']
+            if v not in allowed_types:
+                raise ValueError(f'Employment type must be one of: {", ".join(allowed_types)}')
         return v
     

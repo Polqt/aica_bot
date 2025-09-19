@@ -161,6 +161,13 @@ export default function SavedJobsPage() {
             Keep track of opportunities that caught your interest
           </p>
         </div>
+        <div className="flex items-center gap-3">
+          {savedJobs.length > 0 && (
+            <div className="text-sm text-slate-500 dark:text-slate-400">
+              {savedJobs.length} saved job{savedJobs.length !== 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
       </motion.div>
 
       <motion.div
@@ -196,9 +203,9 @@ export default function SavedJobsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3 }}
-        className="grid lg:grid-cols-5 gap-8 h-[calc(100vh-400px)]"
+        className="grid lg:grid-cols-5 gap-8 h-[calc(100vh-300px)] min-h-[500px]"
       >
-        <div className="lg:col-span-2 space-y-4 overflow-y-auto">
+        <div className="lg:col-span-2 space-y-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
           {filteredJobs.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
@@ -286,20 +293,37 @@ export default function SavedJobsPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-1 mt-3">
-                    {job.matched_skills && job.matched_skills.slice(0, 2).map((tag, tagIndex) => (
-                      <Badge
-                        key={tagIndex}
-                        variant="secondary"
-                        className="text-xs"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
-                    {job.matched_skills && job.matched_skills.length > 2 && (
-                      <Badge variant="secondary" className="text-xs">
-                        +{job.matched_skills.length - 2}
-                      </Badge>
+                  {/* Skills and Coverage */}
+                  <div className="space-y-2 mt-3">
+                    <div className="flex flex-wrap gap-1">
+                      {job.matched_skills && job.matched_skills.slice(0, 2).map((tag, tagIndex) => (
+                        <Badge
+                          key={tagIndex}
+                          variant="secondary"
+                          className="text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                      {job.matched_skills && job.matched_skills.length > 2 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{job.matched_skills.length - 2} more
+                        </Badge>
+                      )}
+                    </div>
+
+                    {job.skill_coverage !== undefined && (
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
+                          <div
+                            className="bg-gradient-to-r from-emerald-500 to-green-600 h-1.5 rounded-full transition-all duration-300"
+                            style={{ width: `${Math.round(job.skill_coverage * 100)}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 min-w-[2.5rem]">
+                          {Math.round(job.skill_coverage * 100)}%
+                        </span>
+                      </div>
                     )}
                   </div>
                 </CardContent>
@@ -310,9 +334,9 @@ export default function SavedJobsPage() {
           )}
         </div>
 
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
           {selectedJob ? (
-            <Card className="h-full bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
+            <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
               <CardHeader className="border-b border-slate-200/50 dark:border-slate-700/50">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -361,17 +385,103 @@ export default function SavedJobsPage() {
                 </div>
               </CardHeader>
 
-              <CardContent className="p-6 space-y-6 overflow-y-auto">
-                {selectedJob.ai_reasoning && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">
-                      AI Reasoning
-                    </h3>
-                    <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+              <CardContent className="p-6 space-y-6">
+                {/* AI Reasoning Section */}
+                {selectedJob.ai_reasoning && selectedJob.ai_reasoning.trim() && (
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 border border-blue-200/50 dark:border-blue-700/50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">AI</span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                        AI Analysis
+                      </h3>
+                    </div>
+                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-sm">
                       {selectedJob.ai_reasoning}
                     </p>
                   </div>
                 )}
+
+                {/* Skill Analysis Section */}
+                <div className="grid gap-4">
+                  {/* Skill Coverage */}
+                  {selectedJob.skill_coverage !== undefined && selectedJob.skill_coverage >= 0 && (
+                    <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-lg p-4 border border-emerald-200/50 dark:border-emerald-700/50">
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                        <div className="w-5 h-5 bg-emerald-600 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs">✓</span>
+                        </div>
+                        Skill Coverage
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-600 dark:text-slate-400">Match Rate</span>
+                          <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                            {Math.round(selectedJob.skill_coverage * 100)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3">
+                          <div
+                            className="bg-gradient-to-r from-emerald-500 to-green-600 h-3 rounded-full transition-all duration-500 ease-out"
+                            style={{ width: `${Math.round(selectedJob.skill_coverage * 100)}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {selectedJob.matched_skills?.length || 0} of {(selectedJob.matched_skills?.length || 0) + (selectedJob.missing_critical_skills?.length || 0)} skills matched
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Matched Skills */}
+                  {selectedJob.matched_skills && selectedJob.matched_skills.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                        <div className="w-5 h-5 bg-violet-600 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs">★</span>
+                        </div>
+                        Your Matching Skills
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedJob.matched_skills.map((skill, index) => (
+                          <Badge
+                            key={index}
+                            className="bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-700"
+                          >
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Missing Critical Skills */}
+                  {selectedJob.missing_critical_skills && selectedJob.missing_critical_skills.length > 0 && (
+                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg p-4 border border-amber-200/50 dark:border-amber-700/50">
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                        <div className="w-5 h-5 bg-amber-600 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs">⚠</span>
+                        </div>
+                        Skills to Develop
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedJob.missing_critical_skills.map((skill, index) => (
+                          <Badge
+                            key={index}
+                            variant="outline"
+                            className="border-amber-300 text-amber-700 dark:border-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20"
+                          >
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                        Consider learning these skills to improve your match rate
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">
