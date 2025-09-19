@@ -205,6 +205,7 @@ class SavedJobResponse(BaseModel):
     location: str = ""
     url: str = ""
     description: str = ""
+    match_score: float = None
 @router.delete("/matches")
 async def clear_job_matches(
     current_user: User = Depends(get_current_user)
@@ -266,22 +267,34 @@ async def remove_saved_job(job_id: str, current_user: User = Depends(get_current
 async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: int = 50):
     try:
         matching_service = JobMatchingService()
-        jobs = await matching_service.get_user_saved_jobs(current_user.id, limit)
+        # Get both jobs and their saved records
+        saved_jobs = matching_service.user_db.get_user_saved_jobs(current_user.id, limit)
 
-        if not jobs:
+        if not saved_jobs:
             return []
 
         responses = []
-        for job in jobs:
-            if job:  # Ensure job exists
+        for saved in saved_jobs:
+            job = matching_service.job_db.get_job_by_id(saved.job_id)
+            if job:
+                # Get match score from user_job_matches table
+                match_score = None
+                try:
+                    match = matching_service.user_db.client.table("user_job_matches").select("match_score").eq("user_id", current_user.id).eq("job_id", saved.job_id).execute()
+                    if match.data and len(match.data) > 0:
+                        match_score = match.data[0]["match_score"]
+                except Exception as e:
+                    logger.warning(f"Could not get match score for job {saved.job_id}: {str(e)}")
+
                 responses.append(SavedJobResponse(
-                    job_id=job.id,
-                    saved_at="",  # We'll get this from the saved job record
+                    job_id=saved.job_id,
+                    saved_at=saved.saved_at.isoformat() if saved.saved_at else "",
                     title=job.title,
                     company=job.company,
                     location=job.location or "",
                     url=job.url,
-                    description=job.description or ""
+                    description=job.description or "",
+                    match_score=match_score
                 ))
 
         return responses

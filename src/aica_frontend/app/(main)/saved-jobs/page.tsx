@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useSavedJobs } from '@/hooks/useSavedJobs';
 import { SavedJob } from '@/types/jobMatch';
+import { getMatchScoreColor } from '@/lib/utils/getConfidence';
 
 export default function SavedJobsPage() {
   const { savedJobs, loading, error, removeJob, refreshSavedJobs } = useSavedJobs();
@@ -61,16 +62,7 @@ export default function SavedJobsPage() {
       (job.type && job.type.toLowerCase() === filterType.toLowerCase());
 
     return matchesSearch && matchesFilter;
-  });
-
-  const getMatchScoreColor = (score: number) => {
-    if (score >= 90) return 'text-emerald-600 dark:text-emerald-400';
-    if (score >= 80) return 'text-blue-600 dark:text-blue-400';
-    if (score >= 70) return 'text-amber-600 dark:text-amber-400';
-    return 'text-slate-600 dark:text-slate-400';
-  };
-
-  // Loading state
+  })
   if (loading) {
     return (
       <div className="space-y-8">
@@ -192,7 +184,7 @@ export default function SavedJobsPage() {
                 </p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
                   {savedJobs.length > 0 ? Math.round(
-                    savedJobs.reduce((acc, job) => acc + (job.matchScore || 0), 0) /
+                    savedJobs.reduce((acc, job) => acc + ((job.match_score || job.matchScore || 0) * 100), 0) /
                       savedJobs.length,
                   ) : 0}
                   %
@@ -313,7 +305,7 @@ export default function SavedJobsPage() {
                       </div>
                     </div>
                     <Badge className="bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
-                      {job.matchScore || 0}% match
+                      {job.match_score ? (job.match_score * 100).toFixed(0) : 0}% match
                     </Badge>
                   </div>
 
@@ -387,15 +379,15 @@ export default function SavedJobsPage() {
                       </span>
                     </CardDescription>
                   </div>
-                  {selectedJob.matchScore && (
+                  {(selectedJob.match_score || selectedJob.matchScore) && (
                     <div className="flex items-center gap-2">
                       <div className="text-center">
                         <div
                           className={`text-2xl font-bold ${getMatchScoreColor(
-                            selectedJob.matchScore,
+                            selectedJob.match_score || selectedJob.matchScore || 0,
                           )}`}
                         >
-                          {selectedJob.matchScore}%
+                          {(selectedJob.match_score || selectedJob.matchScore || 0) * 100}%
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">
                           match
@@ -454,7 +446,10 @@ export default function SavedJobsPage() {
                 )}
 
                 <div className="flex gap-4 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
-                  <Button className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white">
+                  <Button
+                    className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
+                    onClick={() => selectedJob && window.open(selectedJob.url, '_blank')}
+                  >
                     <ExternalLink className="w-4 h-4 mr-2" />
                     Apply Now
                   </Button>

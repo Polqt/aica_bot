@@ -10,6 +10,6 @@ export const API_ENDPOINTS = {
     SKILLS: '/auth/skills',
   },
   JOBS: {
-    SAVED_JOBS: '/jobs/saved',
+    SAVED_JOBS: '/jobs/saved-jobs',
   },
 } as const;

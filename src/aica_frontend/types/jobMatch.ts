@@ -29,9 +29,10 @@ export interface SavedJob {
   location: string;
   url: string;
   description: string;
+  match_score?: number;
   // Optional fields for enhanced UI
   tags?: string[];
-  matchScore?: number;
+  matchScore?: number; // Keep for backward compatibility
   requirements?: string[];
   salary?: string;
   savedDate?: string;
