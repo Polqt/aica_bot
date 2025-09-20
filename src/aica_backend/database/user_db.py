@@ -118,13 +118,40 @@ class UserDatabase:
 
     def update_user_profile(self, user_id: str, update_data: dict) -> Optional[UserProfile]:
         try:
-            update_data["updated_at"] = datetime.now().isoformat()
-            response = self.client.table("user_profiles").update(update_data).eq("user_id", user_id).execute()
-            self._handle_db_response(response, "update user profile")
-            
-            if response.data:
-                return UserProfile(**response.data[0])
-            return None
+            # Check if profile exists
+            existing_profile = self.get_user_profile(user_id)
+
+            if not existing_profile:
+                # Create profile if it doesn't exist
+                create_data = {
+                    "user_id": user_id,
+                    "resume_uploaded": False,
+                    "resume_processed": False,
+                    "profile_completed": False,
+                    "processing_step": None,
+                    "processing_error": None,
+                    "matches_generated": False,
+                }
+                # Merge with update data
+                create_data.update(update_data)
+                create_data["created_at"] = datetime.now().isoformat()
+                create_data["updated_at"] = datetime.now().isoformat()
+
+                response = self.client.table("user_profiles").insert(create_data).execute()
+                self._handle_db_response(response, "create user profile")
+
+                if response.data:
+                    return UserProfile(**response.data[0])
+                return None
+            else:
+                # Update existing profile
+                update_data["updated_at"] = datetime.now().isoformat()
+                response = self.client.table("user_profiles").update(update_data).eq("user_id", user_id).execute()
+                self._handle_db_response(response, "update user profile")
+
+                if response.data:
+                    return UserProfile(**response.data[0])
+                return None
         except Exception as e:
             raise ValueError(f"Failed to update user profile: {str(e)}")
 

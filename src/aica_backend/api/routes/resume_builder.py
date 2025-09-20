@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from ...api.dependencies import get_current_user
 from ...core.resume_builder import ResumeBuilder
 from ...database.models.user_models import (
-    UserEducation, UserEducationCreate,
+    User, UserEducation, UserEducationCreate,
     UserExperience, UserExperienceCreate,
     UserSkill, UserSkillCreate,
     UserProfile
@@ -20,11 +20,11 @@ router = APIRouter()
 @router.post("/education", response_model=UserEducation)
 async def add_education(
     education: UserEducationCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     try:
         builder = ResumeBuilder()
-        return builder.add_education(current_user["id"], education)
+        return builder.add_education(current_user.id, education)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -32,10 +32,10 @@ async def add_education(
 
 
 @router.get("/education", response_model=List[UserEducation])
-async def get_user_education(current_user: dict = Depends(get_current_user)):
+async def get_user_education(current_user: User = Depends(get_current_user)):
     try:
         builder = ResumeBuilder()
-        return builder.get_user_education(current_user["id"])
+        return builder.get_user_education(current_user.id)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve education")
 
@@ -44,11 +44,11 @@ async def get_user_education(current_user: dict = Depends(get_current_user)):
 async def update_education(
     education_id: str,
     education: UserEducationCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     try:
         builder = ResumeBuilder()
-        result = builder.update_education(education_id, current_user["id"], education)
+        result = builder.update_education(education_id, current_user.id, education)
         if not result:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Education entry not found")
         return result
@@ -59,11 +59,11 @@ async def update_education(
 @router.delete("/education/{education_id}")
 async def delete_education(
     education_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     try:
         builder = ResumeBuilder()
-        success = builder.delete_education(education_id, current_user["id"])
+        success = builder.delete_education(education_id, current_user.id)
         if not success:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Education entry not found")
         return {"message": "Education entry deleted successfully"}
@@ -73,11 +73,11 @@ async def delete_education(
 @router.post("/experience", response_model=UserExperience)
 async def add_experience(
     experience: UserExperienceCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     try:
         builder = ResumeBuilder()
-        return builder.add_experience(current_user["id"], experience)
+        return builder.add_experience(current_user.id, experience)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -85,10 +85,10 @@ async def add_experience(
 
 
 @router.get("/experience", response_model=List[UserExperience])
-async def get_user_experience(current_user: dict = Depends(get_current_user)):
+async def get_user_experience(current_user: User = Depends(get_current_user)):
     try:
         builder = ResumeBuilder()
-        return builder.get_user_experience(current_user["id"])
+        return builder.get_user_experience(current_user.id)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve experience")
 
@@ -97,11 +97,11 @@ async def get_user_experience(current_user: dict = Depends(get_current_user)):
 async def update_experience(
     experience_id: str,
     experience: UserExperienceCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     try:
         builder = ResumeBuilder()
-        result = builder.update_experience(experience_id, current_user["id"], experience)
+        result = builder.update_experience(experience_id, current_user.id, experience)
         if not result:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Experience entry not found")
         return result
@@ -111,11 +111,11 @@ async def update_experience(
 @router.delete("/experience/{experience_id}")
 async def delete_experience(
     experience_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     try:
         builder = ResumeBuilder()
-        success = builder.delete_experience(experience_id, current_user["id"])
+        success = builder.delete_experience(experience_id, current_user.id)
         if not success:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Experience entry not found")
         return {"message": "Experience entry deleted successfully"}
@@ -125,11 +125,11 @@ async def delete_experience(
 @router.post("/skills", response_model=UserSkill)
 async def add_skill(
     skill: UserSkillCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     try:
         builder = ResumeBuilder()
-        return builder.add_skill(current_user["id"], skill)
+        return builder.add_skill(current_user.id, skill)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -137,10 +137,10 @@ async def add_skill(
 
 
 @router.get("/skills", response_model=List[UserSkill])
-async def get_user_skills(current_user: dict = Depends(get_current_user)):
+async def get_user_skills(current_user: User = Depends(get_current_user)):
     try:
         builder = ResumeBuilder()
-        return builder.get_user_skills(current_user["id"])
+        return builder.get_user_skills(current_user.id)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve skills")
 
@@ -148,11 +148,11 @@ async def get_user_skills(current_user: dict = Depends(get_current_user)):
 async def update_skill(
     skill_id: str,
     skill: UserSkillCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     try:
         builder = ResumeBuilder()
-        result = builder.update_skill(skill_id, current_user["id"], skill)
+        result = builder.update_skill(skill_id, current_user.id, skill)
         if not result:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Skill entry not found")
         return result
@@ -163,11 +163,11 @@ async def update_skill(
 @router.delete("/skills/{skill_id}")
 async def delete_skill(
     skill_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     try:
         builder = ResumeBuilder()
-        success = builder.delete_skill(skill_id, current_user["id"])
+        success = builder.delete_skill(skill_id, current_user.id)
         if not success:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Skill entry not found")
         return {"message": "Skill entry deleted successfully"}
@@ -186,23 +186,29 @@ class ProfileUpdateRequest(BaseModel):
 @router.put("/profile", response_model=UserProfile)
 async def update_profile(
     profile_data: ProfileUpdateRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     try:
+        logger.info(f"Updating profile for user {current_user.id} with data: {profile_data.model_dump()}")
         builder = ResumeBuilder()
-        result = builder.update_profile(current_user["id"], profile_data.model_dump(exclude_unset=True))
+        result = builder.update_profile(current_user.id, profile_data.model_dump(exclude_unset=True))
         if not result:
+            logger.error(f"Profile update returned None for user {current_user.id}")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+        logger.info(f"Profile updated successfully for user {current_user.id}")
         return result
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Exception updating profile for user {current_user.id}: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update profile")
 
 
 @router.get("/profile", response_model=UserProfile)
-async def get_profile(current_user: dict = Depends(get_current_user)):
+async def get_profile(current_user: User = Depends(get_current_user)):
     try:
         builder = ResumeBuilder()
-        profile = builder.get_profile(current_user["id"])
+        profile = builder.get_profile(current_user.id)
         if not profile:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
         return profile
@@ -210,19 +216,19 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve profile")
 
 @router.get("/summary")
-async def get_resume_summary(current_user: dict = Depends(get_current_user)):
+async def get_resume_summary(current_user: User = Depends(get_current_user)):
     try:
         builder = ResumeBuilder()
-        return builder.get_resume_summary(current_user["id"])
+        return builder.get_resume_summary(current_user.id)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve resume summary")
 
 
 @router.delete("/reset")
-async def reset_resume_data(current_user: dict = Depends(get_current_user)):
+async def reset_resume_data(current_user: User = Depends(get_current_user)):
     try:
         builder = ResumeBuilder()
-        success = builder.clear_user_data(current_user["id"])
+        success = builder.clear_user_data(current_user.id)
         if not success:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to reset resume data")
         return {"message": "Resume data reset successfully"}

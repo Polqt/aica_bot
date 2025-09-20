@@ -82,16 +82,16 @@ class UserSkill(BaseModel):
 class UserSkillCreate(BaseModel):
     user_id: str = ""  # Will be set by the calling code
     skill_name: str
-    skill_category: str 
+    skill_category: str = "technical"  # Default to technical
     confidence_score: Optional[float] = None
     source: str = "resume"
-    
+
     @validator('skill_name')
     def validate_skill_name(cls, v):
         if not v or not v.strip():
             raise ValueError('Skill name cannot be empty')
         return v.strip()
-    
+
     @validator('skill_category')
     def validate_skill_category(cls, v):
         allowed_categories = ['technical', 'soft', 'industry', 'job_title']

@@ -3,7 +3,16 @@ import {
   SkillsResponse,
   UploadResponse,
 } from '@/types/api';
-import { UserProfile } from '@/types/user';
+import {
+  UserProfile,
+  UserEducation,
+  UserEducationCreate,
+  UserExperience,
+  UserExperienceCreate,
+  UserSkill,
+  UserSkillCreate,
+  ResumeSummary
+} from '@/types/user';
 import { SavedJob } from '@/types/jobMatch';
 import { API_BASE_URL, API_ENDPOINTS } from '@/lib/constants/api';
 
@@ -166,6 +175,67 @@ export class ApiClient {
 
   async removeSavedJob(jobId: string): Promise<{ message: string }> {
     return this.delete<{ message: string }>(`${API_ENDPOINTS.JOBS.SAVED_JOBS}/${jobId}`);
+  }
+
+  // Resume Builder API methods
+  async getEducation(): Promise<UserEducation[]> {
+    return this.get<UserEducation[]>('/resume/education');
+  }
+
+  async addEducation(education: UserEducationCreate): Promise<UserEducation> {
+    return this.post<UserEducation>('/resume/education', education);
+  }
+
+  async updateEducation(id: string, education: Partial<UserEducationCreate>): Promise<UserEducation> {
+    return this.put<UserEducation>(`/resume/education/${id}`, education);
+  }
+
+  async deleteEducation(id: string): Promise<{ message: string }> {
+    return this.delete<{ message: string }>(`/resume/education/${id}`);
+  }
+
+  async getExperience(): Promise<UserExperience[]> {
+    return this.get<UserExperience[]>('/resume/experience');
+  }
+
+  async addExperience(experience: UserExperienceCreate): Promise<UserExperience> {
+    return this.post<UserExperience>('/resume/experience', experience);
+  }
+
+  async updateExperience(id: string, experience: Partial<UserExperienceCreate>): Promise<UserExperience> {
+    return this.put<UserExperience>(`/resume/experience/${id}`, experience);
+  }
+
+  async deleteExperience(id: string): Promise<{ message: string }> {
+    return this.delete<{ message: string }>(`/resume/experience/${id}`);
+  }
+
+  async getSkills(): Promise<UserSkill[]> {
+    return this.get<UserSkill[]>('/resume/skills');
+  }
+
+  async addSkill(skill: UserSkillCreate): Promise<UserSkill> {
+    return this.post<UserSkill>('/resume/skills', skill);
+  }
+
+  async updateSkill(id: string, skill: Partial<UserSkillCreate>): Promise<UserSkill> {
+    return this.put<UserSkill>(`/resume/skills/${id}`, skill);
+  }
+
+  async deleteSkill(id: string): Promise<{ message: string }> {
+    return this.delete<{ message: string }>(`/resume/skills/${id}`);
+  }
+
+  async updateProfile(profile: Partial<UserProfile>): Promise<UserProfile> {
+    return this.put<UserProfile>('/resume/profile', profile);
+  }
+
+  async getResumeSummary(): Promise<ResumeSummary> {
+    return this.get<ResumeSummary>('/resume/summary');
+  }
+
+  async resetResume(): Promise<{ message: string }> {
+    return this.delete<{ message: string }>('/resume/reset');
   }
 }
 

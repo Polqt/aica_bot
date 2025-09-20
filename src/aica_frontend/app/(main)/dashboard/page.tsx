@@ -134,7 +134,7 @@ export default function DashboardPage() {
         <div className="flex gap-3">
           <Button
             asChild
-            variant="outline"
+            variant="neutral"
             className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800"
           >
             <Link href="/user-profile">
@@ -217,7 +217,7 @@ export default function DashboardPage() {
               </div>
               <Button
                 asChild
-                variant="ghost"
+                variant="neutral"
                 size="sm"
                 className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20"
               >
@@ -278,7 +278,7 @@ export default function DashboardPage() {
                       </div>
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="neutral"
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20"
                       >
                         <ExternalLink className="w-4 h-4" />
@@ -354,7 +354,7 @@ export default function DashboardPage() {
             <CardContent className="space-y-3">
               <Button
                 asChild
-                variant="outline"
+                variant="neutral"
                 className="w-full justify-start bg-white/50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700"
               >
                 <Link href="/user-profile">
@@ -365,7 +365,7 @@ export default function DashboardPage() {
 
               <Button
                 asChild
-                variant="outline"
+                variant="neutral"
                 className="w-full justify-start bg-white/50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700"
               >
                 <Link href="/saved-jobs">
@@ -376,7 +376,7 @@ export default function DashboardPage() {
 
               <Button
                 asChild
-                variant="outline"
+                variant="neutral"
                 className="w-full justify-start bg-white/50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700"
               >
                 <Link href="/job-matches">

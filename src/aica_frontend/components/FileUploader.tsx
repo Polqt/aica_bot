@@ -89,7 +89,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         </Button>
 
         <Button
-          variant="outline"
+          variant="neutral"
           onClick={onSkip}
           disabled={isUploading}
           className="flex-1 btn-modern"

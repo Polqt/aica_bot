@@ -48,3 +48,4 @@ class JobSearchFilters(BaseModel):
     location: Optional[str] = Field(description="Location filter")
     company: Optional[str] = Field(description="Company filter")
     skills: Optional[List[str]] = Field(description="Required skills filter")
+    

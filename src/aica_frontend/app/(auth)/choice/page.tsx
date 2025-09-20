@@ -59,7 +59,7 @@ export default function ChoicePage() {
   };
 
   const handleProfileBuilder = () => {
-    router.push('/(onboarding)/profile');
+    router.push('/profile');
   };
 
   // Show loading state while checking

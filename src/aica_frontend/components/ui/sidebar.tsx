@@ -540,11 +540,9 @@ function SidebarMenuButton({
 function SidebarMenuAction({
   className,
   asChild = false,
-  showOnHover = false,
   ...props
 }: React.ComponentProps<"button"> & {
   asChild?: boolean
-  showOnHover?: boolean
 }) {
   const Comp = asChild ? Slot : "button"
 

@@ -1,8 +1,15 @@
 import sys
 import uvicorn
+import logging
 from dotenv import load_dotenv
 
 from pathlib import Path
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / ".env")
 

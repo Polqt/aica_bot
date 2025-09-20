@@ -27,6 +27,12 @@ class ResumeBuilder:
             data = education_data.model_dump()
             data['user_id'] = user_id
 
+            # Convert empty strings to None for date fields
+            if data.get('start_date') == '':
+                data['start_date'] = None
+            if data.get('end_date') == '':
+                data['end_date'] = None
+
             # Insert into database
             response = self.user_db.client.table("user_education").insert(data).execute()
             if not response.data:
@@ -48,6 +54,7 @@ class ResumeBuilder:
             return [UserEducation(**item) for item in response.data] if response.data else []
 
         except Exception as e:
+            logger.error(f"Error getting user education for {user_id}: {str(e)}")
             return []
 
     def update_education(self, education_id: str, user_id: str, education_data: UserEducationCreate) -> Optional[UserEducation]:
@@ -61,11 +68,17 @@ class ResumeBuilder:
             update_data = education_data.model_dump()
             update_data['updated_at'] = datetime.now().isoformat()
 
+            # Convert empty strings to None for date fields
+            if update_data.get('start_date') == '':
+                update_data['start_date'] = None
+            if update_data.get('end_date') == '':
+                update_data['end_date'] = None
+
             response = (self.user_db.client.table("user_education")
-                       .update(update_data)
-                       .eq("id", education_id)
-                       .eq("user_id", user_id)
-                       .execute())
+                        .update(update_data)
+                        .eq("id", education_id)
+                        .eq("user_id", user_id)
+                        .execute())
 
             if response.data:
                 return UserEducation(**response.data[0])
@@ -98,6 +111,12 @@ class ResumeBuilder:
             data = experience_data.model_dump()
             data['user_id'] = user_id
 
+            # Convert empty strings to None for date fields
+            if data.get('start_date') == '':
+                data['start_date'] = None
+            if data.get('end_date') == '':
+                data['end_date'] = None
+
             # Insert into database
             response = self.user_db.client.table("user_experience").insert(data).execute()
             if not response.data:
@@ -119,6 +138,7 @@ class ResumeBuilder:
             return [UserExperience(**item) for item in response.data] if response.data else []
 
         except Exception as e:
+            logger.error(f"Error getting user experience for {user_id}: {str(e)}")
             return []
 
     def update_experience(self, experience_id: str, user_id: str, experience_data: UserExperienceCreate) -> Optional[UserExperience]:
@@ -132,11 +152,17 @@ class ResumeBuilder:
             update_data = experience_data.model_dump()
             update_data['updated_at'] = datetime.now().isoformat()
 
+            # Convert empty strings to None for date fields
+            if update_data.get('start_date') == '':
+                update_data['start_date'] = None
+            if update_data.get('end_date') == '':
+                update_data['end_date'] = None
+
             response = (self.user_db.client.table("user_experience")
-                       .update(update_data)
-                       .eq("id", experience_id)
-                       .eq("user_id", user_id)
-                       .execute())
+                        .update(update_data)
+                        .eq("id", experience_id)
+                        .eq("user_id", user_id)
+                        .execute())
 
             if response.data:
                 return UserExperience(**response.data[0])
@@ -180,7 +206,11 @@ class ResumeBuilder:
             raise ValueError(f"Failed to add skill: {str(e)}")
 
     def get_user_skills(self, user_id: str) -> List[UserSkill]:
-        return self.user_db.get_user_skills(user_id)
+        try:
+            return self.user_db.get_user_skills(user_id)
+        except Exception as e:
+            logger.error(f"Error getting user skills for {user_id}: {str(e)}")
+            return []
 
     def update_skill(self, skill_id: str, user_id: str, skill_data: UserSkillCreate) -> Optional[UserSkill]:
         try:
@@ -259,6 +289,7 @@ class ResumeBuilder:
             }
 
         except Exception as e:
+            logger.error(f"Error getting resume summary for {user_id}: {str(e)}")
             return {
                 "profile": None,
                 "education": [],
