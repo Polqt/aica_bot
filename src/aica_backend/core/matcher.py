@@ -279,49 +279,61 @@ class JobMatcher:
             analysis_prompt = f"""
             As an expert career counselor and hiring manager, analyze the compatibility between a candidate's skills and job requirements.
 
-            Candidate Skills: {user_skills_text}
-            Job Requirements: {job_skills_text}
-            Position: {job_title} at {company}
+            CANDIDATE'S ACTUAL SKILLS: {user_skills_text}
+            JOB REQUIREMENTS: {job_skills_text}
+            POSITION: {job_title} at {company}
 
-            IMPORTANT: When analyzing skills, consider these common variations and equivalencies:
-            - CSS frameworks: "tailwind css", "tailwindcss", "tailwind-css" are the same
-            - JavaScript: "js", "javascript", "java script" are the same
-            - React: "react.js", "reactjs", "react" are the same
-            - Node.js: "nodejs", "node.js", "node js" are the same
-            - Python: "python", "py" are the same
-            - Database: "mongodb", "mongo", "postgresql", "postgres", "mysql", "sql" variations
-            - Cloud: "aws", "amazon web services", "gcp", "google cloud", "azure" variations
-            - Version control: "git", "github", "gitlab", "bitbucket" are related
-            - Testing: "jest", "testing", "unit testing", "tdd" are related
+            CRITICAL INSTRUCTION: Only consider skills that are EXPLICITLY LISTED in the candidate's skills above. Do NOT suggest or imply skills that are not in their profile, even if they are related or equivalent.
 
-            Provide a comprehensive analysis including:
-            1. Overall compatibility score (0-100) considering skill equivalencies
-            2. Matching skills and their relevance to this specific role (include variations)
-            3. Missing critical skills and their impact on job performance
-            4. Skill gaps that can be bridged with training or experience
-            5. Specific recommendations for the candidate to improve their fit
-            6. Overall assessment reasoning with actionable insights
+            ANALYSIS REQUIREMENTS:
+            1. Identify ONLY the skills from the candidate's profile that directly match job requirements
+            2. Calculate compatibility score (0-100) based ONLY on skills the candidate actually has
+            3. List missing skills that are required but not in the candidate's profile
+            4. Assess skill gaps and their impact on job performance
+            5. Provide specific, actionable recommendations for improvement
 
-            Focus on practical, actionable advice. Be specific about which skills are most important for this role and why.
-            Consider skill variations and equivalencies when determining matches and gaps.
-            Keep the analysis concise but informative - aim for 150-250 words.
+            IMPORTANT CONSTRAINTS:
+            - Matched skills must be EXACTLY from the candidate's listed skills
+            - Do not assume or suggest unlisted skills (e.g., if candidate has "React" but not "JavaScript", do not list "JavaScript" as matched)
+            - Be honest about skill gaps without making assumptions
+            - Focus on practical career development advice
+
+            FORMATTING REQUIREMENTS:
+            - Use clear, professional language that anyone can understand
+            - Structure the response with clear sections (Strengths, Gaps, Recommendations)
+            - Avoid technical jargon unless explaining it
+            - Be encouraging and constructive in feedback
+            - Keep the analysis concise but comprehensive - aim for 150-250 words
+
+            Example structure:
+            "Your profile shows strong alignment in [matched skills]. However, this role requires [missing skills] that you haven't listed. Consider [specific recommendations] to improve your fit."
             """
 
             # Get AI response
             response = await self.llm.ainvoke(analysis_prompt)
             ai_analysis = response.content
 
-            # Calculate basic metrics
+            # Calculate basic metrics - STRICT matching only
             matched_skills = []
             missing_skills = []
-            
+
+            # Convert user skills to lowercase for comparison
+            user_skills_lower = [skill.lower().strip() for skill in user_skills]
+
             for job_skill in job_skills:
+                job_skill_lower = job_skill.lower().strip()
                 skill_matched = False
-                for user_skill in user_skills:
-                    if self._skills_match(user_skill.lower(), job_skill.lower()):
-                        matched_skills.append(job_skill)
+
+                # Only match if the job skill is directly represented in user's skills
+                for user_skill_lower in user_skills_lower:
+                    if (user_skill_lower == job_skill_lower or  # Exact match
+                        user_skill_lower in job_skill_lower or  # User skill is substring of job skill
+                        job_skill_lower in user_skill_lower):   # Job skill is substring of user skill
+                        # But only add the ORIGINAL job skill name, not variations
+                        matched_skills.append(job_skill)  # Keep original job skill name
                         skill_matched = True
                         break
+
                 if not skill_matched:
                     missing_skills.append(job_skill)
 

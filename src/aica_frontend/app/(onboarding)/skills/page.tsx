@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, ArrowRight, Zap, Plus, X, Star } from 'lucide-react';
 import { useResumeBuilder } from '@/hooks/useResumeBuilder';
+import { apiClient } from '@/lib/api-client';
 import { toast } from 'sonner';
 
 export default function SkillsPage() {
@@ -41,7 +42,27 @@ export default function SkillsPage() {
     await deleteSkill(id);
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    try {
+      console.log('Completing onboarding - marking profile as completed');
+      // Mark profile as completed
+      const updateResult = await apiClient.updateProfile({ profile_completed: true });
+      console.log('Profile update result:', updateResult);
+
+      // Generate job matches using resume builder data
+      console.log('Generating job matches');
+      const result = await apiClient.generateMatches();
+      console.log('Generate matches result:', result);
+      if (result.success) {
+        toast.success(`Found ${result.matches_found} job matches!`);
+      }
+    } catch (error) {
+      console.error('Failed to complete onboarding:', error);
+      toast.error('Profile setup completed, but matching may run later');
+      // Continue to dashboard even if matching fails
+    }
+
+    console.log('Redirecting to dashboard');
     router.push('/dashboard');
   };
 

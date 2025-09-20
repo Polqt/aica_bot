@@ -3,6 +3,7 @@ export interface UserProfile {
   email: string
   created_at: string | null
   resume_uploaded?: boolean
+  profile_completed?: boolean
   full_name?: string
   phone?: string
   location?: string

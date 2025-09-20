@@ -255,10 +255,14 @@ class ResumeBuilder:
             if not user:
                 raise ValueError(f"User {user_id} not found")
 
+            print(f"ResumeBuilder: Updating profile for user {user_id} with data: {profile_data}")
             # Update profile
-            return self.user_db.update_user_profile(user_id, profile_data)
+            result = self.user_db.update_user_profile(user_id, profile_data)
+            print(f"ResumeBuilder: Profile update result: {result}")
+            return result
 
         except Exception as e:
+            print(f"ResumeBuilder: Error updating profile for user {user_id}: {str(e)}")
             return None
 
     def get_profile(self, user_id: str) -> Optional[UserProfile]:

@@ -45,16 +45,33 @@ class JobMatchingService:
         self.job_db = job_db or JobDatabase()
         self.embedder = TextEmbedder()
         self.matcher = JobMatcher()  # Our existing AI matcher
-        
+
         # AI matching parameters
         self.MINIMUM_MATCH_SCORE = 0.4  # Lower threshold for AI decisions
         self.HIGH_CONFIDENCE_THRESHOLD = 0.75
         self.MEDIUM_CONFIDENCE_THRESHOLD = 0.55
 
+    def get_combined_user_skills(self, user_id: str) -> List[UserSkill]:
+        """
+        Get all user skills from both resume parsing AND manual resume builder entry.
+        Combines skills from both sources, avoiding duplicates.
+        """
+        # Get all skills from database (includes both resume-uploaded and manually entered)
+        all_skills = self.user_db.get_user_skills(user_id)
+
+        # Group by skill name to avoid duplicates, keeping the one with higher confidence
+        skill_map = {}
+        for skill in all_skills:
+            key = skill.skill_name.lower().strip()
+            if key not in skill_map or skill.confidence_score > skill_map[key].confidence_score:
+                skill_map[key] = skill
+
+        return list(skill_map.values())
+
     async def find_job_matches(self, user_id: str, limit: int = 20) -> List[JobMatchResult]:
         try:
-            # Get user skills with context
-            user_skills = self.user_db.get_user_skills(user_id)
+            # Get combined user skills (resume + manual entry)
+            user_skills = self.get_combined_user_skills(user_id)
             if not user_skills:
                 logger.warning(f"No skills found for user {user_id}")
                 return []
@@ -124,7 +141,8 @@ class JobMatchingService:
             return jobs[:limit]  # Fallback
 
     async def _find_semantic_matches_fast(self, user_skills: List[str], job_skills: List[str]) -> List[str]:
-        return self._keyword_similarity_matches(user_skills, job_skills)
+        # Disabled semantic matching to ensure only user's actual skills are considered
+        return []
 
     async def _ai_analyze_top_candidates(self, user_skills: List[UserSkill], jobs: List[Job]) -> List[JobMatchResult]:
         user_context = self._prepare_user_skill_context(user_skills)
@@ -173,10 +191,16 @@ class JobMatchingService:
 
     def _find_exact_matches(self, user_skills: List[str], job_skills: List[str]) -> List[str]:
         matches = []
+        user_skills_lower = [skill.lower().strip() for skill in user_skills]
+
         for job_skill in job_skills:
-            for user_skill in user_skills:
-                if user_skill == job_skill or user_skill in job_skill or job_skill in user_skill:
-                    matches.append(job_skill)
+            job_skill_lower = job_skill.lower().strip()
+            for user_skill_lower in user_skills_lower:
+                # Strict matching: only if user skill is directly related to job skill
+                if (user_skill_lower == job_skill_lower or
+                    user_skill_lower in job_skill_lower or
+                    job_skill_lower in user_skill_lower):
+                    matches.append(job_skill)  # Keep original job skill name
                     break
         return matches
 
@@ -392,12 +416,11 @@ class JobMatchingService:
             # Prepare job skill data
             job_skills = [skill.lower().strip() for skill in job.skills if skill.strip()]
             
-            # Find matches
+            # Find matches - only exact matches, no semantic guessing
             exact_matches = self._find_exact_matches(user_skill_names, job_skills)
-            semantic_matches = await self._find_semantic_matches_fast(user_skill_names, job_skills)
-            
-            # Combine all matches (avoid duplicates)
-            all_matched_skills = list(set(exact_matches + semantic_matches))
+
+            # Combine matches (avoid duplicates)
+            all_matched_skills = list(set(exact_matches))
             
             # Calculate scores
             skill_coverage = len(all_matched_skills) / len(job_skills) if job_skills else 0

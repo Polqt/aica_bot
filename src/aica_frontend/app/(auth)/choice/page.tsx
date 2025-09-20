@@ -32,13 +32,33 @@ export default function ChoicePage() {
         }
 
         const profile: UserProfile = await apiClient.getUserProfile();
-
         const processingStatus: ProcessingStatusResponse = await apiClient.getProcessingStatus();
 
-        if (profile.resume_uploaded || processingStatus.status === 'completed') {
+        // Also check if user has resume builder data (skills indicate completion)
+        let hasResumeBuilderData = false;
+        try {
+          const skills = await apiClient.getUserSkills();
+          hasResumeBuilderData = skills.technical_skills.length > 0 || skills.soft_skills.length > 0;
+        } catch (e) {
+          console.log('Could not check skills:', e);
+        }
+
+        console.log('Choice page check:', {
+          profile,
+          processingStatus,
+          resume_uploaded: profile.resume_uploaded,
+          profile_completed: profile.profile_completed,
+          processing_completed: processingStatus.status === 'completed',
+          hasResumeBuilderData
+        });
+
+        // Check if user has completed onboarding (either resume upload or resume builder)
+        if (profile.resume_uploaded || profile.profile_completed || processingStatus.status === 'completed' || hasResumeBuilderData) {
+          console.log('Redirecting to dashboard - user has completed onboarding');
           router.push('/dashboard');
           return;
         }
+        console.log('Showing choice page - user has not completed onboarding');
 
         // Show choice page if neither condition is met
         setShouldShowChoice(true);

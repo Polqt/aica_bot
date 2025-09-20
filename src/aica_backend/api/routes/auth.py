@@ -158,6 +158,7 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
             "education_level": getattr(profile, 'education_level', None) if profile else None
         }
 
+        print(f"Auth /profile returning for user {current_user['id']}: profile_completed={user_data['profile_completed']}, resume_uploaded={user_data['resume_uploaded']}")
         return user_data
     except Exception as e:
         print(f"Profile error: {str(e)}")
@@ -279,6 +280,7 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
         
         db.update_user_profile(user_id, {
             "resume_processed": True,
+            "profile_completed": True,
             "processing_step": "completed",
             "matches_generated": True
         })
@@ -530,17 +532,70 @@ async def get_processing_status(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=f"Failed to retrieve processing status: {str(e)}")
 
 
+@router.post("/generate-matches")
+async def generate_job_matches(current_user: dict = Depends(get_current_user)):
+    """
+    Generate job matches using resume builder data (profile, education, experience, skills).
+    This can be called after completing the onboarding process.
+    """
+    try:
+        user_id = current_user["id"]
+        db = UserDatabase()
+        job_matching_service = JobMatchingService()
+
+        # Check if user has any resume builder data
+        profile = db.get_user_profile(user_id)
+        skills = db.get_user_skills(user_id)
+
+        if not skills:
+            return {
+                "success": False,
+                "message": "No skills found. Please complete your profile and add skills first.",
+                "matches_found": 0
+            }
+
+        # Update profile to indicate matching is in progress
+        db.update_user_profile(user_id, {
+            "processing_step": "matching",
+            "matches_generated": False
+        })
+
+        # Generate matches using combined resume builder data
+        summary = await job_matching_service.update_matches_for_user(user_id)
+
+        # Update profile with completion status
+        db.update_user_profile(user_id, {
+            "processing_step": "completed",
+            "matches_generated": True
+        })
+
+        return summary
+
+    except Exception as e:
+        # Update error status
+        try:
+            db = UserDatabase()
+            db.update_user_profile(current_user["id"], {
+                "processing_step": "error",
+                "processing_error": str(e)
+            })
+        except:
+            pass
+
+        raise HTTPException(status_code=500, detail=f"Failed to generate matches: {str(e)}")
+
+
 @router.get("/storage/status")
 async def get_storage_status(current_user: dict = Depends(get_current_user)):
     try:
         supabase = get_supabase_admin_client()
         bucket_name = "resumes"
-        
+
         buckets = supabase.storage.list_buckets()
         bucket_names = [bucket.name for bucket in buckets]
-        
+
         bucket_exists = bucket_name in bucket_names
-        
+
         return {
             "storage_available": True,
             "bucket_exists": bucket_exists,

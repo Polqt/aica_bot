@@ -107,30 +107,32 @@ export default function JobMatchesPage() {
     refreshSavedJobs();
   }, [checkProcessingStatus, refreshSavedJobs]);
 
-
   useEffect(() => {
-    if (
-      !isCheckingStatus &&
-      (processingStatus === 'completed' ||
-        processingStatus === 'not_processing')
-    ) {
+    // Always try to load matches - they might exist from resume builder or previous sessions
+    if (!isCheckingStatus) {
       loadJobMatches();
       loadStats();
-      refreshSavedJobs();
     }
   }, [
     isCheckingStatus,
-    processingStatus,
     loadJobMatches,
     loadStats,
-    refreshSavedJobs,
   ]);
 
   const refreshMatches = async () => {
     try {
       setRefreshing(true);
       setError(null);
-      await apiClient.post('/jobs/find-matches');
+
+      // Try to generate new matches using current resume builder data
+      try {
+        await apiClient.generateMatches();
+      } catch (genError) {
+        console.warn('Could not generate new matches:', genError);
+        // Fall back to finding matches the old way
+        await apiClient.post('/jobs/find-matches');
+      }
+
       await Promise.all([loadJobMatches(), loadStats()]);
     } catch (err: unknown) {
       const errorMessage =

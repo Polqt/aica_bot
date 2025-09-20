@@ -237,6 +237,10 @@ export class ApiClient {
   async resetResume(): Promise<{ message: string }> {
     return this.delete<{ message: string }>('/resume/reset');
   }
+
+  async generateMatches(): Promise<{ success: boolean; message: string; matches_found: number }> {
+    return this.post('/auth/generate-matches');
+  }
 }
 
 export const apiClient = new ApiClient();
