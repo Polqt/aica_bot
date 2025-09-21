@@ -3,13 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ArrowLeft, ArrowRight, Briefcase, Plus, Edit, Trash2, Calendar, Building } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Briefcase, Plus, Edit, Trash2 } from 'lucide-react';
 import { useResumeBuilder } from '@/hooks/useResumeBuilder';
 import { UserExperience, UserExperienceCreate } from '@/types/user';
 
@@ -110,274 +104,299 @@ export default function ExperiencePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-4xl"
-      >
-        <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
-          <CardHeader className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Briefcase className="w-8 h-8 text-white" />
-            </div>
-            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">
-              Work Experience
-            </CardTitle>
-            <CardDescription className="text-slate-600 dark:text-slate-400">
-              Share your professional journey and accomplishments
-            </CardDescription>
-          </CardHeader>
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      className="p-12"
+    >
+      {/* Header Section */}
+      <div className="text-center mb-12">
+        <div className="w-24 h-24 bg-gradient-to-br from-violet-600 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-violet-600/25">
+          <Briefcase className="w-12 h-12 text-white" />
+        </div>
+        <h1 className="text-5xl lg:text-6xl font-black text-gray-900 dark:text-white uppercase tracking-wider mb-6">
+          WORK EXPERIENCE
+        </h1>
+        <p className="text-2xl text-gray-700 dark:text-gray-300 font-bold max-w-2xl mx-auto">
+          SHARE YOUR PROFESSIONAL JOURNEY AND ACCOMPLISHMENTS WITH OUR AI CAREER ASSISTANT
+        </p>
+      </div>
 
-          <CardContent className="space-y-6">
-            {/* Experience List */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                  Your Experience
-                </h3>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      onClick={() => handleOpenDialog()}
-                      className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
-                      disabled={saving}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Experience
-                    </Button>
-                  </DialogTrigger>
+      {/* Content Section */}
+      <div className="space-y-8">
+        {/* Experience List */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-3xl font-black text-black uppercase tracking-wide">
+              YOUR EXPERIENCE
+            </h3>
+            <button
+              onClick={() => handleOpenDialog()}
+              disabled={saving}
+              className="bg-green-400 border-4 border-black px-8 py-4 font-black text-xl text-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 flex items-center gap-3"
+            >
+              <Plus className="w-6 h-6" />
+              ADD EXPERIENCE
+            </button>
 
-                  <DialogContent className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
-                    <DialogHeader>
-                      <DialogTitle>
-                        {editingExperience ? 'Edit Experience' : 'Add Work Experience'}
-                      </DialogTitle>
-                      <DialogDescription>
-                        {editingExperience ? 'Update your work experience details' : 'Add your professional experience'}
-                      </DialogDescription>
-                    </DialogHeader>
+            {isDialogOpen && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="bg-white border-4 border-black p-8 max-w-2xl w-full shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-h-[90vh] overflow-y-auto">
+                  <div className="mb-6">
+                    <h2 className="text-3xl font-black text-black uppercase tracking-wider mb-2">
+                      {editingExperience ? 'EDIT EXPERIENCE' : 'ADD EXPERIENCE'}
+                    </h2>
+                    <p className="text-lg font-bold text-black uppercase">
+                      {editingExperience ? 'UPDATE YOUR WORK EXPERIENCE DETAILS' : 'ADD YOUR PROFESSIONAL BACKGROUND'}
+                    </p>
+                  </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="company_name">Company Name *</Label>
-                          <Input
-                            id="company_name"
-                            type="text"
-                            placeholder="Tech Corp Inc."
-                            value={formData.company_name}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('company_name', e.target.value)}
-                            required
-                            className="bg-white/50 dark:bg-slate-700/50"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="job_title">Job Title *</Label>
-                          <Input
-                            id="job_title"
-                            type="text"
-                            placeholder="Software Engineer"
-                            value={formData.job_title}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('job_title', e.target.value)}
-                            required
-                            className="bg-white/50 dark:bg-slate-700/50"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="employment_type">Employment Type *</Label>
-                        <select
-                          id="employment_type"
-                          value={formData.employment_type}
-                          onChange={(e) => handleInputChange('employment_type', e.target.value)}
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-yellow-200 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <label htmlFor="company_name" className="flex items-center gap-3 mb-3">
+                          <div className="w-6 h-6 bg-red-500 border-2 border-black"></div>
+                          <span className="text-lg font-black text-black uppercase">Company Name *</span>
+                        </label>
+                        <input
+                          id="company_name"
+                          type="text"
+                          placeholder="TECH CORP INC."
+                          value={formData.company_name}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('company_name', e.target.value)}
                           required
-                          className="w-full h-10 px-3 py-2 bg-white/50 dark:bg-slate-700/50 border-2 border-border rounded-base text-sm font-base text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black"
-                        >
-                          <option value="">Select employment type</option>
-                          <option value="Full-time">Full-time</option>
-                          <option value="Part-time">Part-time</option>
-                          <option value="Contract">Contract</option>
-                          <option value="Freelance">Freelance</option>
-                          <option value="Internship">Internship</option>
-                          <option value="Apprenticeship">Apprenticeship</option>
-                        </select>
+                          className="w-full p-3 text-lg font-bold bg-white border-4 border-black uppercase placeholder:text-gray-500 focus:outline-none focus:bg-yellow-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="start_date">Start Date *</Label>
-                          <Input
-                            id="start_date"
-                            type="date"
-                            value={formData.start_date}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('start_date', e.target.value)}
-                            required
-                            className="bg-white/50 dark:bg-slate-700/50"
-                          />
-                        </div>
+                      <div className="bg-yellow-200 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <label htmlFor="job_title" className="flex items-center gap-3 mb-3">
+                          <div className="w-6 h-6 bg-blue-500 border-2 border-black"></div>
+                          <span className="text-lg font-black text-black uppercase">Job Title *</span>
+                        </label>
+                        <input
+                          id="job_title"
+                          type="text"
+                          placeholder="SOFTWARE ENGINEER"
+                          value={formData.job_title}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('job_title', e.target.value)}
+                          required
+                          className="w-full p-3 text-lg font-bold bg-white border-4 border-black uppercase placeholder:text-gray-500 focus:outline-none focus:bg-yellow-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        />
+                      </div>
+                    </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="end_date">End Date</Label>
-                          <Input
-                            id="end_date"
-                            type="date"
-                            value={formData.end_date}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('end_date', e.target.value)}
-                            disabled={formData.is_current}
-                            className="bg-white/50 dark:bg-slate-700/50 disabled:opacity-50"
-                          />
-                        </div>
+                    <div className="bg-yellow-200 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                      <label htmlFor="employment_type" className="flex items-center gap-3 mb-3">
+                        <div className="w-6 h-6 bg-green-500 border-2 border-black"></div>
+                        <span className="text-lg font-black text-black uppercase">Employment Type *</span>
+                      </label>
+                      <select
+                        id="employment_type"
+                        value={formData.employment_type}
+                        onChange={(e) => handleInputChange('employment_type', e.target.value)}
+                        required
+                        className="w-full p-3 text-lg font-bold bg-white border-4 border-black uppercase focus:outline-none focus:bg-yellow-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                      >
+                        <option value="">SELECT EMPLOYMENT TYPE</option>
+                        <option value="Full-time">FULL-TIME</option>
+                        <option value="Part-time">PART-TIME</option>
+                        <option value="Contract">CONTRACT</option>
+                        <option value="Freelance">FREELANCE</option>
+                        <option value="Internship">INTERNSHIP</option>
+                        <option value="Apprenticeship">APPRENTICESHIP</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-yellow-200 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <label htmlFor="start_date" className="flex items-center gap-3 mb-3">
+                          <div className="w-6 h-6 bg-purple-500 border-2 border-black"></div>
+                          <span className="text-lg font-black text-black uppercase">Start Date *</span>
+                        </label>
+                        <input
+                          id="start_date"
+                          type="date"
+                          value={formData.start_date}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('start_date', e.target.value)}
+                          required
+                          className="w-full p-3 text-lg font-bold bg-white border-4 border-black focus:outline-none focus:bg-yellow-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        />
                       </div>
 
-                      <div className="flex items-center space-x-2">
+                      <div className="bg-yellow-200 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <label htmlFor="end_date" className="flex items-center gap-3 mb-3">
+                          <div className="w-6 h-6 bg-orange-500 border-2 border-black"></div>
+                          <span className="text-lg font-black text-black uppercase">End Date</span>
+                        </label>
+                        <input
+                          id="end_date"
+                          type="date"
+                          value={formData.end_date}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('end_date', e.target.value)}
+                          disabled={formData.is_current}
+                          className="w-full p-3 text-lg font-bold bg-white border-4 border-black focus:outline-none focus:bg-yellow-100 disabled:opacity-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-yellow-200 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                      <label className="flex items-center gap-3">
                         <input
                           type="checkbox"
                           id="is_current"
                           checked={formData.is_current}
                           onChange={(e) => handleInputChange('is_current', e.target.checked)}
-                          className="rounded border-slate-300"
+                          className="w-6 h-6 border-4 border-black"
                         />
-                        <Label htmlFor="is_current">I currently work here</Label>
-                      </div>
+                        <span className="text-lg font-black text-black uppercase ml-3">I AM CURRENTLY WORKING HERE</span>
+                      </label>
+                    </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="description">Job Description</Label>
-                        <Textarea
-                          id="description"
-                          placeholder="Describe your responsibilities, achievements, and key contributions..."
-                          value={formData.description || ''}
-                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('description', e.target.value)}
-                          rows={4}
-                          className="bg-white/50 dark:bg-slate-700/50 resize-none"
-                        />
-                      </div>
+                    <div className="bg-yellow-200 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                      <label htmlFor="description" className="flex items-center gap-3 mb-3">
+                        <div className="w-6 h-6 bg-pink-500 border-2 border-black"></div>
+                        <span className="text-lg font-black text-black uppercase">Job Description</span>
+                      </label>
+                      <textarea
+                        id="description"
+                        placeholder="DESCRIBE YOUR RESPONSIBILITIES, ACHIEVEMENTS, AND KEY CONTRIBUTIONS..."
+                        value={formData.description || ''}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('description', e.target.value)}
+                        rows={4}
+                        className="w-full p-3 text-lg font-bold bg-white border-4 border-black uppercase placeholder:text-gray-500 focus:outline-none focus:bg-yellow-100 resize-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                      />
+                    </div>
 
-                      <div className="flex gap-3 pt-4">
-                        <Button
-                          type="button"
-                          variant="neutral"
-                          onClick={handleCloseDialog}
-                          className="flex-1"
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="submit"
-                          className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
-                          disabled={saving}
-                        >
-                          {saving ? 'Saving...' : editingExperience ? 'Update' : 'Add'}
-                        </Button>
-                      </div>
-                    </form>
-                  </DialogContent>
-                </Dialog>
+                    <div className="flex gap-6 pt-6">
+                      <button
+                        type="button"
+                        onClick={handleCloseDialog}
+                        className="flex-1 bg-gray-400 border-4 border-black p-4 font-black text-xl text-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow"
+                      >
+                        CANCEL
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={saving}
+                        className="flex-1 bg-red-500 border-4 border-black p-4 font-black text-xl text-white uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 flex items-center justify-center gap-3"
+                      >
+                        {saving ? (
+                          <>
+                            <div className="w-6 h-6 bg-white border-2 border-black animate-spin"></div>
+                            SAVING...
+                          </>
+                        ) : (
+                          editingExperience ? 'UPDATE' : 'ADD'
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
+            )}
+          </div>
 
-              <AnimatePresence mode="popLayout">
-                {experience.length === 0 ? (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="text-center py-12"
-                  >
-                    <Briefcase className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                      No Experience Added Yet
-                    </h3>
-                    <p className="text-slate-600 dark:text-slate-400 mb-4">
-                      Add your work experience to showcase your professional background
-                    </p>
-                  </motion.div>
-                ) : (
-                  experience.map((exp, index) => (
-                    <motion.div
-                      key={exp.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="bg-white/50 dark:bg-slate-700/50 rounded-lg p-4 border border-slate-200/50 dark:border-slate-600/50"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-slate-900 dark:text-white">
-                            {exp.job_title}
-                          </h4>
-                          <div className="flex items-center text-sm text-slate-600 dark:text-slate-400 mt-1">
-                            <Building className="w-4 h-4 mr-1" />
-                            {exp.company_name}
-                          </div>
-                          <div className="flex items-center text-sm text-slate-600 dark:text-slate-400 mt-1">
-                            <Calendar className="w-4 h-4 mr-1" />
-                            {new Date(exp.start_date).getFullYear()} - {
-                              exp.is_current ? 'Present' :
-                              exp.end_date ? new Date(exp.end_date).getFullYear() :
-                              'Present'
-                            }
-                          </div>
-                          <div className="text-sm text-slate-600 dark:text-slate-400 mt-2">
-                            {exp.employment_type}
-                          </div>
-                          {exp.description && (
-                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 line-clamp-2">
-                              {exp.description}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="icon"
-                            variant="neutral"
-                            onClick={() => handleOpenDialog(exp)}
-                            disabled={saving}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="neutral"
-                            onClick={() => handleDelete(exp.id)}
-                            disabled={saving}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+          <AnimatePresence mode="popLayout">
+            {experience.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="text-center py-16 bg-gray-200 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+              >
+                <div className="w-20 h-20 bg-black border-4 border-black flex items-center justify-center mx-auto mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                  <Briefcase className="w-10 h-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-black text-black uppercase tracking-wider mb-4">
+                  NO EXPERIENCE ADDED YET
+                </h3>
+                <p className="text-lg font-bold text-black uppercase max-w-md mx-auto">
+                  ADD YOUR WORK EXPERIENCE TO SHOWCASE YOUR PROFESSIONAL BACKGROUND
+                </p>
+              </motion.div>
+            ) : (
+              experience.map((exp, index) => (
+                <motion.div
+                  key={exp.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white border-4 border-black p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h4 className="text-xl font-black text-black uppercase mb-2">
+                        {exp.job_title}
+                      </h4>
+                      <div className="flex items-center text-lg font-bold text-black mb-2">
+                        <div className="w-6 h-6 bg-blue-500 border-2 border-black mr-3"></div>
+                        <span className="uppercase">{exp.company_name}</span>
                       </div>
-                    </motion.div>
-                  ))
-                )}
-              </AnimatePresence>
-            </div>
+                      <div className="flex items-center text-lg font-bold text-black mb-2">
+                        <div className="w-6 h-6 bg-green-500 border-2 border-black mr-3"></div>
+                        <span className="uppercase">
+                          {new Date(exp.start_date).getFullYear()} - {
+                            exp.is_current ? 'PRESENT' :
+                            exp.end_date ? new Date(exp.end_date).getFullYear() :
+                            'PRESENT'
+                          }
+                        </span>
+                      </div>
+                      <div className="text-lg font-bold text-black uppercase mb-2">
+                        {exp.employment_type}
+                      </div>
+                      {exp.description && (
+                        <p className="text-lg font-bold text-black uppercase">
+                          {exp.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => handleOpenDialog(exp)}
+                        disabled={saving}
+                        className="w-12 h-12 bg-yellow-400 border-4 border-black flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50"
+                      >
+                        <Edit className="w-6 h-6 text-black" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(exp.id)}
+                        disabled={saving}
+                        className="w-12 h-12 bg-red-500 border-4 border-black flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50"
+                      >
+                        <Trash2 className="w-6 h-6 text-white" />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </AnimatePresence>
+        </div>
 
-            {/* Navigation */}
-            <div className="flex gap-4 pt-6 border-t border-slate-200/50 dark:border-slate-700/50">
-              <Button
-                onClick={handleBack}
-                variant="neutral"
-                className="flex-1"
-                disabled={saving}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-              <Button
-                onClick={handleContinue}
-                className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
-                disabled={saving}
-              >
-                Continue
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </div>
+        {/* Navigation */}
+        <div className="flex gap-6 pt-8">
+          <button
+            onClick={handleBack}
+            disabled={saving}
+            className="flex-1 bg-gray-400 border-4 border-black p-6 font-black text-xl text-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 flex items-center justify-center gap-3"
+          >
+            <ArrowLeft className="w-6 h-6" />
+            BACK
+          </button>
+          <button
+            onClick={handleContinue}
+            disabled={saving}
+            className="flex-1 bg-red-500 border-4 border-black p-6 font-black text-xl text-white uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 flex items-center justify-center gap-3"
+          >
+            CONTINUE
+            <ArrowRight className="w-6 h-6" />
+          </button>
+        </div>
+      </div>
+    </motion.div>
   );
 }
