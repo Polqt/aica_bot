@@ -21,6 +21,7 @@ import {
   MapPin,
   Building,
   ExternalLink,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -31,7 +32,7 @@ const stats = [
     change: '+12%',
     trend: 'up',
     icon: Target,
-    color: 'from-blue-500 to-blue-600',
+    color: 'bg-black',
   },
   {
     label: 'Profile Views',
@@ -39,7 +40,7 @@ const stats = [
     change: '+8%',
     trend: 'up',
     icon: Eye,
-    color: 'from-emerald-500 to-emerald-600',
+    color: 'bg-gray-800',
   },
   {
     label: 'Applications',
@@ -47,7 +48,7 @@ const stats = [
     change: '+3',
     trend: 'up',
     icon: FileText,
-    color: 'from-violet-500 to-violet-600',
+    color: 'bg-violet-600',
   },
   {
     label: 'Saved Jobs',
@@ -55,7 +56,7 @@ const stats = [
     change: '+2',
     trend: 'up',
     icon: Star,
-    color: 'from-amber-500 to-amber-600',
+    color: 'bg-black',
   },
 ];
 
@@ -114,41 +115,42 @@ const activities = [
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+        className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6"
       >
-        <div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white">
-            Welcome back, Alex! 👋
+        <div className="relative">
+          <div className="absolute -left-2 sm:-left-4 top-0 w-2 h-full bg-black transform -skew-x-12" />
+          <h1 className="text-2xl sm:text-4xl lg:text-6xl font-black text-black uppercase tracking-wide pl-4 sm:pl-8 flex items-center gap-2 sm:gap-4">
+            <Sparkles className="w-8 h-8 sm:w-12 sm:h-12 text-black" />
+            <span className="leading-tight">WELCOME BACK, ALEX!</span>
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-2">
-            Here&apos;s your job search overview and latest opportunities
+          <p className="text-gray-700 font-bold text-base sm:text-lg mt-2 sm:mt-4 pl-4 sm:pl-8">
+            HERE'S YOUR JOB SEARCH OVERVIEW
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
           <Button
             asChild
-            variant="neutral"
-            className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800"
+            className="bg-black text-white border-4 border-black hover:bg-white hover:text-black font-black uppercase tracking-wide px-4 sm:px-8 py-3 sm:py-4 shadow-[8px_8px_0px_0px_black] hover:shadow-[12px_12px_0px_0px_black] transition-all duration-200 text-sm sm:text-base"
           >
             <Link href="/user-profile">
-              <FileText className="w-4 h-4 mr-2" />
-              Update Profile
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
+              UPDATE PROFILE
             </Link>
           </Button>
           <Button
             asChild
-            className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-500/25"
+            className="bg-violet-600 text-white border-4 border-black hover:bg-black hover:text-white font-black uppercase tracking-wide px-4 sm:px-8 py-3 sm:py-4 shadow-[8px_8px_0px_0px_black] hover:shadow-[12px_12px_0px_0px_black] transition-all duration-200 text-sm sm:text-base"
           >
             <Link href="/job-matches">
-              Find New Matches
-              <ArrowRight className="w-4 h-4 ml-2" />
+              FIND NEW MATCHES
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 sm:ml-3" />
             </Link>
           </Button>
         </div>
@@ -159,35 +161,35 @@ export default function DashboardPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
       >
         {stats.map(stat => {
           const Icon = stat.icon;
           return (
             <Card
               key={stat.label}
-              className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg transition-all duration-300"
+              className="bg-white border-4 border-black hover:shadow-[8px_8px_0px_0px_black] transition-all duration-300"
             >
-              <CardContent className="p-6">
+              <CardContent className="p-8">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                    <p className="text-sm font-black text-gray-700 uppercase tracking-wide">
                       {stat.label}
                     </p>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">
+                    <p className="text-3xl font-black text-black mt-3">
                       {stat.value}
                     </p>
-                    <div className="flex items-center mt-2">
-                      <TrendingUp className="w-4 h-4 text-emerald-500 mr-1" />
-                      <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                    <div className="flex items-center mt-3">
+                      <TrendingUp className="w-5 h-5 text-black mr-2" />
+                      <span className="text-sm font-bold text-black uppercase">
                         {stat.change}
                       </span>
                     </div>
                   </div>
                   <div
-                    className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center shadow-lg`}
+                    className={`w-16 h-16 ${stat.color} border-4 border-black rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_black]`}
                   >
-                    <Icon className="w-6 h-6 text-white" />
+                    <Icon className="w-8 h-8 text-white" />
                   </div>
                 </div>
               </CardContent>
@@ -196,7 +198,7 @@ export default function DashboardPage() {
         })}
       </motion.div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid lg:grid-cols-3 gap-12">
         {/* Recent Matches */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -204,82 +206,80 @@ export default function DashboardPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="lg:col-span-2"
         >
-          <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
-            <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <Card className="bg-white border-4 border-black">
+            <CardHeader className="border-b-4 border-black pb-6">
               <div>
-                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
-                  <Target className="w-5 h-5 text-violet-600" />
-                  Recent Job Matches
+                <CardTitle className="flex items-center gap-3 text-black font-black uppercase tracking-wide text-2xl">
+                  <Target className="w-6 h-6 text-black" />
+                  RECENT JOB MATCHES
                 </CardTitle>
-                <CardDescription className="text-slate-600 dark:text-slate-400">
+                <CardDescription className="text-gray-700 font-bold text-lg mt-2">
                   AI-powered matches based on your profile
                 </CardDescription>
               </div>
               <Button
                 asChild
-                variant="neutral"
+                className="bg-black text-white border-2 border-black hover:bg-white hover:text-black font-bold uppercase mt-4"
                 size="sm"
-                className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20"
               >
                 <Link href="/job-matches">
-                  View All
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  VIEW ALL
+                  <ChevronRight className="w-4 h-4 ml-2" />
                 </Link>
               </Button>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6 p-8">
               {recentMatches.map((match, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 * index }}
-                  className="p-4 rounded-xl bg-slate-50/50 dark:bg-slate-700/30 border border-slate-200/50 dark:border-slate-600/50 hover:shadow-md transition-all duration-300 cursor-pointer group"
+                  className="p-6 border-4 border-black bg-white hover:shadow-[8px_8px_0px_0px_black] transition-all duration-300 cursor-pointer group"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-black text-black uppercase tracking-wide group-hover:text-violet-600 transition-colors text-lg">
                           {match.title}
                         </h3>
                         {match.isNew && (
-                          <span className="px-2 py-1 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full">
-                            New
+                          <span className="px-3 py-1 text-sm font-black bg-black text-white border-2 border-black uppercase tracking-wide">
+                            NEW
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center text-sm text-slate-600 dark:text-slate-400 space-x-4 mb-2">
-                        <span className="flex items-center">
-                          <Building className="w-4 h-4 mr-1" />
+                      <div className="flex items-center text-sm text-gray-700 space-x-6 mb-3 font-bold">
+                        <span className="flex items-center uppercase">
+                          <Building className="w-5 h-5 mr-2 text-black" />
                           {match.company}
                         </span>
-                        <span className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-1" />
+                        <span className="flex items-center uppercase">
+                          <MapPin className="w-5 h-5 mr-2 text-black" />
                           {match.location}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-slate-900 dark:text-white">
+                        <span className="text-lg font-black text-black">
                           {match.salary}
                         </span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                        <span className="text-sm text-gray-600 font-bold uppercase">
                           {match.timeAgo}
                         </span>
                       </div>
                     </div>
-                    <div className="ml-4 flex flex-col items-end">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                          Match
+                    <div className="ml-6 flex flex-col items-end">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <span className="text-sm font-black text-gray-700 uppercase">
+                          MATCH
                         </span>
-                        <span className="text-lg font-bold text-violet-600 dark:text-violet-400">
+                        <span className="text-2xl font-black text-black">
                           {match.matchScore}%
                         </span>
                       </div>
                       <Button
                         size="sm"
-                        variant="neutral"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white border-2 border-black hover:bg-white hover:text-black font-bold"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </Button>
@@ -290,11 +290,11 @@ export default function DashboardPage() {
 
               <Button
                 asChild
-                className="w-full mt-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
+                className="w-full mt-6 bg-violet-600 text-white border-4 border-black hover:bg-black hover:text-white font-black uppercase tracking-wide py-4 shadow-[8px_8px_0px_0px_black] hover:shadow-[12px_12px_0px_0px_black] transition-all duration-200"
               >
                 <Link href="/job-matches">
-                  Explore All Matches
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  EXPLORE ALL MATCHES
+                  <ArrowRight className="w-5 h-5 ml-3" />
                 </Link>
               </Button>
             </CardContent>
@@ -306,33 +306,33 @@ export default function DashboardPage() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="space-y-6"
+          className="space-y-8"
         >
-          <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
+          <Card className="bg-white border-4 border-black">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
-                <Clock className="w-5 h-5 text-violet-600" />
-                Recent Activity
+              <CardTitle className="flex items-center gap-3 text-black font-black uppercase tracking-wide text-xl">
+                <Clock className="w-6 h-6 text-black" />
+                RECENT ACTIVITY
               </CardTitle>
-              <CardDescription className="text-slate-600 dark:text-slate-400">
+              <CardDescription className="text-gray-700 font-bold text-lg">
                 Your job search timeline
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {activities.map((activity, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 * index }}
-                  className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors"
+                  className="flex items-start space-x-4 p-4 border-2 border-black bg-white hover:shadow-[4px_4px_0px_0px_black] transition-all duration-300"
                 >
-                  <div className="w-2 h-2 bg-violet-500 rounded-full mt-2 flex-shrink-0" />
+                  <div className="w-3 h-3 bg-black rounded-full mt-3 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm text-slate-900 dark:text-white">
+                    <p className="text-sm font-bold text-black uppercase tracking-wide">
                       {activity.message}
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    <p className="text-xs font-black text-gray-600 uppercase mt-2">
                       {activity.time}
                     </p>
                   </div>
@@ -342,46 +342,43 @@ export default function DashboardPage() {
           </Card>
 
           {/* Quick Actions */}
-          <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
+          <Card className="bg-white border-4 border-black">
             <CardHeader>
-              <CardTitle className="text-slate-900 dark:text-white">
-                Quick Actions
+              <CardTitle className="text-black font-black uppercase tracking-wide text-xl">
+                QUICK ACTIONS
               </CardTitle>
-              <CardDescription className="text-slate-600 dark:text-slate-400">
+              <CardDescription className="text-gray-700 font-bold text-lg">
                 Boost your job search
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               <Button
                 asChild
-                variant="neutral"
-                className="w-full justify-start bg-white/50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700"
+                className="w-full justify-start bg-black text-white border-2 border-black hover:bg-white hover:text-black font-black uppercase tracking-wide py-4"
               >
                 <Link href="/user-profile">
-                  <FileText className="w-4 h-4 mr-3" />
-                  Update Resume
+                  <FileText className="w-5 h-5 mr-4" />
+                  UPDATE RESUME
                 </Link>
               </Button>
 
               <Button
                 asChild
-                variant="neutral"
-                className="w-full justify-start bg-white/50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700"
+                className="w-full justify-start bg-black text-white border-2 border-black hover:bg-white hover:text-black font-black uppercase tracking-wide py-4"
               >
                 <Link href="/saved-jobs">
-                  <Star className="w-4 h-4 mr-3" />
-                  View Saved Jobs
+                  <Star className="w-5 h-5 mr-4" />
+                  VIEW SAVED JOBS
                 </Link>
               </Button>
 
               <Button
                 asChild
-                variant="neutral"
-                className="w-full justify-start bg-white/50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700"
+                className="w-full justify-start bg-violet-600 text-white border-2 border-black hover:bg-black hover:text-white font-black uppercase tracking-wide py-4"
               >
                 <Link href="/job-matches">
-                  <Target className="w-4 h-4 mr-3" />
-                  Find More Matches
+                  <Target className="w-5 h-5 mr-4" />
+                  FIND MORE MATCHES
                 </Link>
               </Button>
             </CardContent>

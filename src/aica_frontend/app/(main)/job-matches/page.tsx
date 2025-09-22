@@ -163,21 +163,21 @@ export default function JobMatchesPage() {
 
   if (loading && jobMatches.length === 0) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-12">
         <div className="flex items-center justify-center min-h-[400px]">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="text-center"
           >
-            <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <RefreshCw className="w-8 h-8 text-white animate-spin" />
+            <div className="w-20 h-20 bg-black border-4 border-black rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-[8px_8px_0px_0px_black]">
+              <RefreshCw className="w-10 h-10 text-white animate-spin" />
             </div>
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-              Finding Your Perfect Matches
+            <h3 className="text-2xl font-black text-black uppercase tracking-wide mb-3">
+              FINDING YOUR PERFECT MATCHES
             </h3>
-            <p className="text-slate-600 dark:text-slate-400">
-              Our AI is analyzing thousands of opportunities just for you...
+            <p className="text-gray-700 font-bold">
+              OUR AI IS ANALYZING THOUSANDS OF OPPORTUNITIES JUST FOR YOU...
             </p>
           </motion.div>
         </div>
@@ -186,39 +186,40 @@ export default function JobMatchesPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+        className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6"
       >
-        <div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-            <Sparkles className="w-8 h-8 text-violet-600" />
-            AI Job Matches
+        <div className="relative">
+          <div className="absolute -left-4 top-0 w-2 h-full bg-black transform -skew-x-12" />
+          <h1 className="text-4xl lg:text-6xl font-black text-black uppercase tracking-wide pl-8 flex items-center gap-4">
+            <Sparkles className="w-12 h-12 text-black" />
+            AI JOB MATCHES
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-2">
-            Discover opportunities tailored to your unique skills and aspirations
+          <p className="text-gray-700 font-bold text-lg mt-4 pl-8">
+            DISCOVER OPPORTUNITIES TAILORED TO YOUR UNIQUE SKILLS AND ASPIRATIONS
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           {jobMatches.length > 0 && (
-            <div className="text-sm text-slate-500 dark:text-slate-400">
-              {jobMatches.length} matches found
+            <div className="text-lg font-black text-gray-700 uppercase">
+              {jobMatches.length} MATCHES FOUND
             </div>
           )}
           <Button
             onClick={refreshMatches}
             disabled={refreshing}
-            className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-500/25"
+            className="bg-violet-600 text-white border-4 border-black hover:bg-black hover:text-white font-black uppercase tracking-wide px-8 py-4 shadow-[8px_8px_0px_0px_black] hover:shadow-[12px_12px_0px_0px_black] transition-all duration-200"
           >
             {refreshing ? (
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              <RefreshCw className="w-5 h-5 mr-3 animate-spin" />
             ) : (
-              <Zap className="w-4 h-4 mr-2" />
+              <Zap className="w-5 h-5 mr-3" />
             )}
-            {refreshing ? 'Finding Matches...' : 'Refresh Matches'}
+            {refreshing ? 'FINDING MATCHES...' : 'REFRESH MATCHES'}
           </Button>
         </div>
       </motion.div>
@@ -228,11 +229,11 @@ export default function JobMatchesPage() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Card className="bg-blue-50/50 dark:bg-blue-900/20 border-blue-200/50 dark:border-blue-700/50">
-            <CardContent className="flex items-center justify-center py-6">
-              <RefreshCw className="h-5 w-5 animate-spin text-blue-600 mr-3" />
-              <span className="text-blue-700 dark:text-blue-300">
-                Checking processing status...
+          <Card className="bg-gray-100 border-4 border-black">
+            <CardContent className="flex items-center justify-center py-8">
+              <RefreshCw className="h-6 w-6 animate-spin text-black mr-4" />
+              <span className="text-black font-black uppercase tracking-wide">
+                CHECKING PROCESSING STATUS...
               </span>
             </CardContent>
           </Card>
@@ -247,25 +248,25 @@ export default function JobMatchesPage() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Card className="bg-amber-50/50 dark:bg-amber-900/20 border-amber-200/50 dark:border-amber-700/50">
-            <CardContent className="py-6">
+          <Card className="bg-yellow-200 border-4 border-black">
+            <CardContent className="py-8">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <RefreshCw className="h-6 w-6 animate-spin text-amber-600 mr-4" />
+                  <RefreshCw className="h-8 w-8 animate-spin text-black mr-6" />
                   <div>
-                    <h3 className="font-semibold text-amber-700 dark:text-amber-300">
+                    <h3 className="font-black text-black uppercase tracking-wide text-xl">
                       {processingStatus === 'parsing' &&
-                        'Analyzing Your Resume...'}
+                        'ANALYZING YOUR RESUME...'}
                       {processingStatus === 'matching' &&
-                        'Finding Perfect Matches...'}
+                        'FINDING PERFECT MATCHES...'}
                       {processingStatus === 'finalizing' &&
-                        'Finalizing Results...'}
+                        'FINALIZING RESULTS...'}
                       {processingStatus === 'processing' &&
-                        'Processing Your Profile...'}
+                        'PROCESSING YOUR PROFILE...'}
                     </h3>
-                    <p className="text-amber-600 dark:text-amber-400 text-sm">
-                      Our AI is working hard to find the best opportunities for
-                      you. This usually takes 1-2 minutes.
+                    <p className="text-black font-bold text-lg">
+                      OUR AI IS WORKING HARD TO FIND THE BEST OPPORTUNITIES FOR
+                      YOU. THIS USUALLY TAKES 1-2 MINUTES.
                     </p>
                   </div>
                 </div>
@@ -278,27 +279,27 @@ export default function JobMatchesPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        className="flex flex-col sm:flex-row gap-4"
+        className="flex flex-col sm:flex-row gap-6"
       >
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-black w-6 h-6" />
           <input
             type="text"
-            placeholder="Search job matches..."
+            placeholder="SEARCH JOB MATCHES..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+            className="w-full pl-12 pr-6 py-4 bg-white border-4 border-black font-bold text-black placeholder-black uppercase tracking-wide focus:outline-none focus:shadow-[8px_8px_0px_0px_black] transition-all duration-200"
           />
         </div>
         <select
           value={filter}
           onChange={e => setFilter(e.target.value)}
-          className="px-4 py-3 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+          className="px-6 py-4 bg-white border-4 border-black font-bold text-black uppercase tracking-wide focus:outline-none focus:shadow-[8px_8px_0px_0px_black] transition-all duration-200"
         >
-          <option value="all">All Confidence Levels</option>
-          <option value="high">High Confidence</option>
-          <option value="medium">Medium Confidence</option>
-          <option value="low">Low Confidence</option>
+          <option value="all">ALL CONFIDENCE LEVELS</option>
+          <option value="high">HIGH CONFIDENCE</option>
+          <option value="medium">MEDIUM CONFIDENCE</option>
+          <option value="low">LOW CONFIDENCE</option>
         </select>
       </motion.div>
 
@@ -306,9 +307,9 @@ export default function JobMatchesPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3 }}
-        className="grid lg:grid-cols-5 gap-8 h-[calc(100vh-300px)] min-h-[500px]"
+        className="grid lg:grid-cols-5 gap-12 h-[calc(100vh-300px)] min-h-[500px]"
       >
-        <div className="lg:col-span-2 space-y-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
+        <div className="lg:col-span-2 space-y-6 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-black scrollbar-track-transparent">
           {filteredMatches.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -316,16 +317,16 @@ export default function JobMatchesPage() {
               className="flex items-center justify-center h-full min-h-[300px]"
             >
               <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-8 h-8 text-slate-400" />
+                <div className="w-20 h-20 bg-black border-4 border-black rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-[8px_8px_0px_0px_black]">
+                  <Search className="w-10 h-10 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                  {searchTerm || filter !== 'all' ? 'No matches found' : 'No job matches yet'}
+                <h3 className="text-xl font-black text-black uppercase tracking-wide mb-3">
+                  {searchTerm || filter !== 'all' ? 'NO MATCHES FOUND' : 'NO JOB MATCHES YET'}
                 </h3>
-                <p className="text-slate-600 dark:text-slate-400 mb-4 max-w-xs">
+                <p className="text-gray-700 font-bold mb-6 max-w-xs uppercase tracking-wide">
                   {searchTerm || filter !== 'all'
-                    ? 'Try adjusting your search or filters'
-                    : 'Click "Refresh Matches" to find jobs tailored to your skills'
+                    ? 'TRY ADJUSTING YOUR SEARCH OR FILTERS'
+                    : 'CLICK "REFRESH MATCHES" TO FIND JOBS TAILORED TO YOUR SKILLS'
                   }
                 </p>
                 {(searchTerm || filter !== 'all') && (
@@ -335,9 +336,9 @@ export default function JobMatchesPage() {
                       setSearchTerm('');
                       setFilter('all');
                     }}
-                    className="text-sm"
+                    className="text-sm font-black uppercase bg-black text-white border-2 border-black hover:bg-white hover:text-black"
                   >
-                    Clear filters
+                    CLEAR FILTERS
                   </Button>
                 )}
               </div>
@@ -351,84 +352,83 @@ export default function JobMatchesPage() {
               transition={{ delay: 0.1 * index }}
             >
               <Card
-                className={`cursor-pointer transition-all duration-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg ${
+                className={`cursor-pointer transition-all duration-300 bg-white border-4 border-black hover:shadow-[8px_8px_0px_0px_black] hover:-translate-y-2 ${
                   selectedJob?.job_id === match.job_id
-                    ? 'ring-2 ring-violet-500 shadow-lg shadow-violet-500/10'
+                    ? 'ring-4 ring-black shadow-[8px_8px_0px_0px_black]'
                     : ''
                 }`}
                 onClick={() => setSelectedJob(match)}
               >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-3">
+                <CardContent className="p-8">
+                  <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-slate-900 dark:text-white mb-1 line-clamp-1">
+                      <h3 className="font-black text-black mb-2 line-clamp-1 uppercase tracking-wide text-lg">
                         {match.job_title}
                       </h3>
-                      <div className="flex items-center text-sm text-slate-600 dark:text-slate-400 mb-2">
-                        <Building className="w-4 h-4 mr-1" />
+                      <div className="flex items-center text-sm text-gray-700 mb-3 font-bold uppercase">
+                        <Building className="w-5 h-5 mr-2 text-black" />
                         {match.company}
                       </div>
                     </div>
-                    <Badge className="bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
+                    <Badge className="bg-black text-white border-2 border-black font-bold uppercase">
                       <span
-                        className={`border ${getConfidenceColor(
+                        className={`border-2 ${getConfidenceColor(
                           match.confidence,
-                        )} flex items-center gap-1 px-2 py-1 rounded-md`}
+                        )} flex items-center gap-2 px-3 py-1 rounded-lg`}
                       >
                         {getConfidenceIcon(match.confidence)}
-                        <span className="font-medium ml-1">
+                        <span className="font-black ml-1 uppercase">
                           {match.confidence?.charAt(0).toUpperCase() +
                             match.confidence?.slice(1) || 'Unknown'}
                         </span>
                       </span>
                       <span
-                        className={`ml-2 font-bold ${getMatchScoreColor(
+                        className={`ml-3 font-black ${getMatchScoreColor(
                           match.match_score,
                         )}`}
                       >
-                        {(match.match_score * 100).toFixed(0)}% match
+                        {(match.match_score * 100).toFixed(0)}% MATCH
                       </span>
                     </Badge>
                   </div>
-                  <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                  <div className="space-y-3 text-sm text-gray-700 font-bold uppercase">
                     {match.location && (
                       <div className="flex items-center">
-                        <MapPin className="w-4 h-4 mr-2 text-slate-400" />
+                        <MapPin className="w-5 h-5 mr-3 text-black" />
                         {match.location}
                       </div>
                     )}
                     <div className="flex items-center">
-                      <Clock className="w-4 h-4 mr-2 text-slate-400" />
+                      <Clock className="w-5 h-5 mr-3 text-black" />
                     </div>
                   </div>
                   {/* Skills and Coverage */}
-                  <div className="space-y-2 mt-3">
-                    <div className="flex flex-wrap gap-1">
+                  <div className="space-y-3 mt-4">
+                    <div className="flex flex-wrap gap-2">
                       {match.matched_skills.slice(0, 2).map((tag, tagIndex) => (
                         <Badge
                           key={tagIndex}
-                          variant="secondary"
-                          className="text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                          className="text-sm bg-violet-600 text-white border-2 border-black font-bold uppercase px-3 py-1"
                         >
                           {tag}
                         </Badge>
                       ))}
                       {match.matched_skills.length > 2 && (
-                        <Badge variant="secondary" className="text-xs">
-                          +{match.matched_skills.length - 2} more
+                        <Badge className="text-sm bg-black text-white border-2 border-black font-bold uppercase px-3 py-1">
+                          +{match.matched_skills.length - 2} MORE
                         </Badge>
                       )}
                     </div>
 
                     {match.skill_coverage !== undefined && (
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 bg-gray-200 border-2 border-black rounded-full h-3">
                           <div
-                            className="bg-gradient-to-r from-emerald-500 to-green-600 h-1.5 rounded-full transition-all duration-300"
+                            className="bg-black h-3 rounded-full transition-all duration-300"
                             style={{ width: `${Math.round(match.skill_coverage * 100)}%` }}
                           ></div>
                         </div>
-                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 min-w-[2.5rem]">
+                        <span className="text-sm font-black text-black min-w-[2.5rem] uppercase">
                           {Math.round(match.skill_coverage * 100)}%
                         </span>
                       </div>
@@ -441,98 +441,92 @@ export default function JobMatchesPage() {
           )}
         </div>
 
-        <div className="lg:col-span-3 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
+        <div className="lg:col-span-3 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-black scrollbar-track-transparent">
           {selectedJob ? (
-            <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50">
-              <CardHeader className="border-b border-slate-200/50 dark:border-slate-700/50">
+            <Card className="bg-white border-4 border-black">
+              <CardHeader className="border-b-4 border-black">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-2xl text-slate-900 dark:text-white mb-2">
+                    <CardTitle className="text-3xl font-black text-black uppercase tracking-wide mb-3">
                       {selectedJob.job_title}
                     </CardTitle>
-                    <CardDescription className="flex flex-wrap items-center gap-4 text-slate-600 dark:text-slate-400">
+                    <CardDescription className="flex flex-wrap items-center gap-6 text-gray-700 font-bold uppercase text-lg">
                       <span className="flex items-center">
-                        <Building className="w-4 h-4 mr-1" />
+                        <Building className="w-6 h-6 mr-3 text-black" />
                         {selectedJob.company}
                       </span>
                       {selectedJob.location && (
                         <span className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-1" />
+                          <MapPin className="w-6 h-6 mr-3 text-black" />
                           {selectedJob.location}
                         </span>
                       )}
-                      <Badge
-                        className={`border ${getConfidenceColor(
-                          selectedJob.confidence,
-                        )} flex items-center gap-1 px-2 py-1 rounded-md`}
-                      >
+                      <Badge className={`border-2 ${getConfidenceColor(selectedJob.confidence)} flex items-center gap-2 px-4 py-2 rounded-lg font-bold uppercase`}>
                         {getConfidenceIcon(selectedJob.confidence)}
-                        <span className="font-medium ml-1">
+                        <span className="font-black ml-2">
                           {selectedJob.confidence?.charAt(0).toUpperCase() +
                             selectedJob.confidence?.slice(1) || 'Unknown'}
                         </span>
                       </Badge>
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-center">
-                      <div
-                        className={`text-2xl font-bold ${getMatchScoreColor(
-                          selectedJob.match_score,
-                        )}`}
-                      >
-                        {(selectedJob.match_score * 100).toFixed(0)}%
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        match
-                      </div>
+                  <div className="text-center">
+                    <div
+                      className={`text-3xl font-black ${getMatchScoreColor(
+                        selectedJob.match_score,
+                      )}`}
+                    >
+                      {(selectedJob.match_score * 100).toFixed(0)}%
+                    </div>
+                    <div className="text-sm font-black text-gray-700 uppercase">
+                      MATCH
                     </div>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="p-8 space-y-8">
                 {/* AI Reasoning Section */}
                 {selectedJob.ai_reasoning && selectedJob.ai_reasoning.trim() && (
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 border border-blue-200/50 dark:border-blue-700/50">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                        <span className="text-white text-xs font-bold">AI</span>
+                  <div className="bg-gray-100 border-4 border-black rounded-2xl p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-8 h-8 bg-black rounded-2xl flex items-center justify-center">
+                        <span className="text-white text-sm font-black">AI</span>
                       </div>
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                        AI Analysis
+                      <h3 className="text-2xl font-black text-black uppercase tracking-wide">
+                        AI ANALYSIS
                       </h3>
                     </div>
-                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-sm">
+                    <p className="text-gray-700 font-bold leading-relaxed text-lg">
                       {selectedJob.ai_reasoning}
                     </p>
                   </div>
                 )}
 
                 {/* Skill Analysis Section */}
-                <div className="grid gap-4">
+                <div className="grid gap-6">
                   {/* Skill Coverage */}
                   {selectedJob.skill_coverage !== undefined && selectedJob.skill_coverage >= 0 && (
-                    <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-lg p-4 border border-emerald-200/50 dark:border-emerald-700/50">
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                        <div className="w-5 h-5 bg-emerald-600 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs">✓</span>
+                    <div className="bg-green-100 border-4 border-black rounded-2xl p-6">
+                      <h3 className="text-2xl font-black text-black mb-4 flex items-center gap-4 uppercase tracking-wide">
+                        <div className="w-8 h-8 bg-black rounded-2xl flex items-center justify-center">
+                          <span className="text-white text-sm font-black">✓</span>
                         </div>
-                        Skill Coverage
+                        SKILL COVERAGE
                       </h3>
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-600 dark:text-slate-400">Match Rate</span>
-                          <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                          <span className="text-lg font-black text-gray-700 uppercase">MATCH RATE</span>
+                          <span className="text-2xl font-black text-black">
                             {Math.round(selectedJob.skill_coverage * 100)}%
                           </span>
                         </div>
-                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3">
+                        <div className="w-full bg-gray-200 border-2 border-black rounded-full h-4">
                           <div
-                            className="bg-gradient-to-r from-emerald-500 to-green-600 h-3 rounded-full transition-all duration-500 ease-out"
+                            className="bg-black h-4 rounded-full transition-all duration-500 ease-out"
                             style={{ width: `${Math.round(selectedJob.skill_coverage * 100)}%` }}
                           ></div>
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                        <p className="text-sm font-bold text-gray-600 uppercase">
                           {selectedJob.matched_skills?.length || 0} of {(selectedJob.matched_skills?.length || 0) + (selectedJob.missing_critical_skills?.length || 0)} skills matched
                         </p>
                       </div>
@@ -542,17 +536,17 @@ export default function JobMatchesPage() {
                   {/* Matched Skills */}
                   {selectedJob.matched_skills && selectedJob.matched_skills.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                        <div className="w-5 h-5 bg-violet-600 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs">★</span>
+                      <h3 className="text-2xl font-black text-black mb-4 flex items-center gap-4 uppercase tracking-wide">
+                        <div className="w-8 h-8 bg-violet-600 border-2 border-black rounded-2xl flex items-center justify-center">
+                          <span className="text-white text-sm font-black">★</span>
                         </div>
-                        Your Matching Skills
+                        YOUR MATCHING SKILLS
                       </h3>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-3">
                         {selectedJob.matched_skills.map((skill, index) => (
                           <Badge
                             key={index}
-                            className="bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-700"
+                            className="bg-violet-600 text-white border-2 border-black font-bold uppercase px-4 py-2 text-sm"
                           >
                             {skill}
                           </Badge>
@@ -563,41 +557,41 @@ export default function JobMatchesPage() {
 
                   {/* Missing Critical Skills */}
                   {selectedJob.missing_critical_skills && selectedJob.missing_critical_skills.length > 0 && (
-                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg p-4 border border-amber-200/50 dark:border-amber-700/50">
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                        <div className="w-5 h-5 bg-amber-600 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs">⚠</span>
+                    <div className="bg-yellow-100 border-4 border-black rounded-2xl p-6">
+                      <h3 className="text-2xl font-black text-black mb-4 flex items-center gap-4 uppercase tracking-wide">
+                        <div className="w-8 h-8 bg-black rounded-2xl flex items-center justify-center">
+                          <span className="text-white text-sm font-black">⚠</span>
                         </div>
-                        Skills to Develop
+                        SKILLS TO DEVELOP
                       </h3>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-3">
                         {selectedJob.missing_critical_skills.map((skill, index) => (
                           <Badge
                             key={index}
                             variant="outline"
-                            className="border-amber-300 text-amber-700 dark:border-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20"
+                            className="border-2 border-black text-black font-bold uppercase px-4 py-2 text-sm bg-yellow-200"
                           >
                             {skill}
                           </Badge>
                         ))}
                       </div>
-                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                        Consider learning these skills to improve your match rate
+                      <p className="text-sm font-bold text-gray-700 uppercase mt-3">
+                        CONSIDER LEARNING THESE SKILLS TO IMPROVE YOUR MATCH RATE
                       </p>
                     </div>
                   )}
                 </div>
-                <div className="flex gap-4 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
+                <div className="flex gap-6 pt-6 border-t-4 border-black">
                   <Button
-                    className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
+                    className="flex-1 bg-violet-600 text-white border-4 border-black hover:bg-black hover:text-white font-black uppercase tracking-wide py-4 shadow-[8px_8px_0px_0px_black] hover:shadow-[12px_12px_0px_0px_black] transition-all duration-200"
                     onClick={() => window.open(selectedJob.job_url, '_blank')}
                   >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    View Job
+                    <ExternalLink className="w-5 h-5 mr-3" />
+                    VIEW JOB
                   </Button>
                   <Button
                     variant="neutral"
-                    className="flex-1 bg-white/50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700"
+                    className="bg-black text-white border-2 border-black hover:bg-white hover:text-black font-black uppercase py-4 flex-1"
                     disabled={savingJobId === selectedJob.job_id}
                     onClick={() => {
                       if (savedJobIds.includes(selectedJob.job_id)) {
@@ -608,22 +602,22 @@ export default function JobMatchesPage() {
                     }}
                   >
                     {savedJobIds.includes(selectedJob.job_id) ? (
-                      <BookmarkCheck className="w-4 h-4 mr-2" />
+                      <BookmarkCheck className="w-5 h-5 mr-3" />
                     ) : (
-                      <BookmarkPlus className="w-4 h-4 mr-2" />
+                      <BookmarkPlus className="w-5 h-5 mr-3" />
                     )}
                     {savedJobIds.includes(selectedJob.job_id)
-                      ? 'Unsave'
-                      : 'Save'}
+                      ? 'UNSAVE'
+                      : 'SAVE'}
                   </Button>
                 </div>
               </CardContent>
             </Card>
           ) : (
-            <Card className="h-full flex items-center justify-center bg-white/70 dark:bg-slate-800/70">
+            <Card className="h-full flex items-center justify-center bg-white border-4 border-black">
               <CardContent>
-                <p className="text-slate-600 dark:text-slate-400">
-                  Select a job to view details
+                <p className="text-gray-700 font-bold uppercase tracking-wide">
+                  SELECT A JOB TO VIEW DETAILS
                 </p>
               </CardContent>
             </Card>

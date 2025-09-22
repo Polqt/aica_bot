@@ -31,54 +31,62 @@ function AppSidebar() {
   const { logout } = useAuth()
   const navItems = [
     {
-      title: "Dashboard",
+      title: "DASHBOARD",
       url: "/dashboard",
       icon: Home,
     },
     {
-      title: "Job Matches",
+      title: "JOB MATCHES",
       url: "/job-matches",
       icon: Briefcase,
     },
     {
-      title: "Saved Jobs",
+      title: "SAVED JOBS",
       url: "/saved-jobs",
       icon: Bookmark,
     },
     {
-      title: "Profile",
+      title: "PROFILE",
       url: "/user-profile",
       icon: User,
     },
   ]
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
+    <Sidebar collapsible="icon" className="border-r-4 border-black bg-white">
+      <SidebarHeader className="border-b-4 border-black p-6">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="data-[state=open]:bg-main data-[state=open]:text-main-foreground">
-              <div className="flex aspect-square size-8 items-center justify-center rounded-base bg-violet-600">
-                <Sparkles className="size-4 text-white" />
+            <SidebarMenuButton
+              size="lg"
+              className="bg-black text-white border-4 border-black hover:bg-white hover:text-black font-black uppercase tracking-wide shadow-[8px_8px_0px_0px_black] hover:shadow-[12px_12px_0px_0px_black] transition-all duration-200 p-6"
+            >
+              <div className="flex aspect-square size-12 items-center justify-center rounded-2xl bg-violet-600 border-2 border-black">
+                <Sparkles className="size-6 text-white" />
               </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-heading">AICA</span>
-                <span className="truncate text-xs">AI Career Assistant</span>
+              <div className="grid flex-1 text-left text-sm leading-tight ml-4">
+                <span className="truncate font-black text-xl text-gray-800">AICA</span>
+                <span className="truncate text-xs font-bold uppercase text-gray-700">AI CAREER ASSISTANT</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="p-4">
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarMenu>
+          <SidebarGroupLabel className="text-black font-black uppercase tracking-wide text-lg mb-4 border-b-2 border-black pb-2">
+            NAVIGATION
+          </SidebarGroupLabel>
+          <SidebarMenu className="space-y-2">
             {navItems.map((item) => (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  className="bg-white border-2 border-black hover:bg-black hover:text-white font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_black] hover:shadow-[8px_8px_0px_0px_black] transition-all duration-200 p-4 rounded-xl"
+                >
                   <Link href={item.url}>
-                    <item.icon />
-                    <span>{item.title}</span>
+                    <item.icon className="w-6 h-6" />
+                    <span className="ml-3">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -86,12 +94,15 @@ function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t-4 border-black p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={logout}>
-              <LogOut />
-              <span>Log out</span>
+            <SidebarMenuButton
+              onClick={logout}
+              className="bg-red-600 text-white border-2 border-black hover:bg-black hover:text-white font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_black] hover:shadow-[8px_8px_0px_0px_black] transition-all duration-200 p-4 rounded-xl w-full"
+            >
+              <LogOut className="w-6 h-6" />
+              <span className="ml-3">LOG OUT</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -110,25 +121,30 @@ export default function SidebarLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    AICA Dashboard
+        <header className="flex h-16 sm:h-20 shrink-0 items-center gap-2 sm:gap-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b-4 border-black bg-white px-4 sm:px-6">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+            <SidebarTrigger className="bg-black text-white border-2 border-black hover:bg-white hover:text-black w-10 h-10 sm:w-12 sm:h-12 rounded-xl shadow-[4px_4px_0px_0px_black] hover:shadow-[8px_8px_0px_0px_black] transition-all duration-200 flex-shrink-0" />
+            <Breadcrumb className="min-w-0">
+              <BreadcrumbList className="flex items-center gap-1 sm:gap-2">
+                <BreadcrumbItem className="hidden sm:block">
+                  <BreadcrumbLink
+                    href="#"
+                    className="font-black uppercase tracking-wide text-black hover:text-violet-600 transition-colors text-sm sm:text-base truncate"
+                  >
+                    AICA DASHBOARD
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbSeparator className="hidden sm:block text-black font-black" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Main</BreadcrumbPage>
+                  <BreadcrumbPage className="font-black uppercase tracking-wide text-black text-sm sm:text-base">
+                    MAIN
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
+        <main className="flex flex-1 flex-col gap-4 sm:gap-8 p-4 sm:p-8 pt-4 sm:pt-8 bg-gray-50">
           {children}
         </main>
       </SidebarInset>
