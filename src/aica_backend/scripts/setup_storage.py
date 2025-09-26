@@ -7,7 +7,7 @@ load_dotenv(dotenv_path=Path(__file__).parent.parent.parent.parent / ".env")
 src_path = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(src_path))
 
-from aica_backend.api.utils.auth import get_supabase_admin_client
+from api.utils.auth import get_supabase_admin_client
 
 def setup_storage_bucket():
     try:

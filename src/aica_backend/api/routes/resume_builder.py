@@ -3,9 +3,9 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from ...api.dependencies import get_current_user
-from ...core.resume_builder import ResumeBuilder
-from ...database.models.user_models import (
+from api.dependencies import get_current_user
+from core.resume_builder import ResumeBuilder
+from database.models.user_models import (
     User, UserEducation, UserEducationCreate,
     UserExperience, UserExperienceCreate,
     UserSkill, UserSkillCreate,

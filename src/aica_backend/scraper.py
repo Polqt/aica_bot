@@ -6,8 +6,8 @@ from pathlib import Path
 project_root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(project_root))
 
-from aica_backend.core.job_scraper import JobScraper
-from aica_backend.database.job_db import JobDatabase
+from core.job_scraper import JobScraper
+from database.job_db import JobDatabase
 
 logging.basicConfig(level=logging.INFO)
 

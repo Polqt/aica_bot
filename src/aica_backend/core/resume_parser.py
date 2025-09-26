@@ -15,8 +15,8 @@ from langchain_anthropic import ChatAnthropic
 from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 
-from ..database.user_db import UserDatabase
-from ..database.models.user_models import UserSkillCreate
+from database.user_db import UserDatabase
+from database.models.user_models import UserSkillCreate
 
 logger = logging.getLogger(__name__)
 

@@ -3,8 +3,8 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 import logging
 
-from ..database.user_db import UserDatabase
-from ..database.models.user_models import (
+from database.user_db import UserDatabase
+from database.models.user_models import (
     UserEducation, UserEducationCreate,
     UserExperience, UserExperienceCreate,
     UserProfile, UserSkill, UserSkillCreate

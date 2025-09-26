@@ -1,10 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, BackgroundTasks
-from aica_backend.api.utils.auth import get_supabase_client, get_current_user, get_supabase_admin_client
-from aica_backend.database.models.user_models import UserCreate, UserLogin, TokenResponse, ResumeUploadResponse
-from aica_backend.database.user_db import UserDatabase
-from aica_backend.core.resume_parser import ResumeParser
-from ...database.job_db import JobDatabase
-from ...services.job_matching import JobMatchingService
+
+# Import utilities and models (absolute imports for App Engine)
+from api.utils.auth import get_supabase_client, get_current_user, get_supabase_admin_client
+from database.models.user_models import UserCreate, UserLogin, TokenResponse, ResumeUploadResponse
+from database.user_db import UserDatabase
+from core.resume_parser import ResumeParser
+from database.job_db import JobDatabase
+from services.job_matching import JobMatchingService
 from datetime import datetime
 import traceback
 

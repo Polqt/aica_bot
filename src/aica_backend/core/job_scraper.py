@@ -13,7 +13,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
-from ..database.models.job_models import Job
+from database.models.job_models import Job
 
 logger = logging.getLogger(__name__)
 

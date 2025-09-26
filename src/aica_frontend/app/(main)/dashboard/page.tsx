@@ -11,12 +11,9 @@ import {
 import { Button } from '@/components/ui/button';
 import {
   Target,
-  Clock,
   ArrowRight,
   FileText,
   Star,
-  TrendingUp,
-  Eye,
   ChevronRight,
   MapPin,
   Building,
@@ -24,41 +21,6 @@ import {
   Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
-
-const stats = [
-  {
-    label: 'Total Matches',
-    value: '24',
-    change: '+12%',
-    trend: 'up',
-    icon: Target,
-    color: 'bg-black',
-  },
-  {
-    label: 'Profile Views',
-    value: '156',
-    change: '+8%',
-    trend: 'up',
-    icon: Eye,
-    color: 'bg-gray-800',
-  },
-  {
-    label: 'Applications',
-    value: '12',
-    change: '+3',
-    trend: 'up',
-    icon: FileText,
-    color: 'bg-violet-600',
-  },
-  {
-    label: 'Saved Jobs',
-    value: '8',
-    change: '+2',
-    trend: 'up',
-    icon: Star,
-    color: 'bg-black',
-  },
-];
 
 const recentMatches = [
   {
@@ -90,29 +52,6 @@ const recentMatches = [
   },
 ];
 
-const activities = [
-  {
-    type: 'application',
-    message: 'Applied to Frontend Developer at TechCorp',
-    time: '2 hours ago',
-  },
-  {
-    type: 'match',
-    message: 'New job match: React Developer',
-    time: '1 day ago',
-  },
-  {
-    type: 'save',
-    message: 'Saved Full Stack Engineer position',
-    time: '2 days ago',
-  },
-  {
-    type: 'view',
-    message: 'Profile viewed by 3 companies',
-    time: '3 days ago',
-  },
-];
-
 export default function DashboardPage() {
   return (
     <div className="space-y-12">
@@ -130,7 +69,7 @@ export default function DashboardPage() {
             <span className="leading-tight">WELCOME BACK, ALEX!</span>
           </h1>
           <p className="text-gray-700 font-bold text-base sm:text-lg mt-2 sm:mt-4 pl-4 sm:pl-8">
-            HERE'S YOUR JOB SEARCH OVERVIEW
+            HERE&apos;S YOUR JOB SEARCH OVERVIEW
           </p>
         </div>
 
@@ -154,48 +93,6 @@ export default function DashboardPage() {
             </Link>
           </Button>
         </div>
-      </motion.div>
-
-      {/* Stats Grid */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
-      >
-        {stats.map(stat => {
-          const Icon = stat.icon;
-          return (
-            <Card
-              key={stat.label}
-              className="bg-white border-4 border-black hover:shadow-[8px_8px_0px_0px_black] transition-all duration-300"
-            >
-              <CardContent className="p-8">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-black text-gray-700 uppercase tracking-wide">
-                      {stat.label}
-                    </p>
-                    <p className="text-3xl font-black text-black mt-3">
-                      {stat.value}
-                    </p>
-                    <div className="flex items-center mt-3">
-                      <TrendingUp className="w-5 h-5 text-black mr-2" />
-                      <span className="text-sm font-bold text-black uppercase">
-                        {stat.change}
-                      </span>
-                    </div>
-                  </div>
-                  <div
-                    className={`w-16 h-16 ${stat.color} border-4 border-black rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_black]`}
-                  >
-                    <Icon className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
       </motion.div>
 
       <div className="grid lg:grid-cols-3 gap-12">
@@ -300,48 +197,12 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </motion.div>
-
-        {/* Recent Activity */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
           className="space-y-8"
         >
-          <Card className="bg-white border-4 border-black">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-black font-black uppercase tracking-wide text-xl">
-                <Clock className="w-6 h-6 text-black" />
-                RECENT ACTIVITY
-              </CardTitle>
-              <CardDescription className="text-gray-700 font-bold text-lg">
-                Your job search timeline
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {activities.map((activity, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 * index }}
-                  className="flex items-start space-x-4 p-4 border-2 border-black bg-white hover:shadow-[4px_4px_0px_0px_black] transition-all duration-300"
-                >
-                  <div className="w-3 h-3 bg-black rounded-full mt-3 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-black uppercase tracking-wide">
-                      {activity.message}
-                    </p>
-                    <p className="text-xs font-black text-gray-600 uppercase mt-2">
-                      {activity.time}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
           <Card className="bg-white border-4 border-black">
             <CardHeader>
               <CardTitle className="text-black font-black uppercase tracking-wide text-xl">

@@ -1,8 +1,8 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from aica_backend.database import UserDatabase
-from aica_backend.api.utils.auth import get_current_user as auth_get_current_user
-from aica_backend.database.models.user_models import User
+from database import UserDatabase
+from api.utils.auth import get_current_user as auth_get_current_user
+from database.models.user_models import User
 
 security = HTTPBearer()
 

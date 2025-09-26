@@ -3,12 +3,12 @@ import json
 from typing import List, Dict
 from dataclasses import dataclass
 
-from ..database.user_db import UserDatabase
-from ..database.job_db import JobDatabase
-from ..database.models.user_models import UserSkill, UserJobMatch
-from ..database.models.job_models import Job
-from ..core.embedder import TextEmbedder
-from ..core.matcher import JobMatcher
+from database.user_db import UserDatabase
+from database.job_db import JobDatabase
+from database.models.user_models import UserSkill, UserJobMatch
+from database.models.job_models import Job
+from core.embedder import TextEmbedder
+from core.matcher import JobMatcher
 
 logger = logging.getLogger(__name__)
 

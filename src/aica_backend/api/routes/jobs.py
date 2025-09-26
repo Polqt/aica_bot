@@ -4,10 +4,10 @@ from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict, Any, Optional
 
-from ...api.dependencies import get_current_user
-from ...database.models.user_models import User, UserJobMatch
-from ...services.job_matching import JobMatchingService, JobMatchResult
-from ...database.models.user_models import UserSavedJob
+from api.dependencies import get_current_user
+from database.models.user_models import User, UserJobMatch
+from services.job_matching import JobMatchingService, JobMatchResult
+from database.models.user_models import UserSavedJob
 
 logger = logging.getLogger(__name__)
 

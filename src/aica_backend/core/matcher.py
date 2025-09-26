@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from .embedder import VectorJobStore, TextEmbedder
 from .resume_parser import ResumeParser, ParsedResume
 
-from ..database.user_db import UserDatabase
-from ..database.job_db import JobDatabase
+from database.user_db import UserDatabase
+from database.job_db import JobDatabase
 
 class MatchResult(BaseModel):
     is_match: bool = Field(description="Whether the candidate matches the job")
