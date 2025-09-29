@@ -3,9 +3,37 @@ import json
 import uuid
 from typing import List, Dict, Any, Optional
 from supabase import create_client, Client
-from datetime import datetime
+from datetime import datetime, timedelta
+import functools
+import time
 
 from .models.job_models import JobSource, Job, JobListings, JobSearchFilters
+
+# Simple LRU cache implementation
+class SimpleCache:
+    def __init__(self, max_size: int = 100, ttl: int = 300):  # 5 minutes TTL
+        self.cache = {}
+        self.max_size = max_size
+        self.ttl = ttl
+
+    def get(self, key: str) -> Any:
+        if key in self.cache:
+            item = self.cache[key]
+            if time.time() - item['timestamp'] < self.ttl:
+                return item['value']
+            else:
+                del self.cache[key]
+        return None
+
+    def set(self, key: str, value: Any) -> None:
+        if len(self.cache) >= self.max_size:
+            # Remove oldest item
+            oldest_key = min(self.cache.keys(), key=lambda k: self.cache[k]['timestamp'])
+            del self.cache[oldest_key]
+        self.cache[key] = {'value': value, 'timestamp': time.time()}
+
+    def clear(self) -> None:
+        self.cache.clear()
 
 
 class JobDatabase:
@@ -14,13 +42,16 @@ class JobDatabase:
         if client is None:
             url = os.getenv("SUPABASE_URL")
             key = os.getenv("SUPABASE_KEY")
-            
+
             if not url or not key:
                 raise ValueError("Missing SUPABASE_URL or SUPABASE_KEY environment variables")
-                
+
             self.client = create_client(url, key)
         else:
             self.client = client
+
+        # Initialize cache
+        self.cache = SimpleCache(max_size=50, ttl=300)  # 5 minutes TTL
 
     def save_job_source(self, url: str) -> None:
         try:
@@ -98,11 +129,15 @@ class JobDatabase:
             if existing_response.data:
                 # Update existing job
                 response = self.client.table("jobs").update(job_data).eq("url", job_data['url']).execute()
+                # Clear statistics cache since job count might change
+                self.cache.clear()
                 return existing_response.data[0]['id']
             else:
                 # Insert new job
                 response = self.client.table("jobs").insert(job_data).execute()
                 if response.data:
+                    # Clear statistics cache since job count changed
+                    self.cache.clear()
                     return response.data[0]['id']
                 else:
                     raise Exception("No data returned from insert operation")
@@ -206,26 +241,35 @@ class JobDatabase:
         return " ".join(filter(None, content_parts))
         
     def get_job_statistics(self) -> Dict[str, Any]:
+        cache_key = "job_statistics"
+        cached_result = self.cache.get(cache_key)
+        if cached_result:
+            return cached_result
+
         try:
             # Total jobs
             jobs_response = self.client.table("jobs").select("id", count="exact").execute()
             total_jobs = jobs_response.count or 0
-            
+
             # Indexed jobs
             indexed_response = self.client.table("jobs").select("id", count="exact").eq("is_indexed", True).execute()
             indexed_jobs = indexed_response.count or 0
-            
+
             # Jobs by source
             sources_response = self.client.table("job_sources").select("*").execute()
             sources_data = sources_response.data or []
-            
-            return {
+
+            result = {
                 "total_jobs": total_jobs,
                 "indexed_jobs": indexed_jobs,
                 "unindexed_jobs": total_jobs - indexed_jobs,
                 "active_sources": len([s for s in sources_data if s.get("is_active", True)]),
                 "total_sources": len(sources_data)
             }
+
+            # Cache the result
+            self.cache.set(cache_key, result)
+            return result
         except Exception as e:
             return {
                 "total_jobs": 0,

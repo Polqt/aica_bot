@@ -5,9 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict, Any, Optional
 
 from api.dependencies import get_current_user
-from database.models.user_models import User, UserJobMatch
-from services.job_matching import JobMatchingService, JobMatchResult
-from database.models.user_models import UserSavedJob
+from database.models.user_models import User
+from services.job_matching import JobMatchingService
 
 logger = logging.getLogger(__name__)
 
@@ -64,24 +63,31 @@ async def get_job_matches(
     limit: int = 20,
     current_user: User = Depends(get_current_user)
 ) -> List[JobMatchResponse]:
+    logger.info(f"Starting get_job_matches for user {current_user.id} with limit {limit}")
     try:
         matching_service = JobMatchingService()
-        
+        logger.debug(f"JobMatchingService initialized for user {current_user.id}")
+
         # Get matches from database
+        logger.debug(f"Calling get_user_job_matches for user {current_user.id}")
         saved_matches = matching_service.user_db.get_user_job_matches(current_user.id, limit=limit)
-        
+        logger.info(f"Retrieved {len(saved_matches) if saved_matches else 0} job matches for user {current_user.id}")
+
         if not saved_matches:
+            logger.info(f"No job matches found for user {current_user.id}")
             return []
-        
+
         # Convert to response format
         responses = []
         for match in saved_matches:
             try:
+                logger.debug(f"Processing match {match.id} for job {match.job_id}")
                 # Get job details
                 job = matching_service.job_db.get_job_by_id(match.job_id)
                 if not job:
+                    logger.warning(f"Job {match.job_id} not found in database for user {current_user.id}")
                     continue
-                
+
                 response = JobMatchResponse(
                     job_id=match.job_id,
                     job_title=job.title,
@@ -96,15 +102,16 @@ async def get_job_matches(
                     ai_reasoning=match.ai_reasoning
                 )
                 responses.append(response)
-                
+
             except Exception as e:
-                logger.error(f"Error processing match {match.id}: {str(e)}")
+                logger.error(f"Error processing match {match.id}: {str(e)}", exc_info=True)
                 continue
-        
+
+        logger.info(f"Successfully processed {len(responses)} job matches for user {current_user.id}")
         return responses
-        
+
     except Exception as e:
-        logger.error(f"Error getting job matches for user {current_user.id}: {str(e)}")
+        logger.error(f"Error getting job matches for user {current_user.id}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving job matches: {str(e)}"
@@ -157,13 +164,18 @@ async def get_fresh_job_matches(
 async def get_matching_stats(
     current_user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
+    logger.info(f"Starting get_matching_stats for user {current_user.id}")
     try:
         matching_service = JobMatchingService()
-        
+        logger.debug(f"JobMatchingService initialized for user {current_user.id}")
+
         # Get user matches
+        logger.debug(f"Calling get_user_job_matches for user {current_user.id}")
         matches = matching_service.user_db.get_user_job_matches(current_user.id, limit=100)
-        
+        logger.info(f"Retrieved {len(matches) if matches else 0} matches for stats calculation for user {current_user.id}")
+
         if not matches:
+            logger.info(f"No matches found for stats for user {current_user.id}")
             return {
                 "total_matches": 0,
                 "average_score": 0.0,
@@ -172,18 +184,19 @@ async def get_matching_stats(
                 "low_confidence_matches": 0,
                 "last_updated": None
             }
-        
+
         # Calculate stats
+        logger.debug(f"Calculating stats for {len(matches)} matches")
         total_matches = len(matches)
         average_score = sum(m.match_score for m in matches) / total_matches
-        
+
         high_confidence = len([m for m in matches if m.match_score >= 0.8])
         medium_confidence = len([m for m in matches if 0.6 <= m.match_score < 0.8])
         low_confidence = len([m for m in matches if m.match_score < 0.6])
-        
+
         last_updated = max(m.created_at for m in matches) if matches else None
-        
-        return {
+
+        result = {
             "total_matches": total_matches,
             "average_score": round(average_score, 3),
             "high_confidence_matches": high_confidence,
@@ -191,8 +204,11 @@ async def get_matching_stats(
             "low_confidence_matches": low_confidence,
             "last_updated": last_updated
         }
-        
+        logger.info(f"Successfully calculated stats for user {current_user.id}: {result}")
+        return result
+
     except Exception as e:
+        logger.error(f"Error retrieving matching stats for user {current_user.id}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving matching stats: {str(e)}"

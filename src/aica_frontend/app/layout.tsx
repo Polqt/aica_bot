@@ -23,6 +23,42 @@ export const metadata: Metadata = {
     'AICA is an AI-powered career assistant that helps you find your dream tech job by analyzing your resume and matching you with the best opportunities.',
   keywords: 'AI, job matching, resume, tech jobs, career, recruitment',
   authors: [{ name: 'AICA Team' }],
+  openGraph: {
+    title: 'AICA - AI Career Assistant',
+    description: 'Find your dream tech job with AI-powered resume analysis and job matching.',
+    url: 'https://aica.app',
+    siteName: 'AICA',
+    images: [
+      {
+        url: '/nyxarcanalogotransparent-02.png',
+        width: 1200,
+        height: 630,
+        alt: 'AICA - AI Career Assistant',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AICA - AI Career Assistant',
+    description: 'Find your dream tech job with AI-powered resume analysis and job matching.',
+    images: ['/nyxarcanalogotransparent-02.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'your-google-site-verification-code',
+  },
 };
 
 export const viewport = {
@@ -39,8 +75,67 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "AICA - AI Career Assistant",
+    "description": "AI-powered career assistant that helps you find your dream tech job by analyzing your resume and matching you with the best opportunities.",
+    "url": "https://aica.app",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web Browser",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "creator": {
+      "@type": "Organization",
+      "name": "AICA Team"
+    }
+  };
+
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData),
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Basic performance monitoring
+              window.addEventListener('load', function() {
+                setTimeout(function() {
+                  const perfData = performance.getEntriesByType('navigation')[0];
+                  const pageLoadTime = perfData.loadEventEnd - perfData.fetchStart;
+                  const domContentLoaded = perfData.domContentLoadedEventEnd - perfData.fetchStart;
+
+                  // Send to analytics (placeholder for future implementation)
+                  console.log('Page Load Time:', pageLoadTime, 'ms');
+                  console.log('DOM Content Loaded:', domContentLoaded, 'ms');
+
+                  // Could send to analytics service here
+                  // analytics.track('page_performance', { pageLoadTime, domContentLoaded });
+                }, 0);
+              });
+
+              // Monitor Core Web Vitals (simplified)
+              if ('web-vitals' in window) {
+                import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+                  getCLS(console.log);
+                  getFID(console.log);
+                  getFCP(console.log);
+                  getLCP(console.log);
+                  getTTFB(console.log);
+                });
+              }
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}
       >

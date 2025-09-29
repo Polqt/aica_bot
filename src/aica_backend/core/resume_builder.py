@@ -12,7 +12,6 @@ from database.models.user_models import (
 
 logger = logging.getLogger(__name__)
 
-
 class ResumeBuilder:
     def __init__(self):
         self.user_db = UserDatabase()
@@ -53,8 +52,7 @@ class ResumeBuilder:
 
             return [UserEducation(**item) for item in response.data] if response.data else []
 
-        except Exception as e:
-            logger.error(f"Error getting user education for {user_id}: {str(e)}")
+        except Exception:
             return []
 
     def update_education(self, education_id: str, user_id: str, education_data: UserEducationCreate) -> Optional[UserEducation]:
@@ -138,7 +136,6 @@ class ResumeBuilder:
             return [UserExperience(**item) for item in response.data] if response.data else []
 
         except Exception as e:
-            logger.error(f"Error getting user experience for {user_id}: {str(e)}")
             return []
 
     def update_experience(self, experience_id: str, user_id: str, experience_data: UserExperienceCreate) -> Optional[UserExperience]:
@@ -209,7 +206,6 @@ class ResumeBuilder:
         try:
             return self.user_db.get_user_skills(user_id)
         except Exception as e:
-            logger.error(f"Error getting user skills for {user_id}: {str(e)}")
             return []
 
     def update_skill(self, skill_id: str, user_id: str, skill_data: UserSkillCreate) -> Optional[UserSkill]:
@@ -255,14 +251,11 @@ class ResumeBuilder:
             if not user:
                 raise ValueError(f"User {user_id} not found")
 
-            print(f"ResumeBuilder: Updating profile for user {user_id} with data: {profile_data}")
             # Update profile
             result = self.user_db.update_user_profile(user_id, profile_data)
-            print(f"ResumeBuilder: Profile update result: {result}")
             return result
 
-        except Exception as e:
-            print(f"ResumeBuilder: Error updating profile for user {user_id}: {str(e)}")
+        except Exception:
             return None
 
     def get_profile(self, user_id: str) -> Optional[UserProfile]:
@@ -293,7 +286,6 @@ class ResumeBuilder:
             }
 
         except Exception as e:
-            logger.error(f"Error getting resume summary for {user_id}: {str(e)}")
             return {
                 "profile": None,
                 "education": [],

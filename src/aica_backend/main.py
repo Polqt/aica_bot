@@ -2,16 +2,13 @@ import sys
 import uvicorn
 import logging
 from dotenv import load_dotenv
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from pathlib import Path
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-
-# Load .env file if it exists (for local development)
 env_path = Path(__file__).parent.parent.parent / ".env"
 if env_path.exists():
     load_dotenv(dotenv_path=env_path)
@@ -19,45 +16,102 @@ if env_path.exists():
 parent_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(parent_dir))
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-
-# Import routers (App Engine runs from workspace root)
+from starlette.responses import JSONResponse
 from api.routes.auth import router as auth_router
 from api.routes.jobs import router as jobs_router
 from api.routes.resume_builder import router as resume_builder_router
 
-class CORSMiddlewareFixed(BaseHTTPMiddleware):
-    def __init__(self, app):
-        super().__init__(app)
-
-    async def dispatch(self, request: Request, call_next):
-        # Handle preflight requests
-        if request.method == "OPTIONS":
-            response = Response(status_code=200)
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-            response.headers["Access-Control-Allow-Headers"] = "*"
-            response.headers["Access-Control-Max-Age"] = "600"
-            return response
-
-        # Process the request
-        response = await call_next(request)
-
-        # Add CORS headers to all responses
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-
-        return response
+# Rate limiting
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(title="AICA Backend", version="1.0.0")
 
-# Add custom CORS middleware
-app.add_middleware(CORSMiddlewareFixed)
+# Rate limiting setup
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Global exception handler to ensure CORS headers on ALL responses including errors
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, HTTPException):
+        response = JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail}
+        )
+    elif isinstance(exc, RateLimitExceeded):
+        logging.warning(f"Rate limit exceeded for request: {request.url} from {request.client.host}")
+        response = JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded"}
+        )
+    else:
+        logging.error(f"Unhandled exception: {exc}", exc_info=True)
+        response = JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error"}
+        )
+
+    # Add CORS headers to ALL error responses
+    origin = request.headers.get("origin")
+    allowed_origins = ["http://localhost:3000", "https://your-production-frontend-domain.com"]
+    if origin in allowed_origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
+    response.headers["Access-Control-Allow-Headers"] = "Accept, Accept-Language, Content-Language, Content-Type, Authorization, Origin, X-Requested-With, X-CSRF-Token"
+    response.headers["Access-Control-Expose-Headers"] = "*"
+
+    return response
+
+# Custom CORS middleware to ensure headers are added to ALL responses
+class CORSFixedMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        # Handle preflight requests explicitly
+        if request.method == "OPTIONS":
+            response = JSONResponse(content={})
+            # Set origin based on request
+            origin = request.headers.get("origin")
+            allowed_origins = ["http://localhost:3000", "https://your-production-frontend-domain.com"]
+            if origin in allowed_origins:
+                response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
+            response.headers["Access-Control-Allow-Headers"] = "Accept, Accept-Language, Content-Language, Content-Type, Authorization, Origin, X-Requested-With, X-CSRF-Token"
+            response.headers["Access-Control-Max-Age"] = "86400"
+            return response
+
+        response = await call_next(request)
+
+        # Add CORS headers to ALL responses
+        origin = request.headers.get("origin")
+        allowed_origins = ["http://localhost:3000", "https://your-production-frontend-domain.com"]
+        if origin in allowed_origins:
+            response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
+        response.headers["Access-Control-Allow-Headers"] = "Accept, Accept-Language, Content-Language, Content-Type, Authorization, Origin, X-Requested-With, X-CSRF-Token"
+        response.headers["Access-Control-Expose-Headers"] = "*"
+
+        return response
+
+app.add_middleware(CORSFixedMiddleware)
+
+# Add the standard CORS middleware for preflight handling
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "https://your-production-frontend-domain.com"],  # Replace with actual production domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=86400,
+)
+
+# Add rate limiting middleware
+app.add_middleware(SlowAPIMiddleware)
 
 app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 app.include_router(jobs_router, prefix="/jobs", tags=["job matching"])
@@ -72,3 +126,4 @@ if __name__ == "__main__":
         uvicorn.run(app, host="0.0.0.0", port=8000)
     except Exception as e:
         raise
+    

@@ -182,6 +182,7 @@ class ProfileUpdateRequest(BaseModel):
     linkedin_url: Optional[str] = None
     experience_years: Optional[int] = None
     education_level: Optional[str] = None
+    profile_completed: Optional[bool] = None
 
 @router.put("/profile", response_model=UserProfile)
 async def update_profile(
