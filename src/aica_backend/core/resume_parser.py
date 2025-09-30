@@ -72,31 +72,67 @@ class ResumeParser:
     
     def _create_extraction_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
-            ("system", """You are an expert resume parser. Extract comprehensive information from resumes 
-            for job matching. Be thorough in identifying both explicit and implicit skills, 
-            and accurately estimate experience levels based on career progression.
-            
-            Focus on:
-            - All technical skills (programming languages, tools, frameworks, databases, cloud platforms)
-            - Soft skills (communication, leadership, problem-solving, teamwork)  
-            - Calculate realistic years of professional experience
-            - Extract actual job titles held
-            - Identify education level and industries worked in.
-            
-            Return ONLY valid JSON that matches the required format."""),
-            ("human", """Parse this resume and extract the key information for job matching:
-            
+            ("system", """You are an expert resume parser with one critical mission: EXTRACT EVERY SINGLE SKILL mentioned in the resume text, both technical and soft skills.
+
+            CRITICAL EXTRACTION RULES:
+            1. SCAN THE ENTIRE RESUME TEXT WORD-BY-WORD
+            2. EXTRACT EVERY SKILL THAT APPEARS - do not skip any
+            3. INCLUDE skills from ALL sections (summary, experience, skills, projects, etc.)
+            4. DO NOT use your training knowledge to add skills that aren't in the text
+            5. COPY skills exactly as they appear in the resume
+            6. Be extremely thorough - if it's mentioned as a skill, extract it
+
+            TECHNICAL SKILLS to look for:
+            - Programming languages (Python, Java, JavaScript, C++, etc.)
+            - Frameworks and libraries (React, Angular, Django, Spring, etc.)
+            - Databases (MySQL, PostgreSQL, MongoDB, etc.)
+            - Cloud platforms (AWS, Azure, GCP, etc.)
+            - Tools and technologies (Docker, Kubernetes, Git, etc.)
+            - Operating systems (Linux, Windows, macOS)
+            - Development tools (VS Code, IntelliJ, etc.)
+            - APIs and protocols (REST, GraphQL, etc.)
+            - ANY technology mentioned anywhere in the resume
+
+            SOFT SKILLS to look for:
+            - Communication skills
+            - Leadership abilities
+            - Teamwork/collaboration
+            - Problem-solving
+            - Analytical thinking
+            - Time management
+            - Project management
+            - Customer service
+            - Mentoring/coaching
+            - Adaptability/flexibility
+            - Creativity/innovation
+            - ANY interpersonal or professional skill mentioned
+
+            ADDITIONAL INFORMATION:
+            - Experience years: Calculate based on work history and dates
+            - Job titles: Extract all positions held
+            - Education: Highest level achieved
+            - Industries: Sectors/fields worked in
+
+            Return ONLY valid JSON. Be comprehensive - include every skill you find."""),
+            ("human", """EXTRACT ALL SKILLS FROM THIS RESUME - BE EXTREMELY THOROUGH:
+
             {resume_text}
-            
-            Instructions:
-            - Extract ALL technical skills (programming languages, tools, frameworks, technologies)
-            - Identify soft skills and interpersonal abilities
-            - Calculate years of relevant professional experience (not just total years)
-            - List all previous job titles/roles
-            - Determine highest education level achieved  
-            - Identify industries or domains of experience
-            - Be comprehensive but accurate
-            
+
+            CRITICAL INSTRUCTIONS - FOLLOW EXACTLY:
+            1. TECHNICAL SKILLS: List EVERY technology, tool, language, framework, database, platform, or software mentioned ANYWHERE in the resume. Do not miss any.
+
+            2. SOFT SKILLS: List EVERY interpersonal skill, professional ability, or personal strength mentioned in the resume. Extract all communication, leadership, teamwork, and other soft skills.
+
+            3. EXPERIENCE YEARS: Calculate total professional experience based on work history dates and descriptions.
+
+            4. JOB TITLES: List all job positions/roles mentioned in the resume.
+
+            5. EDUCATION LEVEL: Extract the highest education level achieved.
+
+            6. INDUSTRIES: List all industries or domains of experience mentioned.
+
+            IMPORTANT: Scan the entire resume text multiple times. Look in summary sections, experience descriptions, skills sections, project descriptions, and anywhere else skills might be mentioned. Extract EVERY skill you find - be comprehensive and thorough.
+
             {format_instructions}""")
         ])
         
