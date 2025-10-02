@@ -20,6 +20,7 @@ from database.models.user_models import UserSkillCreate
 
 logger = logging.getLogger(__name__)
 
+# Data Models
 class ResumeSkills(BaseModel):
     technical_skills: List[str] = Field(description="Technical skills and technologies", default_factory=list)
     soft_skills: List[str] = Field(description="Soft skills and interpersonal abilities", default_factory=list)
@@ -43,122 +44,225 @@ class ParsedResume:
     cleaned_text: str
 
 class ResumeParser:
+    """Advanced resume parser for RAG job matching application.
+
+    Handles various resume formats and extracts comprehensive information
+    including skills, personal info, experience, and education.
+    """
+
     SUPPORTED_FILE_TYPES = {
         "application/pdf": "PDF",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "DOCX",
         "application/msword": "DOC"
     }
-    
+
+    # Skill normalization mappings for common typos and variations
+    SKILL_NORMALIZATIONS = {
+        "tailwind css": "Tailwind CSS",
+        "tailwindcss": "Tailwind CSS",
+        "tailwind-css": "Tailwind CSS",
+        "react.js": "React",
+        "reactjs": "React",
+        "node.js": "Node.js",
+        "nodejs": "Node.js",
+        "vue.js": "Vue.js",
+        "vuejs": "Vue.js",
+        "angular.js": "Angular",
+        "angularjs": "Angular",
+        "express.js": "Express.js",
+        "expressjs": "Express.js",
+        "next.js": "Next.js",
+        "nextjs": "Next.js",
+        "c++": "C++",
+        "c#": "C#",
+        "asp.net": "ASP.NET",
+        "asp.net core": "ASP.NET Core",
+        "google cloud": "Google Cloud Platform",
+        "gcp": "Google Cloud Platform",
+        "aws": "Amazon Web Services",
+        "azure": "Microsoft Azure",
+        "postgresql": "PostgreSQL",
+        "mongodb": "MongoDB",
+        "mysql": "MySQL",
+        "html5": "HTML",
+        "css3": "CSS",
+        "javascript es6": "JavaScript",
+        "typescript": "TypeScript",
+        "scss": "SCSS",
+        "sass": "Sass"
+    }
+
     def __init__(self):
-        self.llm = None
-        try:
-            self.llm = self._create_llm_client()
-        except Exception as e:
-            logger.warning(f"LLM client initialization failed: {str(e)}. Will use fallback extraction methods.")
-        
+        self.llm = self._create_llm_client()
         self.skills_parser = PydanticOutputParser(pydantic_object=ResumeSkills)
         self.info_parser = PydanticOutputParser(pydantic_object=PersonalInfo)
-        
-    def _create_llm_client(self) -> ChatAnthropic:
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key or api_key == "your_anthropic_api_key_here":
-            raise ValueError("ANTHROPIC_API_KEY environment variable not set or contains placeholder value")
-        
-        return ChatAnthropic(
-            model=os.getenv("ANTHROPIC_MODEL", "claude-3-haiku-20240307"),
-            temperature=0,
-            anthropic_api_key=api_key
-        )
+
+    def _create_llm_client(self) -> Optional[ChatAnthropic]:
+        """Create Anthropic LLM client with error handling."""
+        try:
+            api_key = os.getenv("ANTHROPIC_API_KEY")
+            if not api_key or api_key == "your_anthropic_api_key_here":
+                logger.warning("ANTHROPIC_API_KEY not set, using fallback methods")
+                return None
+
+            return ChatAnthropic(
+                model=os.getenv("ANTHROPIC_MODEL", "claude-3-haiku-20240307"),
+                temperature=0,
+                anthropic_api_key=api_key
+            )
+        except Exception as e:
+            logger.warning(f"LLM client initialization failed: {str(e)}")
+            return None
     
-    def _create_extraction_prompt(self) -> ChatPromptTemplate:
+    def _create_comprehensive_prompt(self) -> ChatPromptTemplate:
+        """Create comprehensive prompt for extracting ALL resume information."""
         return ChatPromptTemplate.from_messages([
-            ("system", """You are an expert resume parser with one critical mission: EXTRACT EVERY SINGLE SKILL mentioned in the resume text, both technical and soft skills.
+            ("system", """You are an expert resume parser for a RAG job matching application. Your mission is to extract EVERY piece of relevant information from resumes to enable accurate job matching.
 
-            CRITICAL EXTRACTION RULES:
-            1. SCAN THE ENTIRE RESUME TEXT WORD-BY-WORD
-            2. EXTRACT EVERY SKILL THAT APPEARS - do not skip any
-            3. INCLUDE skills from ALL sections (summary, experience, skills, projects, etc.)
-            4. DO NOT use your training knowledge to add skills that aren't in the text
-            5. COPY skills exactly as they appear in the resume
-            6. Be extremely thorough - if it's mentioned as a skill, extract it
+            CRITICAL EXTRACTION PRINCIPLES:
+            1. SCAN THE ENTIRE RESUME - every section, every line, every word
+            2. EXTRACT INFORMATION FROM ALL SECTIONS - summary, experience, skills, projects, education, etc.
+            3. BE COMPREHENSIVE - don't miss anything that could be relevant for job matching
+            4. PRESERVE ORIGINAL TEXT - copy skills and information exactly as written
+            5. HANDLE DIFFERENT RESUME STYLES - formal, creative, technical, etc.
 
-            TECHNICAL SKILLS to look for:
-            - Programming languages (Python, Java, JavaScript, C++, etc.)
-            - Frameworks and libraries (React, Angular, Django, Spring, etc.)
+            EXTRACTION REQUIREMENTS:
+
+            PERSONAL INFORMATION:
+            - Full name (from header/top of resume)
+            - Phone number (any format)
+            - Email address
+            - Location/City (current or general location)
+            - LinkedIn profile URL
+
+            TECHNICAL SKILLS - EXTRACT FROM EVERYWHERE:
+            - Programming languages (Python, Java, JavaScript, etc.)
+            - Frameworks and libraries (React, Angular, Django, etc.)
             - Databases (MySQL, PostgreSQL, MongoDB, etc.)
             - Cloud platforms (AWS, Azure, GCP, etc.)
             - Tools and technologies (Docker, Kubernetes, Git, etc.)
             - Operating systems (Linux, Windows, macOS)
             - Development tools (VS Code, IntelliJ, etc.)
             - APIs and protocols (REST, GraphQL, etc.)
-            - ANY technology mentioned anywhere in the resume
+            - ANY technology mentioned in experience descriptions
+            - ANY technology mentioned in project descriptions
+            - ANY technology mentioned in skills sections
 
-            SOFT SKILLS to look for:
+            SOFT SKILLS - EXTRACT FROM EVERYWHERE:
             - Communication skills
             - Leadership abilities
             - Teamwork/collaboration
-            - Problem-solving
+            - Problem-solving abilities
             - Analytical thinking
             - Time management
             - Project management
-            - Customer service
-            - Mentoring/coaching
+            - Customer service orientation
+            - Mentoring/coaching abilities
             - Adaptability/flexibility
             - Creativity/innovation
             - ANY interpersonal or professional skill mentioned
 
-            ADDITIONAL INFORMATION:
-            - Experience years: Calculate based on work history and dates
-            - Job titles: Extract all positions held
-            - Education: Highest level achieved
-            - Industries: Sectors/fields worked in
+            PROFESSIONAL INFORMATION:
+            - Experience years: Calculate from work history dates and descriptions
+            - Job titles: All positions held (current and past)
+            - Education level: Highest degree achieved
+            - Industries: Sectors/fields of experience
 
-            Return ONLY valid JSON. Be comprehensive - include every skill you find."""),
-            ("human", """EXTRACT ALL SKILLS FROM THIS RESUME - BE EXTREMELY THOROUGH:
+            EXTRACTION STRATEGY:
+            1. Read the entire resume multiple times
+            2. Look for skills in job descriptions under experience
+            3. Check project descriptions for technologies used
+            4. Scan skills sections thoroughly
+            5. Look for implicit skills in achievement descriptions
+            6. Extract location information from headers or contact info
+            7. Calculate experience from date ranges in work history
+
+            Return ONLY valid JSON with comprehensive information."""),
+            ("human", """EXTRACT ALL INFORMATION FROM THIS RESUME FOR JOB MATCHING:
 
             {resume_text}
 
-            CRITICAL INSTRUCTIONS - FOLLOW EXACTLY:
-            1. TECHNICAL SKILLS: List EVERY technology, tool, language, framework, database, platform, or software mentioned ANYWHERE in the resume. Do not miss any.
+            COMPREHENSIVE EXTRACTION REQUIREMENTS:
 
-            2. SOFT SKILLS: List EVERY interpersonal skill, professional ability, or personal strength mentioned in the resume. Extract all communication, leadership, teamwork, and other soft skills.
+            1. PERSONAL INFO:
+               - Extract full name from resume header
+               - Find phone number (any format)
+               - Extract email address
+               - Get location/city information
+               - Find LinkedIn profile URL
 
-            3. EXPERIENCE YEARS: Calculate total professional experience based on work history dates and descriptions.
+            2. TECHNICAL SKILLS - SEARCH EVERYWHERE:
+               - Programming languages mentioned anywhere
+               - Frameworks and libraries used in projects/experience
+               - Databases mentioned in work history
+               - Cloud platforms and services
+               - Development tools and technologies
+               - Operating systems
+               - APIs, protocols, and integrations
+               - Extract from experience descriptions
+               - Extract from project sections
+               - Extract from skills sections
 
-            4. JOB TITLES: List all job positions/roles mentioned in the resume.
+            3. SOFT SKILLS - SEARCH EVERYWHERE:
+               - Communication and interpersonal skills
+               - Leadership and management abilities
+               - Teamwork and collaboration skills
+               - Problem-solving capabilities
+               - Analytical and critical thinking
+               - Time management and organization
+               - Project management skills
+               - Customer service orientation
+               - Mentoring and coaching abilities
+               - Adaptability and flexibility
+               - Creativity and innovation
 
-            5. EDUCATION LEVEL: Extract the highest education level achieved.
+            4. PROFESSIONAL INFO:
+               - Calculate years of experience from work history dates
+               - List all job titles/positions held
+               - Extract highest education level
+               - Identify industries/domains of experience
 
-            6. INDUSTRIES: List all industries or domains of experience mentioned.
-
-            IMPORTANT: Scan the entire resume text multiple times. Look in summary sections, experience descriptions, skills sections, project descriptions, and anywhere else skills might be mentioned. Extract EVERY skill you find - be comprehensive and thorough.
+            CRITICAL: This is for a RAG job matching system. Extract EVERY technology, skill, and piece of information that could be relevant for matching candidates to jobs. Be thorough and comprehensive.
 
             {format_instructions}""")
         ])
         
     def _create_info_prompt(self) -> ChatPromptTemplate:
+        """Create prompt for extracting personal information comprehensively."""
         return ChatPromptTemplate.from_messages([
-            ("system", """You are an expert at extracting personal contact information from resumes. 
-            Pay special attention to finding the person's full name, which might appear in various formats:
-            - At the top of the resume as a header
-            - In various fonts or formatting styles
-            - Sometimes split across lines
+            ("system", """You are an expert at extracting personal and contact information from resumes of all styles and formats.
+
+            EXTRACTION PRIORITIES:
+            1. Full name - usually at the very top of the resume
+            2. Contact information - phone, email, location
+            3. Professional profiles - LinkedIn, GitHub, etc.
+
+            NAME EXTRACTION RULES:
+            - Look at the top 3-5 lines of the resume first
+            - Names are typically 2-4 words with proper capitalization
             - May include titles (Dr., Mr., Ms.) or suffixes (Jr., Sr., III)
-            - Could be in all caps, title case, or other formatting
-            
-            Return only valid JSON with the extracted information."""),
-            ("human", """Extract contact information from this resume. Pay special attention to finding the full name:
+            - Could be in different formats or split across lines
+            - Choose the most complete name if multiple found
+
+            CONTACT INFORMATION:
+            - Phone numbers in any format (+1, (555), 555-1234, etc.)
+            - Email addresses (any valid format)
+            - Location/City (current residence or general area)
+            - LinkedIn profiles (full URLs or @usernames)
+
+            Be thorough and handle various resume formats and styles."""),
+            ("human", """Extract personal and contact information from this resume:
 
             {resume_text}
 
-            Guidelines:
-            - Look for the full name throughout the document, especially at the beginning
-            - Include middle names/initials if present
-            - Don't include titles like "Resume of" or "CV of" 
-            - If you find multiple name-like entries, choose the most complete one
-            - Clean up any formatting artifacts but preserve the actual name
-            - For phone numbers, extract the most complete format available
-            - For LinkedIn, include the full profile URL if available
+            EXTRACTION REQUIREMENTS:
+            - FULL NAME: Find the person's complete name from the resume header
+            - PHONE: Extract phone number in any format
+            - EMAIL: Find the email address
+            - LOCATION: Extract city/location information
+            - LINKEDIN: Find LinkedIn profile URL if present
+
+            Look carefully at the beginning of the resume for the name, and scan all sections for contact information.
 
             {format_instructions}""")
         ])
@@ -270,53 +374,78 @@ class ResumeParser:
             return self._fallback_info_extraction(text)
 
     async def extract_skills(self, text: str) -> ResumeSkills:
-        # If LLM is not available, use fallback directly
+        """Extract comprehensive skills information from resume text."""
         if self.llm is None:
             logger.info("LLM not available, using fallback skills extraction")
             return self._fallback_skills_extraction(text)
-        
+
         try:
-            prompt = self._create_extraction_prompt().format_prompt(
+            prompt = self._create_comprehensive_prompt().format_prompt(
                 resume_text=text,
                 format_instructions=self.skills_parser.get_format_instructions()
             )
             response = await self.llm.ainvoke(prompt)
             parsed_skills = self.skills_parser.parse(response.content)
-            
-            # Validate and clean skills
-            return self._validate_skills(parsed_skills)
-            
+
+            # Validate, clean, and normalize skills
+            validated_skills = self._validate_skills(parsed_skills)
+            normalized_skills = self._normalize_skills(validated_skills)
+
+            return normalized_skills
+
         except Exception as e:
             logger.warning(f"LLM skills extraction failed: {str(e)}, using fallback")
             return self._fallback_skills_extraction(text)
 
+    def _normalize_skills(self, skills: ResumeSkills) -> ResumeSkills:
+        """Normalize skill names to handle common typos and variations."""
+        def normalize_skill_list(skill_list: List[str]) -> List[str]:
+            normalized = []
+            for skill in skill_list:
+                skill_lower = skill.lower().strip()
+                # Check if we have a normalization mapping
+                if skill_lower in self.SKILL_NORMALIZATIONS:
+                    normalized.append(self.SKILL_NORMALIZATIONS[skill_lower])
+                else:
+                    # Title case for consistency
+                    normalized.append(skill.strip().title())
+            return list(set(normalized))  # Remove duplicates
+
+        skills.technical_skills = normalize_skill_list(skills.technical_skills)
+        skills.soft_skills = normalize_skill_list(skills.soft_skills)
+        skills.industries = normalize_skill_list(skills.industries)
+
+        return skills
+
     def _validate_skills(self, skills: ResumeSkills) -> ResumeSkills:
+        """Validate and clean extracted skills."""
         # Remove duplicates and empty strings
         skills.technical_skills = list(set(filter(bool, [skill.strip() for skill in skills.technical_skills])))
         skills.soft_skills = list(set(filter(bool, [skill.strip() for skill in skills.soft_skills])))
         skills.job_titles = list(set(filter(bool, [title.strip() for title in skills.job_titles])))
         skills.industries = list(set(filter(bool, [industry.strip() for industry in skills.industries])))
-        
+
         # Validate experience years
         if skills.experience_years is not None:
             skills.experience_years = max(0, min(70, skills.experience_years))
-            
+
         return skills
 
     def _fallback_info_extraction(self, text: str) -> PersonalInfo:
+        """Fallback method for extracting personal information."""
         patterns = {
             'email': r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
             'phone': r'\b(?:\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}\b',
             'linkedin': r'(?:linkedin\.com/in/|linkedin\.com/pub/)[\w-]+'
         }
-        
+
         extracted_info = {}
         for field, pattern in patterns.items():
             match = re.search(pattern, text, re.IGNORECASE)
             extracted_info[field] = match.group() if match else None
-        
+
         name = self._extract_name_from_text(text)
-        
+
         return PersonalInfo(
             full_name=name,
             email=extracted_info['email'],
@@ -325,103 +454,173 @@ class ResumeParser:
         )
 
     def _fallback_skills_extraction(self, text: str) -> ResumeSkills:
+        """Enhanced fallback method for skills extraction."""
         text_lower = text.lower()
-        
-        # Common technical skills
+
+        # Expanded technical skills list
         technical_keywords = [
-            'python', 'java', 'javascript', 'react', 'node', 'sql', 'aws', 'azure',
-            'docker', 'kubernetes', 'git', 'html', 'css', 'mongodb', 'postgresql',
-            'c++', 'c#', 'php', 'ruby', 'swift', 'kotlin', 'typescript', 'angular',
-            'vue', 'django', 'flask', 'spring', 'express', 'laravel'
+            'python', 'java', 'javascript', 'typescript', 'react', 'node.js', 'node',
+            'html', 'css', 'sql', 'mysql', 'postgresql', 'mongodb', 'redis',
+            'aws', 'azure', 'google cloud', 'docker', 'kubernetes', 'git', 'github',
+            'linux', 'windows', 'macos', 'c++', 'c#', 'php', 'ruby', 'swift', 'kotlin',
+            'angular', 'vue', 'django', 'flask', 'spring', 'express', 'laravel',
+            'tensorflow', 'pytorch', 'pandas', 'numpy', 'jupyter', 'tableau',
+            'react native', 'flutter', 'ios', 'android', 'graphql', 'rest api',
+            'tailwind css', 'bootstrap', 'sass', 'webpack', 'babel', 'jest'
         ]
-        
-        # Common soft skills
+
+        # Expanded soft skills list
         soft_keywords = [
-            'leadership', 'communication', 'teamwork', 'problem solving',
-            'analytical', 'creative', 'organizational', 'time management',
-            'project management', 'critical thinking', 'collaboration'
+            'leadership', 'communication', 'teamwork', 'collaboration', 'problem solving',
+            'analytical', 'critical thinking', 'creativity', 'innovation', 'organization',
+            'time management', 'project management', 'customer service', 'mentoring',
+            'coaching', 'adaptability', 'flexibility', 'presentation', 'negotiation'
         ]
-        
+
         found_technical = [skill for skill in technical_keywords if skill in text_lower]
         found_soft = [skill for skill in soft_keywords if skill in text_lower]
-        
-        # Try to estimate experience years
+
+        # Extract additional info
         experience_years = self._estimate_experience_years(text)
-        
+        job_titles = self._extract_job_titles(text)
+        education_level = self._extract_education_level(text)
+        industries = self._extract_industries(text)
+
         return ResumeSkills(
             technical_skills=found_technical,
             soft_skills=found_soft,
-            experience_years=experience_years
+            experience_years=experience_years,
+            job_titles=job_titles,
+            education_level=education_level,
+            industries=industries
         )
 
     def _estimate_experience_years(self, text: str) -> Optional[int]:
+        """Calculate years of experience from resume text."""
         patterns = [
             r'(\d+)\+?\s*years?\s*(?:of\s*)?experience',
-            r'(\d+)\+?\s*years?\s*in',
+            r'(\d+)\+?\s*years?\s*in(?:\s+the\s+)?(?:software|tech|it)?\s*industry',
+            r'experience:\s*(\d+)\+?\s*years?',
             r'over\s*(\d+)\s*years?',
+            r'(\d+)\+?\s*years?\s*professional\s*experience'
         ]
-        
+
         for pattern in patterns:
-            matches = re.findall(pattern, text.lower())
+            matches = re.findall(pattern, text, re.IGNORECASE)
             if matches:
                 try:
                     years = max(int(match) for match in matches)
                     return min(years, 70)  # Cap at 70 years
                 except ValueError:
                     continue
-        
+
         return None
 
+    def _extract_job_titles(self, text: str) -> List[str]:
+        """Extract job titles from resume text."""
+        # Look for common job title patterns
+        title_patterns = [
+            r'(?:^|\n)([A-Z][^.\n]{10,50}?)(?:\n|$)',  # Lines that look like job titles
+            r'(?:position|role|title)[:\s]*([A-Z][^.\n]{5,30})',  # Explicit position mentions
+            r'(?:software|web|full.?stack|backend|frontend|devops|data)\s+(?:engineer|developer|analyst|scientist|architect)',
+        ]
+
+        found_titles = []
+        for pattern in title_patterns:
+            matches = re.findall(pattern, text, re.MULTILINE | re.IGNORECASE)
+            for match in matches:
+                title = match.strip()
+                if len(title) > 3 and len(title) < 50:
+                    # Filter out non-job-title content
+                    if not any(word in title.lower() for word in ['email', 'phone', 'address', 'www', 'http', 'university', 'college']):
+                        found_titles.append(title)
+
+        return list(set(found_titles))[:5]  # Limit to 5 most relevant
+
+    def _extract_education_level(self, text: str) -> Optional[str]:
+        """Extract highest education level from resume."""
+        text_lower = text.lower()
+        education_levels = [
+            ('phd', 'PhD'), ('doctorate', 'PhD'), ('doctoral', 'PhD'),
+            ("master's", "Master's"), ('masters', "Master's"), ('mba', 'MBA'),
+            ('ms', 'MS'), ('ma', 'MA'), ('msc', 'MSc'), ('meng', 'MEng'),
+            ("bachelor's", "Bachelor's"), ('bachelors', 'Bachelor\'s'), ('bachelor', 'Bachelor\'s'),
+            ('bs', 'BS'), ('ba', 'BA'), ('bsc', 'BSc'), ('beng', 'BEng'),
+            ('associate', 'Associate'), ('diploma', 'Diploma'), ('certificate', 'Certificate')
+        ]
+
+        for keyword, level in education_levels:
+            if keyword in text_lower:
+                return level
+
+        return None
+
+    def _extract_industries(self, text: str) -> List[str]:
+        """Extract industries/sectors from resume text."""
+        industries = [
+            'technology', 'software', 'it', 'finance', 'banking', 'healthcare', 'medical',
+            'retail', 'e-commerce', 'education', 'consulting', 'manufacturing', 'automotive',
+            'telecommunications', 'energy', 'oil', 'gas', 'government', 'non-profit',
+            'marketing', 'advertising', 'media', 'entertainment', 'hospitality', 'real estate',
+            'logistics', 'supply chain', 'construction', 'pharmaceuticals', 'biotechnology'
+        ]
+
+        found_industries = [industry for industry in industries if industry in text.lower()]
+        return list(set(found_industries))
+
     def _extract_name_from_text(self, text: str) -> Optional[str]:
+        """Extract full name from resume text."""
         lines = text.split('\n')
         lines = [line.strip() for line in lines if line.strip()]
-        
+
         if not lines:
             return None
-        
-        # Try first few lines for name
-        for i, line in enumerate(lines[:5]):  # Check first 5 lines
+
+        # Check first few lines for name
+        for line in lines[:5]:
             line = line.strip()
-            
+
+            # Skip obvious non-name lines
             skip_keywords = [
                 'resume', 'cv', 'curriculum', 'vitae', 'phone', 'email', 'address',
                 'objective', 'summary', 'profile', 'experience', 'education',
-                'skills', 'contact', 'www', 'http', '.com', '@'
+                'skills', 'contact', 'www', 'http', '.com', '@', 'linkedin'
             ]
-            
+
             if any(keyword in line.lower() for keyword in skip_keywords):
                 continue
-            
+
             # Check if line looks like a name (2-4 words, proper capitalization)
             words = line.split()
             if 2 <= len(words) <= 4:
-                # Check if words start with capital letters and contain only letters
-                if all(word[0].isupper() and word.replace('-', '').replace("'", '').isalpha() 
+                # Validate word patterns (proper names)
+                if all(word[0].isupper() and word.replace('-', '').replace("'", '').isalpha()
                       for word in words if word):
-                    return line
-        
+                    return self._clean_extracted_name(line)
+
         return None
 
     def _clean_extracted_name(self, name: str) -> str:
+        """Clean and format extracted name."""
         if not name:
             return name
-            
+
         # Remove common prefixes
         prefixes_to_remove = ['resume of ', 'cv of ', 'name:', 'full name:']
         name_lower = name.lower().strip()
-        
+
         for prefix in prefixes_to_remove:
             if name_lower.startswith(prefix):
                 name = name[len(prefix):].strip()
                 break
-        
-        # Remove extra whitespace and clean up
+
+        # Clean up and format
         name = ' '.join(name.split())
-        
-        # Capitalize properly if it's all caps or all lowercase
+
+        # Proper title case
         if name.isupper() or name.islower():
             name = name.title()
-        
+
         return name
 
     async def parse_resume_from_file(self, file_content: bytes, file_type: str) -> ParsedResume:
