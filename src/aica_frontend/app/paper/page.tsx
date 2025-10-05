@@ -5,7 +5,7 @@ import React from 'react';
 
 export default function PaperPage() {
   return (
-    <div>
+    <div className="min-h-screen bg-transparent">
       <Navbar />
       <Paper />
       <Testimony />

@@ -1,29 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { motion } from 'motion/react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import {
-  Mail,
-  Lock,
-  ArrowRight,
-  Eye,
-  EyeOff,
-  Loader2,
-} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { NeoCard } from '@/components/ui/neo-card';
+import { NeoButton } from '@/components/ui/neo-button';
+import { NeoForm, NeoFormField, NeoFormInput } from '@/components/ui/neo-form';
+import { Mail, Lock, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { AuthCarouselWrapper } from '@/components/AuthCarousel';
-import { SignupResponse, SignupFormData } from '@/types/auth';
+import { SignupFormData } from '@/types/auth';
 import { API_BASE_URL } from '@/lib/constants/api';
 import { validateEmail, validatePassword } from '@/lib/utils/errorHandler';
 
@@ -40,8 +24,6 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [isCarouselCollapsed, setIsCarouselCollapsed] = useState(false);
-  const router = useRouter();
 
   const validateForm = (): ValidationError => {
     const { email, password, confirmPassword } = formData;
@@ -102,49 +84,22 @@ export default function SignupPage() {
         }),
       });
 
-      const data: SignupResponse = await response.json();
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.detail || `HTTP ${response.status}: Signup failed`,
-        );
-      }
-
-      // Check if email confirmation is required
-      if (data.email_confirmation_required) {
-        setSuccess(
-          'Account created successfully! Please check your email and confirm your account before proceeding.',
-        );
-
-        setTimeout(() => {
-          window.open('https://mail.google.com', '_blank');
-
-          router.push(
-            '/login?message=Please confirm your email and then log in',
-          );
-        }, 2000);
-      } else if (data.access_token) {
-        localStorage.setItem('access_token', data.access_token);
-        setSuccess(
-          'Account created successfully! Redirecting to choice...',
-        );
-        setTimeout(() => {
-          router.push('/choice');
-        }, 1500);
+        setError(data.detail || 'Failed to create account');
       } else {
         setSuccess(
-          data.message ||
-            'Account created successfully! Please log in to continue.',
+          'Account created successfully! Please check your email to verify your account.',
         );
-        setTimeout(() => {
-          router.push('/login');
-        }, 3000);
+        setFormData({
+          email: '',
+          password: '',
+          confirmPassword: '',
+        });
       }
-    } catch (error) {
-      console.error('Signup error:', error);
-      const errorMessage =
-        error instanceof Error ? error.message : 'An unexpected error occurred';
-      setError(errorMessage);
+    } catch {
+      setError('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -160,57 +115,35 @@ export default function SignupPage() {
 
   return (
     <>
-      <div
-        className={`hidden lg:block min-h-screen p-4 transition-all duration-500 ease-in-out ${
-          isCarouselCollapsed ? 'w-20' : 'w-1/3'
-        }`}
-      >
-        <AuthCarouselWrapper
-          className="h-full"
-          onCollapseChange={setIsCarouselCollapsed}
-        />
-      </div>
-
-      {/* Right Section - Sign Up Form */}
-      <div
-        className={`min-h-screen flex items-center p-4 lg:p-8 transition-all duration-500 ease-in-out ${
-          isCarouselCollapsed
-            ? 'flex-1 justify-center'
-            : 'flex-1 justify-center'
-        }`}
-      >
+      <div className="fixed inset-0 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="w-full max-w-md"
         >
-          <div className="relative group">
-            <Card className="relative bg-white dark:bg-gray-900 border-4 border-black dark:border-violet-300 rounded-none shadow-none transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1">
-              <CardHeader className="space-y-6 p-8">
-                <div className="text-center space-y-3">
+          <div className="relative">
+            <NeoCard variant="elevated" className="relative">
+              <div className="p-8">
+                <div className="text-center space-y-3 mb-8">
                   <div className="inline-block">
-                    <div className="bg-violet-600 text-white px-4 py-2 transform -rotate-2 font-black text-sm tracking-wider">
-                      SIGN UP
+                    <div className="bg-violet-600 text-white px-4 py-2 text-sm">
+                      Sign up
                     </div>
                   </div>
-                  <CardTitle className="text-3xl font-black tracking-tight text-black dark:text-white">
-                    CREATE ACCOUNT
-                  </CardTitle>
-                  <CardDescription className="text-base font-medium text-gray-700 dark:text-gray-300">
+                  <h2 className="text-2xl font-semibold text-black dark:text-white">
+                    Create Account
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Join us to get started
-                  </CardDescription>
+                  </p>
                 </div>
-              </CardHeader>
 
-              <CardContent className="p-8 pt-0">
-              <form onSubmit={handleSignup} className="space-y-6">
-                <div className="space-y-6">
-                  <div className="relative group">
-                    <div className="absolute -inset-0.5 bg-violet-400 rounded-none opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
+                <NeoForm onSubmit={handleSignup} className="space-y-6">
+                  <NeoFormField>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-4 h-5 w-5 text-gray-600 dark:text-gray-400 z-10" />
-                      <Input
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-600 dark:text-gray-400 z-10" />
+                      <NeoFormInput
                         id="email"
                         name="email"
                         type="email"
@@ -218,17 +151,16 @@ export default function SignupPage() {
                         placeholder="EMAIL ADDRESS"
                         value={formData.email}
                         onChange={handleInputChange}
-                        className="pl-12 h-14 bg-gray-50 dark:bg-gray-800 border-3 border-black dark:border-violet-300 rounded-none focus:border-violet-600 dark:focus:border-violet-400 focus:ring-0 font-bold placeholder:font-bold placeholder:text-gray-500 text-black dark:text-white transition-all duration-300"
+                        className="pl-12"
                         disabled={loading}
                       />
                     </div>
-                  </div>
+                  </NeoFormField>
 
-                  <div className="relative group">
-                    <div className="absolute -inset-0.5 bg-violet-400 rounded-none opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
+                  <NeoFormField>
                     <div className="relative">
-                      <Lock className="absolute left-4 top-4 h-5 w-5 text-gray-600 dark:text-gray-400 z-10" />
-                      <Input
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-600 dark:text-gray-400 z-10" />
+                      <NeoFormInput
                         id="password"
                         name="password"
                         type={showPassword ? 'text' : 'password'}
@@ -236,13 +168,13 @@ export default function SignupPage() {
                         placeholder="PASSWORD"
                         value={formData.password}
                         onChange={handleInputChange}
-                        className="pl-12 pr-12 h-14 bg-gray-50 dark:bg-gray-800 border-3 border-black dark:border-violet-300 rounded-none focus:border-violet-600 dark:focus:border-violet-400 focus:ring-0 font-bold placeholder:font-bold placeholder:text-gray-500 text-black dark:text-white transition-all duration-300"
+                        className="pl-12 pr-12"
                         disabled={loading}
                       />
                       <button
                         type="button"
                         onClick={() => togglePasswordVisibility('password')}
-                        className="absolute right-4 top-4 h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors z-10"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors z-10"
                         disabled={loading}
                         aria-label="Toggle password visibility"
                       >
@@ -253,13 +185,12 @@ export default function SignupPage() {
                         )}
                       </button>
                     </div>
-                  </div>
+                  </NeoFormField>
 
-                  <div className="relative group">
-                    <div className="absolute -inset-0.5 bg-violet-400 rounded-none opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
+                  <NeoFormField>
                     <div className="relative">
-                      <Lock className="absolute left-4 top-4 h-5 w-5 text-gray-600 dark:text-gray-400 z-10" />
-                      <Input
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-600 dark:text-gray-400 z-10" />
+                      <NeoFormInput
                         id="confirmPassword"
                         name="confirmPassword"
                         type={showConfirmPassword ? 'text' : 'password'}
@@ -267,7 +198,7 @@ export default function SignupPage() {
                         placeholder="CONFIRM PASSWORD"
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
-                        className="pl-12 pr-12 h-14 bg-gray-50 dark:bg-gray-800 border-3 border-black dark:border-violet-300 rounded-none focus:border-violet-600 dark:focus:border-violet-400 focus:ring-0 font-bold placeholder:font-bold placeholder:text-gray-500 text-black dark:text-white transition-all duration-300"
+                        className="pl-12 pr-12"
                         disabled={loading}
                       />
                       <button
@@ -275,7 +206,7 @@ export default function SignupPage() {
                         onClick={() =>
                           togglePasswordVisibility('confirmPassword')
                         }
-                        className="absolute right-4 top-4 h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors z-10"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors z-10"
                         disabled={loading}
                         aria-label="Toggle confirm password visibility"
                       >
@@ -286,46 +217,42 @@ export default function SignupPage() {
                         )}
                       </button>
                     </div>
-                  </div>
-                </div>
+                  </NeoFormField>
 
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="relative"
-                  >
-                    <div className="absolute -inset-1 bg-red-500 rotate-1"></div>
-                    <div className="relative bg-red-50 dark:bg-red-950 border-2 border-red-600 p-4 text-center">
-                      <p className="text-red-700 dark:text-red-300 font-bold text-sm tracking-wide">
-                        {error.toUpperCase()}
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="relative"
+                    >
+                      <div className="absolute -inset-1 bg-red-500 rotate-1"></div>
+                      <div className="relative bg-red-50 dark:bg-red-950 border-2 border-red-600 p-4 text-center">
+                        <p className="text-red-700 dark:text-red-300 font-bold text-sm tracking-wide">
+                          {error.toUpperCase()}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
 
-                {success && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="relative"
-                  >
-                    <div className="absolute -inset-1 bg-green-500 rotate-1"></div>
-                    <div className="relative bg-green-50 dark:bg-green-950 border-2 border-green-600 p-4 text-center">
-                      <p className="text-green-700 dark:text-green-300 font-bold text-sm tracking-wide">
-                        {success.toUpperCase()}
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
+                  {success && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="relative"
+                    >
+                      <div className="absolute -inset-1 bg-green-500 rotate-1"></div>
+                      <div className="relative bg-green-50 dark:bg-green-950 border-2 border-green-600 p-4 text-center">
+                        <p className="text-green-700 dark:text-green-300 font-bold text-sm tracking-wide">
+                          {success.toUpperCase()}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
 
-                <div className="relative group">
-                  <div className="absolute -inset-1 bg-black rotate-2 group-hover:rotate-1 transition-transform duration-300"></div>
-                  <Button
+                  <NeoButton
                     type="submit"
                     disabled={loading}
-                    className="relative w-full h-14 bg-violet-600 hover:bg-violet-700 border-3 border-black text-white font-black text-base tracking-widest rounded-none transition-all duration-300 transform hover:-translate-y-1 disabled:hover:translate-y-0"
-                    size="lg"
+                    className="w-full h-14 font-black tracking-widest group"
                   >
                     {loading ? (
                       <div className="flex items-center justify-center space-x-3">
@@ -333,59 +260,54 @@ export default function SignupPage() {
                         <span>CREATING ACCOUNT...</span>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center space-x-3 group">
+                      <div className="flex items-center justify-center space-x-3">
                         <span>CREATE ACCOUNT</span>
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
                       </div>
                     )}
-                  </Button>
-                </div>
-              </form>
+                  </NeoButton>
 
-              <div className="mt-8 relative">
-                <Separator className="border-2 border-black dark:border-violet-300" />
+                  <div className="text-center mt-8">
+                    <p className="text-base font-bold text-gray-700 dark:text-gray-300">
+                      ALREADY HAVE AN ACCOUNT?{' '}
+                      <Link
+                        href="/login"
+                        className="text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 transition-colors duration-300 underline decoration-2 underline-offset-4 hover:decoration-4"
+                      >
+                        SIGN IN
+                      </Link>
+                    </p>
+                  </div>
+                </NeoForm>
               </div>
+            </NeoCard>
+          </div>
 
-              <div className="text-center mt-8">
-                <p className="text-base font-bold text-gray-700 dark:text-gray-300">
-                  ALREADY HAVE AN ACCOUNT?{' '}
-                  <Link
-                    href="/login"
-                    className="text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 transition-colors duration-300 underline decoration-2 underline-offset-4 hover:decoration-4"
-                  >
-                    SIGN IN
-                  </Link>
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-          className="mt-8 text-center"
-        >
-          <p className="text-xs font-bold text-gray-600 dark:text-gray-400 tracking-wider">
-            BY SIGNING UP, YOU AGREE TO OUR{' '}
-            <Link
-              href="#"
-              className="text-violet-600 hover:text-violet-700 underline decoration-2"
-            >
-              TERMS
-            </Link>{' '}
-            AND{' '}
-            <Link
-              href="#"
-              className="text-violet-600 hover:text-violet-700 underline decoration-2"
-            >
-              PRIVACY
-            </Link>
-          </p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mt-8 text-center"
+          >
+            <p className="text-xs font-bold text-gray-600 dark:text-gray-400 tracking-wider">
+              BY SIGNING UP, YOU AGREE TO OUR{' '}
+              <Link
+                href="#"
+                className="text-violet-600 hover:text-violet-700 underline decoration-2"
+              >
+                TERMS
+              </Link>{' '}
+              AND{' '}
+              <Link
+                href="#"
+                className="text-violet-600 hover:text-violet-700 underline decoration-2"
+              >
+                PRIVACY
+              </Link>
+            </p>
+          </motion.div>
         </motion.div>
-      </motion.div>
-    </div>
-  </>
-);
+      </div>
+    </>
+  );
 }

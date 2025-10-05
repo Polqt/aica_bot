@@ -4,7 +4,6 @@ import { motion } from 'motion/react';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ArrowRight, Play, Brain, Target, Zap, Shield } from 'lucide-react';
 import Link from 'next/link';
 
@@ -44,12 +43,13 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <Navbar />
       <section className="relative overflow-hidden">
-        <div className="relative container mx-auto px-6 py-32 lg:py-40">
-          <div className="grid lg:grid-cols-2 gap-20 items-center">
+        <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)]" />
+        <div className="relative container mx-auto px-6 py-24 lg:py-32">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className="space-y-12"
             >
               <motion.div
@@ -57,21 +57,21 @@ export default function Home() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
               >
-                <Badge className="bg-violet-600 hover:bg-violet-700 text-white border-0 px-6 py-3 text-sm font-bold uppercase tracking-wider shadow-lg shadow-violet-600/25">
+                <div className="inline-block bg-violet-600 text-white px-6 py-3 text-sm font-black uppercase tracking-wider transform -rotate-2 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
                   AI-POWERED CAREERS
-                </Badge>
+                </div>
               </motion.div>
 
               <div className="space-y-6">
                 <h1 className="text-6xl lg:text-8xl font-black leading-[0.9] tracking-tight">
-                  <span className="block text-gray-900 dark:text-white">
+                  <span className="block text-gray-900 dark:text-white relative">
                     FIND YOUR
+                    <span className="absolute -bottom-2 left-0 w-full h-1 bg-black dark:bg-white transform -skew-x-12"></span>
                   </span>
-                  <span className="block relative">
-                    <span className="bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                  <span className="block relative mt-4">
+                    <span className="relative inline-block px-4 py-2 bg-violet-600 text-white transform -rotate-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.8)]">
                       DREAM JOB
                     </span>
-                    <div className="absolute -bottom-2 left-0 w-full h-2 bg-violet-600 transform -skew-x-12" />
                   </span>
                 </h1>
 
@@ -88,7 +88,7 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-6">
                 <Button
                   asChild
-                  className="group bg-violet-600 hover:bg-violet-700 text-white border-0 px-10 py-6 text-lg font-bold uppercase tracking-wide shadow-xl shadow-violet-600/25 hover:shadow-2xl hover:shadow-violet-600/40 transition-all duration-300"
+                  className="group bg-violet-600 hover:bg-violet-700 text-white border-3 border-black dark:border-white px-10 py-6 text-lg font-black uppercase tracking-wide rounded-none transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
                 >
                   <Link href="/sign-up">
                     GET STARTED
@@ -98,7 +98,7 @@ export default function Home() {
 
                 <Button
                   variant="neutral"
-                  className="group border-2 border-gray-900 dark:border-white bg-transparent hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-gray-900 px-10 py-6 text-lg font-bold uppercase tracking-wide transition-all duration-300"
+                  className="group border-3 border-black dark:border-white bg-white dark:bg-black hover:bg-violet-50 dark:hover:bg-violet-950 px-10 py-6 text-lg font-black uppercase tracking-wide rounded-none transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
                 >
                   <Play className="w-5 h-5 mr-3" />
                   WATCH DEMO
@@ -106,16 +106,16 @@ export default function Home() {
               </div>
 
               <div className="flex items-center gap-8 pt-8">
-                <div className="flex -space-x-4">
+                <div className="flex -space-x-2">
                   {[...Array(4)].map((_, i) => (
                     <div
                       key={i}
-                      className="w-14 h-14 bg-gradient-to-br from-violet-500 to-purple-600 border-4 border-white dark:border-gray-950 rounded-full flex items-center justify-center text-white text-lg font-black shadow-lg"
+                      className="w-14 h-14 bg-violet-600 border-3 border-black dark:border-white text-white text-lg font-black transform hover:-translate-y-1 transition-all flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
                     >
                       {i + 1}
                     </div>
                   ))}
-                  <div className="w-14 h-14 bg-gray-200 dark:bg-gray-800 border-4 border-white dark:border-gray-950 rounded-full flex items-center justify-center text-gray-500 text-sm font-bold">
+                  <div className="w-14 h-14 bg-gray-200 dark:bg-gray-800 border-3 border-black dark:border-white text-black dark:text-white text-sm font-black transform hover:-translate-y-1 transition-all flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
                     +10K
                   </div>
                 </div>
@@ -137,19 +137,21 @@ export default function Home() {
               transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
               className="relative"
             >
-              <div className="relative bg-white dark:bg-gray-900 rounded-3xl shadow-2xl shadow-gray-900/10 dark:shadow-black/40 border border-gray-200 dark:border-gray-800 overflow-hidden">
-                <div className="bg-gradient-to-r from-violet-600 to-purple-600 p-6 relative">
+              <div className="relative bg-white dark:bg-black border-2 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.8)] overflow-hidden transform rotate-1">
+                <div className="bg-violet-600 dark:bg-violet-700 p-6 relative border-b-2 border-black dark:border-white">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-xl font-black text-white uppercase tracking-wide">
+                      <h3 className="text-xl font-black text-white uppercase tracking-wide transform -rotate-1">
                         YOUR MATCHES
                       </h3>
-                      <p className="text-violet-100 font-semibold">
+                      <p className="text-violet-100 font-bold transform -rotate-1">
                         Perfect opportunities await
                       </p>
                     </div>
-                    <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
-                      <span className="text-white font-bold">98% MATCH</span>
+                    <div className="bg-white dark:bg-black px-4 py-2 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.8)] transform -rotate-2">
+                      <span className="text-black dark:text-white font-bold">
+                        98% MATCH
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -180,7 +182,7 @@ export default function Home() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5 + index * 0.1 }}
-                      className="group p-6 border-2 border-gray-100 dark:border-gray-800 rounded-2xl hover:border-violet-300 dark:hover:border-violet-700 hover:shadow-lg hover:shadow-violet-600/10 transition-all duration-300 cursor-pointer"
+                      className="group p-6 border-3 border-black dark:border-white bg-white dark:bg-black transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] cursor-pointer"
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div>
@@ -210,11 +212,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-24 bg-gradient-to-r from-violet-600 to-purple-600 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10" />
-        <div className="absolute top-0 left-1/4 w-64 h-64 bg-white/5 rounded-full -translate-y-32" />
-        <div className="absolute bottom-0 right-1/4 w-48 h-48 bg-white/5 rounded-full translate-y-24" />
+      <section className="py-24 bg-white dark:bg-black relative overflow-hidden border-y-2 border-black dark:border-white">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-600/10 to-purple-600/10" />
+        <div className="absolute top-0 left-1/4 w-64 h-64 bg-violet-600/5 rounded-full -translate-y-32" />
+        <div className="absolute bottom-0 right-1/4 w-48 h-48 bg-purple-600/5 rounded-full translate-y-24" />
 
         <div className="relative container mx-auto px-6">
           <motion.div
@@ -267,7 +269,7 @@ export default function Home() {
                 viewport={{ once: true }}
                 className="group"
               >
-                <Card className="border-2 border-gray-100 dark:border-gray-800 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 hover:border-violet-300 dark:hover:border-violet-700 hover:shadow-2xl hover:shadow-violet-600/10 transition-all duration-500 overflow-hidden h-full">
+                <Card className="border-3 border-black dark:border-white bg-white dark:bg-black transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] overflow-hidden h-full rounded-none">
                   <CardContent className="p-8 relative">
                     <div className="absolute top-4 right-4 w-2 h-2 bg-violet-600 rounded-full" />
                     <div className="w-16 h-16 bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">

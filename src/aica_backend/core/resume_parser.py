@@ -115,114 +115,115 @@ class ResumeParser:
             return None
     
     def _create_comprehensive_prompt(self) -> ChatPromptTemplate:
-        """Create comprehensive prompt for extracting ALL resume information."""
+        """Create balanced prompt for extracting comprehensive skills from resumes."""
         return ChatPromptTemplate.from_messages([
-            ("system", """You are an expert resume parser for a RAG job matching application. Your mission is to extract EVERY piece of relevant information from resumes to enable accurate job matching.
+            ("system", """You are an expert resume parser for job matching. Extract ALL legitimate skills and competencies from resumes while maintaining high quality and accuracy.
 
-            CRITICAL EXTRACTION PRINCIPLES:
-            1. SCAN THE ENTIRE RESUME - every section, every line, every word
-            2. EXTRACT INFORMATION FROM ALL SECTIONS - summary, experience, skills, projects, education, etc.
-            3. BE COMPREHENSIVE - don't miss anything that could be relevant for job matching
-            4. PRESERVE ORIGINAL TEXT - copy skills and information exactly as written
-            5. HANDLE DIFFERENT RESUME STYLES - formal, creative, technical, etc.
+            EXTRACTION PHILOSOPHY:
+            1. COMPREHENSIVE: Find every skill mentioned anywhere in the resume
+            2. QUALITY CONTROL: Only extract complete, meaningful skills - not fragments
+            3. CONTEXT AWARE: Understand when words represent skills vs. random text
+            4. JOB MATCHING FOCUSED: Extract skills that would be relevant for job matching
 
-            EXTRACTION REQUIREMENTS:
+            SKILL CATEGORIES TO EXTRACT:
 
-            PERSONAL INFORMATION:
-            - Full name (from header/top of resume)
-            - Phone number (any format)
-            - Email address
-            - Location/City (current or general location)
-            - LinkedIn profile URL
-
-            TECHNICAL SKILLS - EXTRACT FROM EVERYWHERE:
-            - Programming languages (Python, Java, JavaScript, etc.)
-            - Frameworks and libraries (React, Angular, Django, etc.)
+            TECHNICAL SKILLS - EXTRACT FROM ANYWHERE:
+            - Programming languages (Python, Java, JavaScript, C++, etc.)
+            - Frameworks and libraries (React, Angular, Django, Node.js, etc.)
             - Databases (MySQL, PostgreSQL, MongoDB, etc.)
             - Cloud platforms (AWS, Azure, GCP, etc.)
             - Tools and technologies (Docker, Kubernetes, Git, etc.)
             - Operating systems (Linux, Windows, macOS)
             - Development tools (VS Code, IntelliJ, etc.)
             - APIs and protocols (REST, GraphQL, etc.)
-            - ANY technology mentioned in experience descriptions
-            - ANY technology mentioned in project descriptions
-            - ANY technology mentioned in skills sections
+            - Any technology mentioned in experience or project descriptions
 
-            SOFT SKILLS - EXTRACT FROM EVERYWHERE:
+            SOFT SKILLS - EXTRACT WHEN CLEARLY STATED:
             - Communication skills
             - Leadership abilities
-            - Teamwork/collaboration
-            - Problem-solving abilities
+            - Teamwork and collaboration
+            - Problem-solving capabilities
             - Analytical thinking
             - Time management
             - Project management
-            - Customer service orientation
-            - Mentoring/coaching abilities
-            - Adaptability/flexibility
-            - Creativity/innovation
-            - ANY interpersonal or professional skill mentioned
+            - Customer service
+            - Mentoring and coaching
+            - Adaptability and flexibility
+            - Creativity and innovation
+            - Any interpersonal or professional skill explicitly mentioned
 
-            PROFESSIONAL INFORMATION:
-            - Experience years: Calculate from work history dates and descriptions
-            - Job titles: All positions held (current and past)
-            - Education level: Highest degree achieved
-            - Industries: Sectors/fields of experience
+            EXTRACTION RULES:
+            ✓ EXTRACT: "Python", "React", "AWS", "Communication", "Leadership"
+            ✓ EXTRACT: Skills from experience bullet points ("Developed React applications" → "React")
+            ✓ EXTRACT: Skills from project descriptions ("Built with Node.js" → "Node.js")
+            ✓ EXTRACT: Skills from summary sections ("Strong in Python development" → "Python")
 
-            EXTRACTION STRATEGY:
-            1. Read the entire resume multiple times
-            2. Look for skills in job descriptions under experience
-            3. Check project descriptions for technologies used
-            4. Scan skills sections thoroughly
-            5. Look for implicit skills in achievement descriptions
-            6. Extract location information from headers or contact info
-            7. Calculate experience from date ranges in work history
+            ✗ AVOID: "where I can gain" (incomplete phrase)
+            ✗ AVOID: "developed applications" (action, not skill)
+            ✗ AVOID: "worked on projects" (activity, not skill)
+            ✗ AVOID: Random words or fragments
 
-            Return ONLY valid JSON with comprehensive information."""),
-            ("human", """EXTRACT ALL INFORMATION FROM THIS RESUME FOR JOB MATCHING:
+            SCAN THOROUGHLY:
+            - Skills sections (explicit lists)
+            - Experience descriptions (extract technologies used)
+            - Project details (tools and technologies mentioned)
+            - Summary/Objective sections (mentioned competencies)
+            - Education sections (relevant technical skills)
+            - Any section where skills or technologies are mentioned
+
+            QUALITY ASSURANCE: Each extracted skill should be something that could legitimately appear on a job description or resume skills section."""),
+            ("human", """EXTRACT ALL SKILLS FROM THIS RESUME FOR COMPREHENSIVE JOB MATCHING:
 
             {resume_text}
 
             COMPREHENSIVE EXTRACTION REQUIREMENTS:
 
-            1. PERSONAL INFO:
-               - Extract full name from resume header
-               - Find phone number (any format)
-               - Extract email address
-               - Get location/city information
-               - Find LinkedIn profile URL
-
-            2. TECHNICAL SKILLS - SEARCH EVERYWHERE:
-               - Programming languages mentioned anywhere
-               - Frameworks and libraries used in projects/experience
-               - Databases mentioned in work history
+            1. TECHNICAL SKILLS - FIND EVERY TECHNOLOGY MENTIONED:
+               - Programming languages anywhere in the resume
+               - Frameworks, libraries, and tools used
+               - Databases and data technologies
                - Cloud platforms and services
-               - Development tools and technologies
-               - Operating systems
-               - APIs, protocols, and integrations
-               - Extract from experience descriptions
-               - Extract from project sections
-               - Extract from skills sections
+               - Development tools and environments
+               - Operating systems and platforms
+               - Extract from experience descriptions ("developed using React" → "React")
+               - Extract from project sections ("built with Python" → "Python")
+               - Extract from skills sections (explicit lists)
+               - Extract from any technical mentions throughout the resume
 
-            3. SOFT SKILLS - SEARCH EVERYWHERE:
+            2. SOFT SKILLS - FIND ALL INTERPERSONAL COMPETENCIES:
                - Communication and interpersonal skills
                - Leadership and management abilities
                - Teamwork and collaboration skills
-               - Problem-solving capabilities
-               - Analytical and critical thinking
-               - Time management and organization
-               - Project management skills
+               - Problem-solving and analytical capabilities
+               - Time management and organizational skills
+               - Project management expertise
                - Customer service orientation
                - Mentoring and coaching abilities
                - Adaptability and flexibility
                - Creativity and innovation
+               - Any professional or soft skills explicitly mentioned
 
-            4. PROFESSIONAL INFO:
-               - Calculate years of experience from work history dates
-               - List all job titles/positions held
-               - Extract highest education level
-               - Identify industries/domains of experience
+            3. PERSONAL & PROFESSIONAL INFORMATION:
+               - Full name from resume header
+               - Contact information (phone, email, location, LinkedIn)
+               - Years of experience from work history
+               - Job titles and positions held
+               - Highest education level achieved
+               - Industries and sectors of experience
 
-            CRITICAL: This is for a RAG job matching system. Extract EVERY technology, skill, and piece of information that could be relevant for matching candidates to jobs. Be thorough and comprehensive.
+            EXTRACTION STRATEGY:
+            - SCAN EVERY SECTION multiple times
+            - Look for skills in context (not just explicit lists)
+            - Extract technologies mentioned in work experience
+            - Find competencies described in achievements
+            - Include skills from project descriptions
+            - Be comprehensive but avoid random phrases
+
+            QUALITY CONTROL:
+            - Extract complete, meaningful skills only
+            - Avoid incomplete phrases like "where I can gain"
+            - Focus on actual competencies and technologies
+            - Ensure each skill is job-relevant
 
             {format_instructions}""")
         ])
@@ -454,33 +455,110 @@ class ResumeParser:
         )
 
     def _fallback_skills_extraction(self, text: str) -> ResumeSkills:
-        """Enhanced fallback method for skills extraction."""
+        """Comprehensive fallback method for skills extraction."""
         text_lower = text.lower()
 
-        # Expanded technical skills list
+        # Expanded technical skills list - comprehensive coverage
         technical_keywords = [
-            'python', 'java', 'javascript', 'typescript', 'react', 'node.js', 'node',
-            'html', 'css', 'sql', 'mysql', 'postgresql', 'mongodb', 'redis',
-            'aws', 'azure', 'google cloud', 'docker', 'kubernetes', 'git', 'github',
-            'linux', 'windows', 'macos', 'c++', 'c#', 'php', 'ruby', 'swift', 'kotlin',
-            'angular', 'vue', 'django', 'flask', 'spring', 'express', 'laravel',
-            'tensorflow', 'pytorch', 'pandas', 'numpy', 'jupyter', 'tableau',
-            'react native', 'flutter', 'ios', 'android', 'graphql', 'rest api',
-            'tailwind css', 'bootstrap', 'sass', 'webpack', 'babel', 'jest'
+            # Programming Languages
+            'python', 'java', 'javascript', 'typescript', 'c++', 'c#', 'php', 'ruby',
+            'swift', 'kotlin', 'r', 'matlab', 'scala', 'perl', 'bash', 'powershell',
+            'go', 'rust', 'dart', 'lua', 'haskell', 'clojure',
+
+            # Web Technologies
+            'html', 'css', 'react', 'angular', 'vue', 'node.js', 'node', 'express',
+            'django', 'flask', 'spring', 'laravel', 'asp.net', 'jquery', 'bootstrap',
+            'tailwind css', 'sass', 'less', 'webpack', 'babel', 'vite', 'next.js',
+            'nuxt.js', 'svelte', 'graphql', 'apollo', 'redux', 'zustand',
+
+            # Databases
+            'sql', 'mysql', 'postgresql', 'mongodb', 'redis', 'oracle', 'sql server',
+            'dynamodb', 'firebase', 'sqlite', 'elasticsearch', 'cassandra', 'neo4j',
+
+            # Cloud Platforms
+            'aws', 'azure', 'google cloud', 'gcp', 'heroku', 'digitalocean', 'vercel',
+            'netlify', 'cloudflare', 'linode', 'vultr', 'ibm cloud',
+
+            # DevOps & Tools
+            'docker', 'kubernetes', 'jenkins', 'terraform', 'ansible', 'git', 'github',
+            'gitlab', 'bitbucket', 'jira', 'confluence', 'slack', 'linux', 'ubuntu',
+            'centos', 'nginx', 'apache', 'postman', 'insomnia', 'swagger',
+
+            # Data Science & AI
+            'tensorflow', 'pytorch', 'pandas', 'numpy', 'scikit-learn', 'jupyter',
+            'tableau', 'power bi', 'matplotlib', 'seaborn', 'spark', 'hadoop',
+            'kafka', 'airflow', 'mlflow', 'opencv',
+
+            # Mobile Development
+            'react native', 'flutter', 'ios', 'android', 'xamarin', 'ionic', 'cordova',
+
+            # Testing & Quality
+            'jest', 'mocha', 'cypress', 'selenium', 'playwright', 'testing', 'tdd',
+            'bdd', 'unit testing', 'integration testing',
+
+            # Other Technologies
+            'agile', 'scrum', 'kanban', 'ci/cd', 'microservices', 'rest api', 'soap',
+            'oauth', 'jwt', 'blockchain', 'ethereum', 'solidity'
         ]
 
-        # Expanded soft skills list
+        # Comprehensive soft skills list
         soft_keywords = [
-            'leadership', 'communication', 'teamwork', 'collaboration', 'problem solving',
-            'analytical', 'critical thinking', 'creativity', 'innovation', 'organization',
-            'time management', 'project management', 'customer service', 'mentoring',
-            'coaching', 'adaptability', 'flexibility', 'presentation', 'negotiation'
+            # Leadership & Management
+            'leadership', 'management', 'team leadership', 'project management',
+            'strategic planning', 'decision making', 'resource management',
+
+            # Communication
+            'communication', 'presentation', 'public speaking', 'writing',
+            'negotiation', 'stakeholder management', 'client relations',
+
+            # Teamwork & Collaboration
+            'teamwork', 'collaboration', 'team player', 'cross-functional',
+            'interpersonal skills', 'relationship building',
+
+            # Problem Solving
+            'problem solving', 'analytical', 'critical thinking', 'troubleshooting',
+            'root cause analysis', 'solution oriented',
+
+            # Organization & Time Management
+            'organization', 'time management', 'prioritization', 'multitasking',
+            'attention to detail', 'planning', 'scheduling',
+
+            # Learning & Adaptability
+            'adaptability', 'flexibility', 'learning agility', 'continuous learning',
+            'growth mindset', 'change management',
+
+            # Customer & Service
+            'customer service', 'client focus', 'user experience', 'empathy',
+            'conflict resolution', 'service orientation',
+
+            # Creativity & Innovation
+            'creativity', 'innovation', 'design thinking', 'brainstorming',
+            'ideation', 'creative problem solving',
+
+            # Work Ethic
+            'work ethic', 'reliability', 'accountability', 'initiative',
+            'self-motivation', 'discipline', 'commitment',
+
+            # Mentoring & Development
+            'mentoring', 'coaching', 'teaching', 'knowledge sharing',
+            'professional development', 'training'
         ]
 
-        found_technical = [skill for skill in technical_keywords if skill in text_lower]
-        found_soft = [skill for skill in soft_keywords if skill in text_lower]
+        # Extract with appropriate matching strategies
+        found_technical = []
+        found_soft = []
 
-        # Extract additional info
+        for skill in technical_keywords:
+            # Use word boundaries for technical skills to avoid partial matches
+            if re.search(r'\b' + re.escape(skill) + r'\b', text_lower):
+                found_technical.append(skill)
+
+        for skill in soft_keywords:
+            # More flexible matching for soft skills (allow within phrases)
+            if skill in text_lower:
+                found_soft.append(skill)
+
+        # Extract additional professional information
         experience_years = self._estimate_experience_years(text)
         job_titles = self._extract_job_titles(text)
         education_level = self._extract_education_level(text)

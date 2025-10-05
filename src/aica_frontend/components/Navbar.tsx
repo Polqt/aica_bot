@@ -32,18 +32,18 @@ export function Navbar() {
 
   return (
     <div className="relative w-full">
-      <ResizableNavbar className="bg-white dark:bg-black border-b-4 border-black dark:border-white">
-        <NavBody className="px-6 py-4">
+      <ResizableNavbar className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 dark:bg-background/90 border-b-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.8)]">
+        <NavBody className="px-8 py-4">
           <div className="flex items-center">
             <NavbarLogo />
           </div>
-          
-          <div className="hidden md:flex items-center space-x-0">
+
+          <div className="hidden md:flex items-center gap-4">
             {navItems.map((item, idx) => (
               <Link
                 key={`nav-link-${idx}`}
                 href={item.link}
-                className="px-6 py-3 border-2 border-black dark:border-white bg-white dark:bg-black text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black font-bold uppercase tracking-wide text-sm transition-all transform hover:scale-105 hover:-rotate-1"
+                className="px-5 py-2 border border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground font-medium tracking-wide text-sm transition-all transform hover:translate-y-[-2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.8)]"
               >
                 {item.name}
               </Link>
@@ -74,7 +74,6 @@ export function Navbar() {
             <MobileNavToggle
               isOpen={isMobileMenuOpen}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              
             />
           </MobileNavHeader>
 
@@ -93,7 +92,7 @@ export function Navbar() {
                 {item.name}
               </Link>
             ))}
-            
+
             <div className="flex flex-col gap-4 mt-8">
               <Link
                 href="/login"

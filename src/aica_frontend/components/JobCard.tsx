@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import {
   JobCard as JobCardPrimitive,
   JobCardHeader,
@@ -42,16 +43,21 @@ export default function JobCard({
     <JobCardPrimitive
       isSelected={isSelected}
       onClick={handleClick}
-      className={className}
+      className={cn(
+        'bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-all duration-200',
+        className,
+      )}
     >
-      <JobCardHeader>
-        <JobCardTitle>{title}</JobCardTitle>
+      <JobCardHeader className="space-y-2">
+        <JobCardTitle className="text-xl font-bold tracking-tight">
+          {title}
+        </JobCardTitle>
       </JobCardHeader>
-      
+
       <JobCardContent>
         <JobCardCompany>{company}</JobCardCompany>
       </JobCardContent>
-      
+
       <JobCardFooter>
         <JobCardMatch percentage={matchPercentage} />
         <JobCardSalary>{salaryRange}</JobCardSalary>

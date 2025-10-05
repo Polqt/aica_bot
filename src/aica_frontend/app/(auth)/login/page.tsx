@@ -2,28 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'motion/react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { motion } from 'framer-motion';
+import { NeoCard } from '@/components/ui/neo-card';
+import { NeoButton } from '@/components/ui/neo-button';
+import { NeoForm, NeoFormField, NeoFormInput } from '@/components/ui/neo-form';
 import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { AuthCarouselWrapper } from '@/components/AuthCarousel';
 import { API_BASE_URL } from '@/lib/constants/api';
-
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isCarouselCollapsed, setIsCarouselCollapsed] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -60,84 +50,60 @@ export default function LoginPage() {
 
   return (
     <>
-      <div
-        className={`hidden lg:block min-h-screen p-6 transition-all duration-500 ease-in-out ${
-          isCarouselCollapsed ? 'w-20' : 'w-1/3'
-        }`}
-      >
-        <AuthCarouselWrapper
-          className="h-full"
-          onCollapseChange={setIsCarouselCollapsed}
-        />
-      </div>
-      <div
-        className={`min-h-screen flex items-center p-6 lg:p-12 transition-all duration-500 ease-in-out ${
-          isCarouselCollapsed
-            ? 'flex-1 justify-center'
-            : 'flex-1 justify-center'
-        }`}
-      >
+      <div className="fixed inset-0 flex items-center justify-center p-4">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full max-w-lg"
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-md"
         >
-          <div className="relative group">
-            <Card className="relative bg-white dark:bg-gray-900 border-4 border-black dark:border-violet-300 rounded-none shadow-none transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1">
-              <CardHeader className="space-y-6 p-8">
-                <div className="text-center space-y-3">
+          <div className="relative">
+            <NeoCard variant="elevated" className="relative">
+              <div className="p-8">
+                <div className="text-center space-y-3 mb-8">
                   <div className="inline-block">
-                    <div className="bg-violet-600 text-white px-4 py-2 transform -rotate-2 font-black text-sm tracking-wider">
-                      SIGN IN
+                    <div className="bg-violet-600 text-white px-4 py-2 text-sm">
+                      Sign in
                     </div>
                   </div>
-                  <CardTitle className="text-3xl font-black tracking-tight text-black dark:text-white">
-                    WELCOME BACK
-                  </CardTitle>
-                  <CardDescription className="text-base font-medium text-gray-700 dark:text-gray-300">
+                  <h1 className="text-2xl font-semibold text-black dark:text-white">
+                    Welcome Back
+                  </h1>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Access your account
-                  </CardDescription>
+                  </p>
                 </div>
-              </CardHeader>
 
-              <CardContent className="p-8 pt-0">
-                <form onSubmit={handleLogin} className="space-y-8">
-                  <div className="space-y-6">
-                    <div className="relative group">
-                      <div className="absolute -inset-0.5 bg-violet-400 rounded-none opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
-                      <div className="relative">
-                        <Mail className="absolute left-4 top-4 h-5 w-5 text-gray-600 dark:text-gray-400 z-10" />
-                        <Input
-                          id="email"
-                          name="email"
-                          type="email"
-                          required
-                          placeholder="EMAIL ADDRESS"
-                          value={email}
-                          onChange={e => setEmail(e.target.value)}
-                          className="pl-12 h-14 bg-gray-50 dark:bg-gray-800 border-3 border-black dark:border-violet-300 rounded-none focus:border-violet-600 dark:focus:border-violet-400 focus:ring-0 font-bold placeholder:font-bold placeholder:text-gray-500 text-black dark:text-white transition-all duration-300"
-                        />
-                      </div>
+                <NeoForm onSubmit={handleLogin} className="space-y-6">
+                  <NeoFormField>
+                    <div className="relative">
+                      <NeoFormInput
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="EMAIL ADDRESS"
+                        required
+                        className="pl-12"
+                      />
+                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400 w-5 h-5" />
                     </div>
+                  </NeoFormField>
 
-                    <div className="relative group">
-                      <div className="absolute -inset-0.5 bg-violet-400 rounded-none opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-4 h-5 w-5 text-gray-600 dark:text-gray-400 z-10" />
-                        <Input
-                          id="password"
-                          name="password"
-                          type="password"
-                          required
-                          placeholder="PASSWORD"
-                          value={password}
-                          onChange={e => setPassword(e.target.value)}
-                          className="pl-12 h-14 bg-gray-50 dark:bg-gray-800 border-3 border-black dark:border-violet-300 rounded-none focus:border-violet-600 dark:focus:border-violet-400 focus:ring-0 font-bold placeholder:font-bold placeholder:text-gray-500 text-black dark:text-white transition-all duration-300"
-                        />
-                      </div>
+                  <NeoFormField>
+                    <div className="relative">
+                      <NeoFormInput
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        placeholder="PASSWORD"
+                        required
+                        className="pl-12"
+                      />
+                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400 w-5 h-5" />
                     </div>
-                  </div>
+                  </NeoFormField>
 
                   {error && (
                     <motion.div
@@ -154,34 +120,26 @@ export default function LoginPage() {
                     </motion.div>
                   )}
 
-                  <div className="relative group">
-                    <div className="absolute -inset-1 bg-black rotate-2 group-hover:rotate-1 transition-transform duration-300"></div>
-                    <Button
-                      type="submit"
-                      disabled={loading}
-                      className="relative w-full h-14 bg-violet-600 hover:bg-violet-700 border-3 border-black text-white font-black text-base tracking-widest rounded-none transition-all duration-300 transform hover:-translate-y-1 disabled:hover:translate-y-0"
-                      size="lg"
-                    >
-                      {loading ? (
-                        <div className="flex items-center justify-center space-x-3">
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          <span>SIGNING IN...</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center space-x-3 group">
-                          <span>SIGN IN</span>
-                          <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
-                        </div>
-                      )}
-                    </Button>
-                  </div>
-                </form>
+                  <NeoButton
+                    type="submit"
+                    className="w-full h-14 font-black tracking-widest group"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center space-x-3">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>SIGNING IN...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center space-x-3">
+                        <span>SIGN IN</span>
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
+                      </div>
+                    )}
+                  </NeoButton>
+                </NeoForm>
 
-                <div className="mt-8 relative">
-                  <Separator className="border-2 border-black dark:border-violet-300" />
-                </div>
-
-                <div className="text-center mt-8">
+                <div className="mt-8 text-center">
                   <p className="text-base font-bold text-gray-700 dark:text-gray-300">
                     DON&apos;T HAVE AN ACCOUNT?{' '}
                     <Link
@@ -192,14 +150,14 @@ export default function LoginPage() {
                     </Link>
                   </p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </NeoCard>
           </div>
 
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
+            transition={{ delay: 0.5 }}
             className="mt-8 text-center"
           >
             <p className="text-xs font-bold text-gray-600 dark:text-gray-400 tracking-wider">

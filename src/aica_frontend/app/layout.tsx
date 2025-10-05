@@ -25,7 +25,8 @@ export const metadata: Metadata = {
   authors: [{ name: 'AICA Team' }],
   openGraph: {
     title: 'AICA - AI Career Assistant',
-    description: 'Find your dream tech job with AI-powered resume analysis and job matching.',
+    description:
+      'Find your dream tech job with AI-powered resume analysis and job matching.',
     url: 'https://aica.app',
     siteName: 'AICA',
     images: [
@@ -42,7 +43,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'AICA - AI Career Assistant',
-    description: 'Find your dream tech job with AI-powered resume analysis and job matching.',
+    description:
+      'Find your dream tech job with AI-powered resume analysis and job matching.',
     images: ['/nyxarcanalogotransparent-02.png'],
   },
   robots: {
@@ -76,22 +78,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "AICA - AI Career Assistant",
-    "description": "AI-powered career assistant that helps you find your dream tech job by analyzing your resume and matching you with the best opportunities.",
-    "url": "https://aica.app",
-    "applicationCategory": "BusinessApplication",
-    "operatingSystem": "Web Browser",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'AICA - AI Career Assistant',
+    description:
+      'AI-powered career assistant that helps you find your dream tech job by analyzing your resume and matching you with the best opportunities.',
+    url: 'https://aica.app',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web Browser',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
     },
-    "creator": {
-      "@type": "Organization",
-      "name": "AICA Team"
-    }
+    creator: {
+      '@type': 'Organization',
+      name: 'AICA Team',
+    },
   };
 
   return (
@@ -101,38 +104,6 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(structuredData),
-          }}
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Basic performance monitoring
-              window.addEventListener('load', function() {
-                setTimeout(function() {
-                  const perfData = performance.getEntriesByType('navigation')[0];
-                  const pageLoadTime = perfData.loadEventEnd - perfData.fetchStart;
-                  const domContentLoaded = perfData.domContentLoadedEventEnd - perfData.fetchStart;
-
-                  // Send to analytics (placeholder for future implementation)
-                  console.log('Page Load Time:', pageLoadTime, 'ms');
-                  console.log('DOM Content Loaded:', domContentLoaded, 'ms');
-
-                  // Could send to analytics service here
-                  // analytics.track('page_performance', { pageLoadTime, domContentLoaded });
-                }, 0);
-              });
-
-              // Monitor Core Web Vitals (simplified)
-              if ('web-vitals' in window) {
-                import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-                  getCLS(console.log);
-                  getFID(console.log);
-                  getFCP(console.log);
-                  getLCP(console.log);
-                  getTTFB(console.log);
-                });
-              }
-            `,
           }}
         />
       </head>
@@ -145,17 +116,21 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="min-h-screen flex flex-col relative">
-            <div
-              className={cn(
-                'absolute inset-0 z-0',
-                '[background-size:40px_40px]',
-                '[background-image:linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)]',
-                'dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]',
-              )}
-            />
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/90 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)] dark:bg-black/90"></div>
-            <main className="flex-1 relative z-10">{children}</main>
+          <div className="relative min-h-screen bg-white dark:bg-black">
+            <div className="fixed inset-0">
+              <div
+                className={cn(
+                  'absolute inset-0',
+                  '[background-size:40px_40px]',
+                  '[background-image:linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)]',
+                  'dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]',
+                )}
+              />
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)] dark:bg-black" />
+            </div>
+
+            {/* Content */}
+            <main className="relative z-10">{children}</main>
           </div>
 
           <Toaster
