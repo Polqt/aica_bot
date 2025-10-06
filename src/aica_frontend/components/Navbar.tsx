@@ -50,16 +50,16 @@ export function Navbar() {
             ))}
           </div>
 
-          <div className="flex items-center gap-0 z-10">
+          <div className="flex items-center gap-4 z-10">
             <Link
               href="/login"
-              className="px-6 py-3 border-2 border-black dark:border-white bg-white dark:bg-black text-black dark:text-white hover:bg-violet-400 hover:text-black dark:hover:bg-violet-400 dark:hover:text-black font-bold uppercase tracking-wide text-sm transition-all"
+              className="px-5 py-2 border border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground font-medium tracking-wide text-sm transition-all transform hover:translate-y-[-2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.8)]"
             >
               LOGIN
             </Link>
             <Link
               href="/sign-up"
-              className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black hover:bg-violet-400 hover:text-black dark:hover:bg-violet-400 border-2 border-black dark:border-white font-bold uppercase tracking-wide text-sm transition-all transform hover:scale-105"
+              className="px-5 py-2 border border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground font-medium tracking-wide text-sm transition-all transform hover:translate-y-[-2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.8)]"
             >
               SIGN UP
             </Link>
@@ -97,14 +97,14 @@ export function Navbar() {
               <Link
                 href="/login"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block w-full p-4 border-2 border-black dark:border-white bg-white dark:bg-black text-black dark:text-white hover:bg-violet-400 hover:text-black font-bold uppercase tracking-wide text-center transition-all"
+                className="block w-full p-4 border-2 border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground font-medium tracking-wide text-center transform hover:scale-105 transition-all"
               >
                 LOGIN
               </Link>
               <Link
                 href="/sign-up"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block w-full p-4 bg-black dark:bg-white text-white dark:text-black hover:bg-violet-400 hover:text-black border-2 border-black dark:border-white font-bold uppercase tracking-wide text-center transform hover:scale-105 transition-all"
+                className="block w-full p-4 border-2 border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground font-medium tracking-wide text-center transform hover:scale-105 transition-all"
               >
                 SIGN UP
               </Link>

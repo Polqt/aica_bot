@@ -16,7 +16,12 @@ import { motion } from 'motion/react';
 const paperData = {
   title:
     'AI Career Assistant: Bridging the Gap Between Technology Education and Industry Demands Through Intelligent Job Matching',
-  authors: ['April Gamboa', 'Janpol Hidalgo', 'Heidine Mahandog', 'Nathania Santia'],
+  authors: [
+    'April Gamboa',
+    'Janpol Hidalgo',
+    'Heidine Mahandog',
+    'Nathania Santia',
+  ],
   publicationDate: 'March 2024',
   conference: 'University of Saint La Salle - College of Computing Studies',
   abstract:
@@ -27,7 +32,7 @@ export default function Paper() {
   const [showPDF, setShowPDF] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-violet-50 dark:from-gray-950 dark:to-violet-950/20 py-20">
+    <div className="min-h-screen py-20">
       <div className="container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
@@ -36,7 +41,6 @@ export default function Paper() {
         >
           <Card className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl shadow-gray-900/10 dark:shadow-black/40 border border-gray-200 dark:border-gray-800 overflow-hidden mb-12">
             <CardHeader className="bg-gradient-to-br from-violet-600 to-purple-700 text-white p-12 relative overflow-hidden">
-
               <div className="relative">
                 <div className="flex items-center gap-3 mb-8">
                   <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">

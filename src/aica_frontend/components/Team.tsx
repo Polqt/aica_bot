@@ -18,7 +18,7 @@ const mentors = [
 
 export default function Team() {
   return (
-    <section className="bg-gradient-to-br from-gray-50 to-violet-50 dark:from-gray-950 dark:to-violet-950/20 py-32">
+    <section className="py-32">
       <div className="container mx-auto px-6">
         <div className="mb-24">
           <div className="text-center mb-20">

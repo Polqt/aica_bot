@@ -40,10 +40,9 @@ const features = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen">
       <Navbar />
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)]" />
         <div className="relative container mx-auto px-6 py-24 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <motion.div
@@ -57,7 +56,7 @@ export default function Home() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
               >
-                <div className="inline-block bg-violet-600 text-white px-6 py-3 text-sm font-black uppercase tracking-wider transform -rotate-2 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+                <div className="inline-block bg-violet-600 hover:bg-violet-400 hover:text-black text-white px-6 py-3 text-sm font-black uppercase tracking-wider transform -rotate-2 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] transition-all hover:-translate-y-1 hover:translate-x-1">
                   AI-POWERED CAREERS
                 </div>
               </motion.div>
@@ -88,7 +87,7 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-6">
                 <Button
                   asChild
-                  className="group bg-violet-600 hover:bg-violet-700 text-white border-3 border-black dark:border-white px-10 py-6 text-lg font-black uppercase tracking-wide rounded-none transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
+                  className="group bg-violet-600 hover:bg-violet-400 hover:text-black text-white border-2 border-black dark:border-white px-10 py-6 text-lg font-black uppercase tracking-wide rounded-none transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
                 >
                   <Link href="/sign-up">
                     GET STARTED
@@ -98,7 +97,7 @@ export default function Home() {
 
                 <Button
                   variant="neutral"
-                  className="group border-3 border-black dark:border-white bg-white dark:bg-black hover:bg-violet-50 dark:hover:bg-violet-950 px-10 py-6 text-lg font-black uppercase tracking-wide rounded-none transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
+                  className="group border-2 border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground px-10 py-6 text-lg font-black uppercase tracking-wide rounded-none transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
                 >
                   <Play className="w-5 h-5 mr-3" />
                   WATCH DEMO
@@ -137,7 +136,7 @@ export default function Home() {
               transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
               className="relative"
             >
-              <div className="relative bg-white dark:bg-black border-2 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.8)] overflow-hidden transform rotate-1">
+              <div className="relative bg-background dark:bg-background border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] overflow-hidden transform rotate-1 hover:-translate-y-1 hover:translate-x-1 transition-all">
                 <div className="bg-violet-600 dark:bg-violet-700 p-6 relative border-b-2 border-black dark:border-white">
                   <div className="flex items-center justify-between">
                     <div>
@@ -182,7 +181,7 @@ export default function Home() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5 + index * 0.1 }}
-                      className="group p-6 border-3 border-black dark:border-white bg-white dark:bg-black transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] cursor-pointer"
+                      className="group p-6 border-2 border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] cursor-pointer"
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div>
@@ -212,24 +211,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-24 bg-white dark:bg-black relative overflow-hidden border-y-2 border-black dark:border-white">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-600/10 to-purple-600/10" />
-        <div className="absolute top-0 left-1/4 w-64 h-64 bg-violet-600/5 rounded-full -translate-y-32" />
-        <div className="absolute bottom-0 right-1/4 w-48 h-48 bg-purple-600/5 rounded-full translate-y-24" />
-
-        <div className="relative container mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-12"
-          ></motion.div>
-        </div>
-      </section>
-
-      <section className="py-32 bg-white dark:bg-gray-900 relative">
+      <section className="py-32 relative">
         <div className="container mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -269,7 +251,7 @@ export default function Home() {
                 viewport={{ once: true }}
                 className="group"
               >
-                <Card className="border-3 border-black dark:border-white bg-white dark:bg-black transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] overflow-hidden h-full rounded-none">
+                <Card className="border-2 border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] overflow-hidden h-full rounded-none">
                   <CardContent className="p-8 relative">
                     <div className="absolute top-4 right-4 w-2 h-2 bg-violet-600 rounded-full" />
                     <div className="w-16 h-16 bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
