@@ -57,7 +57,7 @@ export default function Contact() {
             transition={{ delay: 0.3, duration: 0.8 }}
             className="relative"
           >
-            <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl shadow-black/20 p-12 border border-gray-200 dark:border-gray-800 max-w-2xl mx-auto">
+            <div className="bg-white rounded-xl shadow-lg p-12 border border-gray-200 max-w-2xl mx-auto">
               <div className="space-y-8">
                 <div className="text-center">
                   <div className="w-16 h-16 bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -72,7 +72,7 @@ export default function Contact() {
                 </div>
 
                 <div className="relative">
-                  <div className="bg-gradient-to-r from-gray-50 to-violet-50 dark:from-gray-800 dark:to-violet-900/20 rounded-2xl p-8 border-2 border-gray-200 dark:border-gray-700">
+                  <div className="bg-gray-50 rounded-lg p-8 border border-gray-200">
                     <div className="text-center space-y-4">
                       <p className="text-gray-700 dark:text-gray-300 font-bold uppercase tracking-wide text-sm">
                         Email Us At

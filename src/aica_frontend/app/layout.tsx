@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 import { cn } from '@/lib/utils';
+import Footer from '@/components/Footer';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -126,11 +127,12 @@ export default function RootLayout({
                   'dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]',
                 )}
               />
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/90 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)] dark:bg-black/90" />
+              <div className="pointer-events-none absolute inset-0 bg-white/20 dark:bg-black/20" />
             </div>
 
             {/* Content */}
             <main className="relative z-10">{children}</main>
+            <Footer />
           </div>
 
           <Toaster

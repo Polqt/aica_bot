@@ -1,39 +1,26 @@
-'use client';
-
-import Image from 'next/image';
-import { motion } from 'motion/react';
+import React from 'react';
 
 export default function Footer() {
   return (
-    <motion.div
-      initial={{ y: 100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6 }}
-      className="fixed bottom-0 left-0 right-0 z-50"
-    >
-      <div className="bg-gradient-to-r from-violet-600 to-purple-600 backdrop-blur-xl border-t border-violet-400/30 py-4 shadow-2xl shadow-violet-600/20">
-        <div className="container mx-auto px-6 flex justify-end items-center">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="flex items-center space-x-4 group"
-          >
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/20 group-hover:bg-white/20 transition-all duration-300">
-              <div className="flex items-center space-x-2">
-                <Image
-                  src="/NYXARCANALOGO_TRANSPARENT-02.png"
-                  alt="Nyx Arcana Logo"
-                  width={32}
-                  height={32}
-                  className="object-contain group-hover:scale-110 transition-transform duration-300"
-                />
-                <p className="text-white font-black text-sm tracking-widest uppercase">
-                  NYX ARCANA STUDIOS
-                </p>
-              </div>
+    <footer className="relative z-50">
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">N</span>
             </div>
-          </motion.div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Nyx Arcana Studios</p>
+              <p className="text-xs text-gray-500">Building the future of career matching</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <p className="text-xs text-gray-600">All rights reserved © 2025</p>
+          </div>
         </div>
       </div>
-    </motion.div>
+    </footer>
   );
 }

@@ -61,13 +61,8 @@ export default function LoginPage() {
             <NeoCard variant="elevated" className="relative">
               <div className="p-8">
                 <div className="text-center space-y-3 mb-8">
-                  <div className="inline-block">
-                    <div className="bg-violet-600 text-white px-4 py-2 text-sm">
-                      Sign in
-                    </div>
-                  </div>
                   <h1 className="text-2xl font-semibold text-black dark:text-white">
-                    Welcome Back
+                    
                   </h1>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Access your account

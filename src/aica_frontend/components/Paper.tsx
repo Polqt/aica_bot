@@ -39,45 +39,43 @@ export default function Paper() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <Card className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl shadow-gray-900/10 dark:shadow-black/40 border border-gray-200 dark:border-gray-800 overflow-hidden mb-12">
-            <CardHeader className="bg-gradient-to-br from-violet-600 to-purple-700 text-white p-12 relative overflow-hidden">
-              <div className="relative">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-wide">
-                    Research Paper
-                  </span>
+          <Card className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mb-12">
+            <CardHeader className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-12">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-white" />
+                </div>
+                <span className="bg-white/20 px-4 py-2 rounded-lg text-sm font-semibold uppercase tracking-wide">
+                  Research Paper
+                </span>
+              </div>
+
+              <CardTitle className="text-3xl lg:text-5xl font-bold leading-tight mb-8">
+                {paperData.title}
+              </CardTitle>
+
+              <div className="space-y-6">
+                <div className="bg-white/20 rounded-xl p-6">
+                  <p className="text-violet-100 font-semibold text-lg mb-2">
+                    Authors:
+                  </p>
+                  <p className="text-white font-semibold text-xl">
+                    {paperData.authors.join(' • ')}
+                  </p>
                 </div>
 
-                <CardTitle className="text-3xl lg:text-5xl font-black leading-tight mb-8">
-                  {paperData.title}
-                </CardTitle>
-
-                <div className="space-y-6">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                    <p className="text-violet-100 font-bold text-lg mb-2">
-                      Authors:
-                    </p>
-                    <p className="text-white font-black text-xl">
-                      {paperData.authors.join(' • ')}
-                    </p>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center gap-3 bg-white/20 rounded-lg px-6 py-3">
+                    <Calendar className="h-5 w-5 text-yellow-300" />
+                    <span className="text-white font-semibold">
+                      {paperData.publicationDate}
+                    </span>
                   </div>
-
-                  <div className="flex flex-wrap gap-4">
-                    <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/20">
-                      <Calendar className="h-5 w-5 text-yellow-300" />
-                      <span className="text-white font-bold">
-                        {paperData.publicationDate}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/20">
-                      <Users className="h-5 w-5 text-green-300" />
-                      <span className="text-white font-bold text-sm">
-                        {paperData.conference}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-3 bg-white/20 rounded-lg px-6 py-3">
+                    <Users className="h-5 w-5 text-green-300" />
+                    <span className="text-white font-semibold text-sm">
+                      {paperData.conference}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -85,11 +83,11 @@ export default function Paper() {
 
             <CardContent className="p-12">
               <div className="space-y-8">
-                <div className="bg-gradient-to-r from-gray-50 to-violet-50 dark:from-gray-800 dark:to-violet-900/20 rounded-2xl p-8 border-2 border-gray-200 dark:border-gray-700">
-                  <h4 className="text-xl font-black text-gray-900 dark:text-white mb-4 uppercase tracking-wide">
+                <div className="bg-gray-50 rounded-xl p-8">
+                  <h4 className="text-xl font-semibold text-gray-900 mb-4 uppercase tracking-wide">
                     Abstract
                   </h4>
-                  <p className="text-gray-700 dark:text-gray-300 font-medium leading-relaxed text-lg">
+                  <p className="text-gray-700 font-medium leading-relaxed text-lg">
                     {paperData.abstract}
                   </p>
                 </div>
@@ -99,7 +97,7 @@ export default function Paper() {
                     onClick={() => setShowPDF(!showPDF)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="group flex items-center justify-center gap-3 px-10 py-4 bg-white dark:bg-gray-900 border-2 border-violet-300 dark:border-violet-600 text-violet-600 dark:text-violet-400 hover:bg-violet-600 hover:text-white dark:hover:bg-violet-600 dark:hover:text-white rounded-2xl font-bold text-lg uppercase tracking-wide transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-violet-600/20"
+                    className="group flex items-center justify-center gap-3 px-10 py-4 bg-white border-2 border-violet-300 text-violet-600 hover:bg-violet-600 hover:text-white rounded-xl font-semibold text-lg uppercase tracking-wide transition-all duration-300 shadow-sm hover:shadow-md"
                   >
                     {showPDF ? (
                       <EyeOff className="h-5 w-5" />
@@ -107,7 +105,6 @@ export default function Paper() {
                       <Eye className="h-5 w-5" />
                     )}
                     {showPDF ? 'Hide PDF' : 'View PDF'}
-                    <div className="w-2 h-2 bg-current rounded-full group-hover:scale-150 transition-transform duration-300" />
                   </motion.button>
 
                   <motion.a
@@ -115,9 +112,9 @@ export default function Paper() {
                     download="AICA-Research-Paper.pdf"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="group flex items-center justify-center gap-3 px-10 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-2xl font-bold text-lg uppercase tracking-wide shadow-xl shadow-violet-600/25 hover:shadow-2xl hover:shadow-violet-600/40 transition-all duration-300"
+                    className="group flex items-center justify-center gap-3 px-10 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl font-semibold text-lg uppercase tracking-wide shadow-lg hover:shadow-xl transition-all duration-300"
                   >
-                    <Download className="h-5 w-5 group-hover:animate-bounce" />
+                    <Download className="h-5 w-5" />
                     Download PDF
                     <ExternalLink className="h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
                   </motion.a>
@@ -134,18 +131,18 @@ export default function Paper() {
             transition={{ duration: 0.6 }}
             className="mb-12"
           >
-            <Card className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl shadow-gray-900/10 dark:shadow-black/40 border border-gray-200 dark:border-gray-800 overflow-hidden">
-              <div className="bg-gradient-to-r from-gray-100 to-violet-100 dark:from-gray-800 dark:to-violet-900/20 p-8 border-b border-gray-200 dark:border-gray-700">
+            <Card className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="bg-gray-50 p-8 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl flex items-center justify-center">
                       <FileText className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-wide">
+                      <h3 className="text-2xl font-semibold text-gray-900 uppercase tracking-wide">
                         PDF Viewer
                       </h3>
-                      <p className="text-gray-600 dark:text-gray-400 font-medium">
+                      <p className="text-gray-600 font-medium">
                         Interactive document viewer
                       </p>
                     </div>

@@ -32,18 +32,15 @@ export function Navbar() {
 
   return (
     <div className="relative w-full">
-      <ResizableNavbar className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 dark:bg-background/90 border-b-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.8)]">
-        <NavBody className="px-8 py-4">
-          <div className="flex items-center">
-            <NavbarLogo />
-          </div>
-
-          <div className="hidden md:flex items-center gap-4">
+      <ResizableNavbar>
+        <NavBody>
+          <NavbarLogo />
+          <div className="hidden md:flex items-center gap-6">
             {navItems.map((item, idx) => (
               <Link
                 key={`nav-link-${idx}`}
                 href={item.link}
-                className="px-5 py-2 border border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground font-medium tracking-wide text-sm transition-all transform hover:translate-y-[-2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.8)]"
+                className="px-3 py-2 text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors"
               >
                 {item.name}
               </Link>
@@ -53,24 +50,21 @@ export function Navbar() {
           <div className="flex items-center gap-4 z-10">
             <Link
               href="/login"
-              className="px-5 py-2 border border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground font-medium tracking-wide text-sm transition-all transform hover:translate-y-[-2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.8)]"
+              className="px-3 py-2 text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors"
             >
               LOGIN
             </Link>
             <Link
               href="/sign-up"
-              className="px-5 py-2 border border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground font-medium tracking-wide text-sm transition-all transform hover:translate-y-[-2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.8)]"
+              className="px-4 py-2 bg-violet-600 text-white hover:bg-violet-700 font-medium text-sm transition-colors rounded-md"
             >
               SIGN UP
             </Link>
           </div>
         </NavBody>
 
-        <MobileNav className="bg-white dark:bg-black border-b-4 border-black dark:border-white">
-          <MobileNavHeader className="px-6 py-4">
-            <div className="bg-black dark:bg-white text-white dark:text-black px-4 py-2 font-black text-xl tracking-wider transform -skew-x-12">
-              AICA
-            </div>
+        <MobileNav>
+          <MobileNavHeader>
             <MobileNavToggle
               isOpen={isMobileMenuOpen}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -80,31 +74,31 @@ export function Navbar() {
           <MobileNavMenu
             isOpen={isMobileMenuOpen}
             onClose={() => setIsMobileMenuOpen(false)}
-            className="bg-white dark:bg-black border-t-4 border-black dark:border-white px-6 py-8 space-y-4"
+            className="bg-white/95 backdrop-blur border-t border-gray-200/50 px-6 py-8 space-y-4"
           >
             {navItems.map((item, idx) => (
               <Link
                 key={`mobile-link-${idx}`}
                 href={item.link}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block w-full p-4 border-2 border-black dark:border-white bg-white dark:bg-black text-black dark:text-white hover:bg-violet-400 hover:text-black font-bold uppercase tracking-wide text-center transform hover:scale-105 transition-all"
+                className="block w-full p-3 text-gray-600 hover:text-gray-900 font-medium text-center transition-colors"
               >
                 {item.name}
               </Link>
             ))}
 
-            <div className="flex flex-col gap-4 mt-8">
+            <div className="flex flex-col gap-4 mt-8 pt-4 border-t border-gray-200">
               <Link
                 href="/login"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block w-full p-4 border-2 border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground font-medium tracking-wide text-center transform hover:scale-105 transition-all"
+                className="block w-full p-3 text-gray-600 hover:text-gray-900 font-medium text-center transition-colors"
               >
                 LOGIN
               </Link>
               <Link
                 href="/sign-up"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block w-full p-4 border-2 border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground font-medium tracking-wide text-center transform hover:scale-105 transition-all"
+                className="block w-full p-3 bg-violet-600 hover:bg-violet-700 text-white font-medium text-center rounded-md transition-colors"
               >
                 SIGN UP
               </Link>

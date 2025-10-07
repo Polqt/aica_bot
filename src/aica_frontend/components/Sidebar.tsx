@@ -53,15 +53,15 @@ function AppSidebar() {
   ]
 
   return (
-    <Sidebar collapsible="icon" className="border-r-4 border-black bg-white">
-      <SidebarHeader className="border-b-4 border-black p-6">
+    <Sidebar collapsible="icon" className="border-r border-gray-200 bg-white">
+      <SidebarHeader className="border-b border-gray-200 p-6">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              className="bg-black text-white border-4 border-black hover:bg-white hover:text-black font-black uppercase tracking-wide shadow-[8px_8px_0px_0px_black] hover:shadow-[12px_12px_0px_0px_black] transition-all duration-200 p-6"
+              className="bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold uppercase tracking-wide shadow-lg hover:shadow-xl transition-all duration-200 p-6 rounded-lg"
             >
-              <div className="flex aspect-square size-12 items-center justify-center rounded-2xl bg-violet-600 border-2 border-black">
+              <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-white/20">
                 <Sparkles className="size-6 text-white" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight ml-4">
@@ -74,7 +74,7 @@ function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="p-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-black font-black uppercase tracking-wide text-lg mb-4 border-b-2 border-black pb-2">
+          <SidebarGroupLabel className="text-gray-900 font-semibold uppercase tracking-wide text-lg mb-4 border-b border-gray-200 pb-2">
             NAVIGATION
           </SidebarGroupLabel>
           <SidebarMenu className="space-y-2">
@@ -82,7 +82,7 @@ function AppSidebar() {
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
                   asChild
-                  className="bg-white border-2 border-black hover:bg-black hover:text-white font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_black] hover:shadow-[8px_8px_0px_0px_black] transition-all duration-200 p-4 rounded-xl"
+                  className="bg-white border border-gray-200 hover:bg-violet-50 hover:border-violet-200 font-semibold uppercase tracking-wide shadow-sm hover:shadow-md transition-all duration-200 p-4 rounded-lg"
                 >
                   <Link href={item.url}>
                     <item.icon className="w-6 h-6" />
@@ -99,7 +99,7 @@ function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={logout}
-              className="bg-red-600 text-white border-2 border-black hover:bg-black hover:text-white font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_black] hover:shadow-[8px_8px_0px_0px_black] transition-all duration-200 p-4 rounded-xl w-full"
+              className="bg-red-500 hover:bg-red-600 text-white font-semibold uppercase tracking-wide shadow-sm hover:shadow-md transition-all duration-200 p-4 rounded-lg w-full"
             >
               <LogOut className="w-6 h-6" />
               <span className="ml-3">LOG OUT</span>

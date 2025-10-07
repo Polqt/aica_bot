@@ -1,36 +1,26 @@
-'use client';
-
-import { motion } from 'motion/react';
-import { Navbar } from '@/components/Navbar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import React from 'react';
 import { ArrowRight, Play, Brain, Target, Zap, Shield } from 'lucide-react';
-import Link from 'next/link';
 
 const features = [
   {
-    step: 1,
     icon: Brain,
     title: 'AI-Powered Matching',
     description:
       'Advanced algorithms analyze your skills and preferences to find perfect job matches',
   },
   {
-    step: 2,
     icon: Target,
     title: 'Precision Targeting',
     description:
       'Get matched with opportunities that align with your career goals and expertise',
   },
   {
-    step: 3,
     icon: Zap,
     title: 'Instant Results',
     description:
       'Real-time job matching with immediate feedback and recommendations',
   },
   {
-    step: 4,
     icon: Shield,
     title: 'Secure & Private',
     description:
@@ -38,234 +28,162 @@ const features = [
   },
 ];
 
-export default function Home() {
+export default function Hero() {
   return (
     <div className="min-h-screen">
-      <Navbar />
-      <section className="relative overflow-hidden">
-        <div className="relative container mx-auto px-6 py-24 lg:py-32">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="space-y-12"
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                <div className="inline-block bg-violet-600 hover:bg-violet-400 hover:text-black text-white px-6 py-3 text-sm font-black uppercase tracking-wider transform -rotate-2 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] transition-all hover:-translate-y-1 hover:translate-x-1">
-                  AI-POWERED CAREERS
-                </div>
-              </motion.div>
-
-              <div className="space-y-6">
-                <h1 className="text-6xl lg:text-8xl font-black leading-[0.9] tracking-tight">
-                  <span className="block text-gray-900 dark:text-white relative">
-                    FIND YOUR
-                    <span className="absolute -bottom-2 left-0 w-full h-1 bg-black dark:bg-white transform -skew-x-12"></span>
-                  </span>
-                  <span className="block relative mt-4">
-                    <span className="relative inline-block px-4 py-2 bg-violet-600 text-white transform -rotate-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.8)]">
-                      DREAM JOB
-                    </span>
-                  </span>
-                </h1>
-
-                <div className="relative">
-                  <div className="absolute -left-4 top-0 w-1 h-full bg-violet-600" />
-                  <p className="text-xl text-gray-600 dark:text-gray-300 font-medium leading-relaxed pl-8">
-                    Connect your resume with real job opportunities using AI. No
-                    gimmicks, no guesswork—just personalized, intelligent job
-                    matching designed for tech professionals like you.
-                  </p>
-                </div>
+      <section className="pt-32 pb-20 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="space-y-8">w
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 text-violet-700 rounded-full text-sm font-medium">
+                <div className="w-1.5 h-1.5 bg-violet-500 rounded-full"></div>
+                AI-Powered Career Platform
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-6">
-                <Button
-                  asChild
-                  className="group bg-violet-600 hover:bg-violet-400 hover:text-black text-white border-2 border-black dark:border-white px-10 py-6 text-lg font-black uppercase tracking-wide rounded-none transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
-                >
-                  <Link href="/sign-up">
-                    GET STARTED
-                    <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-2 transition-transform" />
-                  </Link>
-                </Button>
+              <h1 className="text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 leading-tight">
+                FIND YOUR DREAM JOB WITH{' '}
+                <span className="text-violet-600">INTELLIGENT MATCH</span>
+              </h1>
 
-                <Button
-                  variant="neutral"
-                  className="group border-2 border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground px-10 py-6 text-lg font-black uppercase tracking-wide rounded-none transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
-                >
-                  <Play className="w-5 h-5 mr-3" />
-                  WATCH DEMO
-                </Button>
+              <p className="text-lg text-gray-600 leading-relaxed max-w-xl">
+                Connect your resume with real job opportunities using AI. No
+                gimmicks, no guesswork, just personalized, intelligent job
+                matching designed for tech professionals like you.
+              </p>
+
+              <div className="flex flex-wrap gap-4">
+                <button className="group inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow">
+                  Get Started
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+
+                <button className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg font-medium transition-all duration-200">
+                  <Play className="w-4 h-4" />
+                  Watch Demo
+                </button>
               </div>
 
-              <div className="flex items-center gap-8 pt-8">
-                <div className="flex -space-x-2">
-                  {[...Array(4)].map((_, i) => (
+              <div className="flex items-center gap-6 pt-4">
+                <div className="flex -space-x-3">
+                  {[1, 2, 3, 4].map(i => (
                     <div
                       key={i}
-                      className="w-14 h-14 bg-violet-600 border-3 border-black dark:border-white text-white text-lg font-black transform hover:-translate-y-1 transition-all flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
+                      className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 border-2 border-white flex items-center justify-center text-white text-xs font-semibold"
                     >
-                      {i + 1}
+                      {i}
                     </div>
                   ))}
-                  <div className="w-14 h-14 bg-gray-200 dark:bg-gray-800 border-3 border-black dark:border-white text-black dark:text-white text-sm font-black transform hover:-translate-y-1 transition-all flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-gray-600 text-xs font-semibold">
                     +10K
                   </div>
                 </div>
                 <div>
-                  <p className="font-black text-gray-900 dark:text-white text-lg">
-                    10,000+ PROFESSIONALS
+                  <p className="text-sm font-semibold text-gray-900">
+                    10,000+ Professionals
                   </p>
-                  <p className="text-gray-600 dark:text-gray-400 font-semibold">
-                    HAVE FOUND THEIR MATCH
+                  <p className="text-xs text-gray-500">
+                    have found their match
                   </p>
                 </div>
               </div>
-            </motion.div>
+            </div>
 
-            {/* Demo Video */}
-            <motion.div
-              initial={{ opacity: 0, x: 60 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="relative"
-            >
-              <div className="relative bg-background dark:bg-background border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] overflow-hidden transform rotate-1 hover:-translate-y-1 hover:translate-x-1 transition-all">
-                <div className="bg-violet-600 dark:bg-violet-700 p-6 relative border-b-2 border-black dark:border-white">
+            <div className="relative">
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+                <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-xl font-black text-white uppercase tracking-wide transform -rotate-1">
-                        YOUR MATCHES
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Your Top Matches
                       </h3>
-                      <p className="text-violet-100 font-bold transform -rotate-1">
-                        Perfect opportunities await
+                      <p className="text-sm text-gray-600">
+                        Personalized for you
                       </p>
                     </div>
-                    <div className="bg-white dark:bg-black px-4 py-2 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.8)] transform -rotate-2">
-                      <span className="text-black dark:text-white font-bold">
-                        98% MATCH
-                      </span>
+                    <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                      98% Match
                     </div>
                   </div>
                 </div>
 
-                <div className="p-8 space-y-6">
+                <div className="p-6 space-y-3">
                   {[
                     {
-                      company: 'TECHFLOW',
-                      role: 'SENIOR REACT DEVELOPER',
+                      company: 'TechFlow',
+                      role: 'Senior React Developer',
                       match: '98%',
                       salary: '$120K - $150K',
                     },
                     {
-                      company: 'INNOVATE CO',
-                      role: 'FULL STACK ENGINEER',
+                      company: 'Innovate Co',
+                      role: 'Full Stack Engineer',
                       match: '94%',
                       salary: '$100K - $130K',
                     },
                     {
-                      company: 'DATACORE',
-                      role: 'FRONTEND ARCHITECT',
+                      company: 'DataCore',
+                      role: 'Frontend Architect',
                       match: '91%',
                       salary: '$110K - $140K',
                     },
-                  ].map((job, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 + index * 0.1 }}
-                      className="group p-6 border-2 border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] cursor-pointer"
+                  ].map((job, i) => (
+                    <div
+                      key={i}
+                      className="group p-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-violet-200 rounded-lg transition-all duration-200 cursor-pointer"
                     >
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h4 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-wide group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 group-hover:text-violet-600 transition-colors">
                             {job.role}
                           </h4>
-                          <p className="text-gray-600 dark:text-gray-400 font-bold text-sm uppercase tracking-wide">
-                            {job.company}
-                          </p>
+                          <p className="text-sm text-gray-600">{job.company}</p>
                         </div>
-                        <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-lg font-bold text-sm">
+                        <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
                           {job.match}
-                        </div>
+                        </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-violet-600 dark:text-violet-400 font-bold">
+                        <span className="text-sm font-medium text-violet-600">
                           {job.salary}
                         </span>
-                        <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:translate-x-1 transition-all" />
+                        <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-violet-600 group-hover:translate-x-1 transition-all" />
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="py-32 relative">
-        <div className="container mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-20"
-          >
-            <h2 className="text-5xl lg:text-7xl font-black mb-8 leading-tight">
-              <span className="block text-gray-900 dark:text-white">
-                HOW TO USE
-              </span>
-              <span className="block relative mt-4">
-                <span className="bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
-                  AICA?
-                </span>
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-2 bg-violet-600 transform skew-x-12" />
-              </span>
+      <section className="py-20 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+              HOW AICA WORKS
             </h2>
-            <div className="max-w-3xl mx-auto relative">
-              <div className="absolute -left-6 top-0 w-2 h-full bg-gradient-to-b from-violet-600 to-purple-600 transform -skew-y-2" />
-              <div className="absolute -right-2 top-4 w-4 h-4 bg-yellow-400 rotate-45" />
-              <p className="text-2xl text-gray-700 dark:text-gray-300 font-bold pl-12 transform rotate-1 bg-white dark:bg-gray-900 py-6 px-8 border-4 border-black dark:border-white shadow-[8px_8px_0px_0px_theme(colors.violet.600)]">
-                Experience the future of career matching with our revolutionary
-                AI technology
-              </p>
-            </div>
-          </motion.div>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Our intelligent platform makes job searching simple and effective
+            </p>
+          </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.8 }}
-                viewport={{ once: true }}
-                className="group"
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map((feature, i) => (
+              <div
+                key={i}
+                className="group bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md hover:border-violet-200 transition-all duration-300"
               >
-                <Card className="border-2 border-black dark:border-white bg-background dark:bg-background text-foreground dark:text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground transform transition-all duration-300 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] overflow-hidden h-full rounded-none">
-                  <CardContent className="p-8 relative">
-                    <div className="absolute top-4 right-4 w-2 h-2 bg-violet-600 rounded-full" />
-                    <div className="w-16 h-16 bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                      <feature.icon className="w-8 h-8 text-white" />
-                    </div>
-                    <h3 className="text-xl font-black mb-4 uppercase tracking-wide text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
-                      {feature.title}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-300 font-medium leading-relaxed">
-                      {feature.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:bg-violet-200 transition-colors">
+                  <feature.icon className="w-6 h-6 text-violet-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
             ))}
           </div>
         </div>
