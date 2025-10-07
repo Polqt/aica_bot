@@ -90,14 +90,13 @@ export default function UserProfilePage() {
         transition={{ duration: 0.6 }}
         className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6"
       >
-        <div className="relative">
-          <div className="absolute -left-4 top-0 w-2 h-full bg-black transform -skew-x-12" />
-          <h1 className="text-4xl lg:text-6xl font-black text-black uppercase tracking-wide pl-8 flex items-center gap-4">
-            <User className="w-12 h-12 text-black" />
-            USER PROFILE
+        <div>
+          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 flex items-center gap-3">
+            <User className="w-8 h-8 text-violet-600" />
+            <span>User Profile</span>
           </h1>
-          <p className="text-gray-700 font-bold text-lg mt-4 pl-8">
-            MANAGE YOUR PROFESSIONAL INFORMATION AND SKILLS
+          <p className="text-lg text-gray-600 mt-2">
+            Manage your professional information and skills
           </p>
         </div>
 

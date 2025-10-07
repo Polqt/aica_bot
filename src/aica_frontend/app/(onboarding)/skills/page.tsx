@@ -77,66 +77,64 @@ export default function SkillsPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8 }}
-      className="p-12"
+      transition={{ duration: 0.6 }}
+      className="p-8"
     >
       {/* Header Section */}
-      <div className="text-center mb-12">
-        <div className="w-24 h-24 bg-gradient-to-br from-violet-600 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-violet-600/25">
-          <Zap className="w-12 h-12 text-white" />
+      <div className="text-center mb-8">
+        <div className="w-16 h-16 bg-violet-100 rounded-xl flex items-center justify-center mx-auto mb-6">
+          <Zap className="w-8 h-8 text-violet-600" />
         </div>
-        <h1 className="text-5xl lg:text-6xl font-black text-gray-900 dark:text-white uppercase tracking-wider mb-6">
-          SKILLS & EXPERTISE
+        <h1 className="text-3xl font-bold text-gray-900 mb-3">
+          Skills & expertise
         </h1>
-        <p className="text-2xl text-gray-700 dark:text-gray-300 font-bold max-w-2xl mx-auto">
-          HIGHLIGHT YOUR TECHNICAL SKILLS AND COMPETENCIES FOR BETTER JOB MATCHING
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          Highlight your technical skills and competencies for better job matching
         </p>
       </div>
 
       {/* Content Section */}
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Add Skill Form */}
-        <form onSubmit={handleAddSkill} className="bg-gradient-to-r from-pink-200 to-purple-200 dark:from-pink-900/20 dark:to-purple-900/20 rounded-3xl p-8 border-4 border-black shadow-xl">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 bg-pink-500 border-4 border-black rounded-2xl flex items-center justify-center shadow-lg">
-              <Plus className="w-6 h-6 text-white" />
+        <form onSubmit={handleAddSkill} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center">
+              <Plus className="w-5 h-5 text-violet-600" />
             </div>
-            <h3 className="text-2xl font-black text-black uppercase tracking-wide">
-              ADD NEW SKILL
+            <h3 className="text-xl font-semibold text-gray-900">
+              Add new skill
             </h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-              <label htmlFor="skill_name" className="flex items-center gap-3 mb-3">
-                <div className="w-6 h-6 bg-red-500 border-2 border-black"></div>
-                <span className="text-lg font-black text-black uppercase">Skill Name *</span>
+            <div className="md:col-span-2 space-y-3">
+              <label htmlFor="skill_name" className="text-sm font-semibold text-gray-900">
+                Skill Name *
               </label>
               <input
                 id="skill_name"
                 type="text"
-                placeholder="JAVASCRIPT, PYTHON, REACT..."
+                placeholder="JavaScript, Python, React..."
                 value={newSkill}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewSkill(e.target.value)}
-                className="w-full p-3 text-lg font-bold bg-white border-4 border-black uppercase placeholder:text-gray-500 focus:outline-none focus:bg-pink-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
               />
             </div>
 
-            <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-              <label htmlFor="proficiency" className="flex items-center gap-3 mb-3">
-                <div className="w-6 h-6 bg-blue-500 border-2 border-black"></div>
-                <span className="text-lg font-black text-black uppercase">Proficiency</span>
+            <div className="space-y-3">
+              <label htmlFor="proficiency" className="text-sm font-semibold text-gray-900">
+                Proficiency
               </label>
               <select
                 id="proficiency"
                 value={proficiencyLevel}
                 onChange={(e) => setProficiencyLevel(e.target.value)}
-                className="w-full p-3 text-lg font-bold bg-white border-4 border-black uppercase focus:outline-none focus:bg-pink-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
               >
                 {proficiencyOptions.map((option) => (
-                  <option key={option.value} value={option.value} className="uppercase">
+                  <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
@@ -148,18 +146,18 @@ export default function SkillsPage() {
             <button
               type="submit"
               disabled={saving || !newSkill.trim()}
-              className="bg-green-400 border-4 border-black px-8 py-4 font-black text-xl text-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 flex items-center gap-3"
+              className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
             >
-              <Plus className="w-6 h-6" />
-              {saving ? 'ADDING...' : 'ADD SKILL'}
+              <Plus className="w-4 h-4" />
+              {saving ? 'Adding...' : 'Add skill'}
             </button>
           </div>
         </form>
 
         {/* Skills List */}
-        <div className="space-y-6">
-          <h3 className="text-3xl font-black text-black uppercase tracking-wide">
-            YOUR SKILLS ({skills.length})
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold text-gray-900">
+            Your skills ({skills.length})
           </h3>
 
           <AnimatePresence mode="popLayout">
@@ -168,20 +166,20 @@ export default function SkillsPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="text-center py-16 bg-gray-200 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                className="text-center py-12 bg-gray-50 border border-gray-200 rounded-lg"
               >
-                <div className="w-20 h-20 bg-black border-4 border-black flex items-center justify-center mx-auto mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                  <Zap className="w-10 h-10 text-white" />
+                <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Zap className="w-6 h-6 text-gray-500" />
                 </div>
-                <h3 className="text-2xl font-black text-black uppercase tracking-wider mb-4">
-                  NO SKILLS ADDED YET
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  No skills added yet
                 </h3>
-                <p className="text-lg font-bold text-black uppercase max-w-md mx-auto">
-                  ADD YOUR TECHNICAL SKILLS AND EXPERTISE TO IMPROVE JOB MATCHING
+                <p className="text-gray-600 max-w-md mx-auto">
+                  Add your technical skills and expertise to improve job matching
                 </p>
               </motion.div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {skills.map((skill, index) => (
                   <motion.div
                     key={skill.id}
@@ -189,22 +187,20 @@ export default function SkillsPage() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ delay: index * 0.05 }}
-                    className="bg-white border-4 border-black p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-shadow group"
+                    className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow group"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-8 h-8 bg-yellow-400 border-2 border-black rounded-lg flex items-center justify-center">
-                          <Star className="w-4 h-4 text-black" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                          <Star className="w-4 h-4 text-yellow-600" />
                         </div>
                         <div>
-                          <span className="text-lg font-black text-black uppercase">
+                          <span className="text-sm font-semibold text-gray-900">
                             {skill.skill_name}
                           </span>
                           {skill.proficiency_level && (
-                            <div className="bg-violet-400 border-2 border-black px-3 py-1 mt-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                              <span className="text-sm font-black text-black uppercase">
-                                {skill.proficiency_level}
-                              </span>
+                            <div className="bg-violet-100 text-violet-700 px-2 py-1 mt-1 rounded text-xs font-medium">
+                              {skill.proficiency_level}
                             </div>
                           )}
                         </div>
@@ -212,9 +208,9 @@ export default function SkillsPage() {
                       <button
                         onClick={() => handleDeleteSkill(skill.id)}
                         disabled={saving}
-                        className="w-10 h-10 bg-red-500 border-4 border-black flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 opacity-0 group-hover:opacity-100"
+                        className="w-8 h-8 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50 opacity-0 group-hover:opacity-100 flex items-center justify-center"
                       >
-                        <X className="w-5 h-5 text-white" />
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   </motion.div>
@@ -225,22 +221,22 @@ export default function SkillsPage() {
         </div>
 
         {/* Navigation */}
-        <div className="flex gap-6 pt-8">
+        <div className="flex gap-4 pt-6">
           <button
             onClick={handleBack}
             disabled={saving}
-            className="flex-1 bg-gray-400 border-4 border-black p-6 font-black text-xl text-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 flex items-center justify-center gap-3"
+            className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            <ArrowLeft className="w-6 h-6" />
-            BACK
+            <ArrowLeft className="w-4 h-4" />
+            Back
           </button>
           <button
             onClick={handleContinue}
             disabled={saving}
-            className="flex-1 bg-red-500 border-4 border-black p-6 font-black text-xl text-white uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 flex items-center justify-center gap-3"
+            className="flex-1 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            COMPLETE SETUP
-            <ArrowRight className="w-6 h-6" />
+            Complete setup
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>

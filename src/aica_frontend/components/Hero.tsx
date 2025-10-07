@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight, Play, Brain, Target, Zap, Shield } from 'lucide-react';
+import Video from './Video';
 
 const features = [
   {
@@ -34,14 +35,14 @@ export default function Hero() {
       <section className="pt-32 pb-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-8">w
+            <div className="space-y-8">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 text-violet-700 rounded-full text-sm font-medium">
                 <div className="w-1.5 h-1.5 bg-violet-500 rounded-full"></div>
                 AI-Powered Career Platform
               </div>
 
               <h1 className="text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 leading-tight">
-                FIND YOUR DREAM JOB WITH{' '}
+                FIND YOUR <br /> DREAM JOB WITH{' '}
                 <span className="text-violet-600">INTELLIGENT MATCH</span>
               </h1>
 
@@ -156,6 +157,8 @@ export default function Hero() {
           </div>
         </div>
       </section>
+
+      <Video />
 
       <section className="py-20 px-6">
         <div className="max-w-7xl mx-auto">

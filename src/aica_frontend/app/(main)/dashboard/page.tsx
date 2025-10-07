@@ -54,49 +54,47 @@ const recentMatches = [
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-12">
-      {/* Header */}
+    <div className="space-y-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6"
+        className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6"
       >
-        <div className="relative">
-          <div className="absolute -left-2 sm:-left-4 top-0 w-2 h-full bg-black transform -skew-x-12" />
-          <h1 className="text-2xl sm:text-4xl lg:text-6xl font-black text-black uppercase tracking-wide pl-4 sm:pl-8 flex items-center gap-2 sm:gap-4">
-            <Sparkles className="w-8 h-8 sm:w-12 sm:h-12 text-black" />
-            <span className="leading-tight">WELCOME BACK, ALEX!</span>
+        <div>
+          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 flex items-center gap-3">
+            <Sparkles className="w-8 h-8 text-violet-600" />
+            <span>Welcome back, Alex!</span>
           </h1>
           <p className="text-gray-700 font-bold text-base sm:text-lg mt-2 sm:mt-4 pl-4 sm:pl-8">
             HERE&apos;S YOUR JOB SEARCH OVERVIEW
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
+        <div className="flex gap-4">
           <Button
             asChild
-            className="bg-black text-white border-4 border-black hover:bg-white hover:text-black font-black uppercase tracking-wide px-4 sm:px-8 py-3 sm:py-4 shadow-[8px_8px_0px_0px_black] hover:shadow-[12px_12px_0px_0px_black] transition-all duration-200 text-sm sm:text-base"
+            variant="neutral"
+            className="border border-gray-300 hover:bg-gray-50"
           >
             <Link href="/user-profile">
-              <FileText className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
-              UPDATE PROFILE
+              <FileText className="w-4 h-4 mr-2" />
+              Update profile
             </Link>
           </Button>
           <Button
             asChild
-            className="bg-violet-600 text-white border-4 border-black hover:bg-black hover:text-white font-black uppercase tracking-wide px-4 sm:px-8 py-3 sm:py-4 shadow-[8px_8px_0px_0px_black] hover:shadow-[12px_12px_0px_0px_black] transition-all duration-200 text-sm sm:text-base"
+            className="bg-violet-600 hover:bg-violet-700 text-white"
           >
             <Link href="/job-matches">
-              FIND NEW MATCHES
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 sm:ml-3" />
+              Find new matches
+              <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </Button>
         </div>
       </motion.div>
 
       <div className="grid lg:grid-cols-3 gap-12">
-        {/* Recent Matches */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}

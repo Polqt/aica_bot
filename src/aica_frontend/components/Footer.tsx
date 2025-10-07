@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import React from 'react';
 
 export default function Footer() {
@@ -6,8 +7,13 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">N</span>
+            <div className="flex items-center justify-center">
+              <Image 
+                src={"/NYXARCANALOGO_TRANSPARENT2-02.png"}
+                alt='Nyx Arcana Studios Logo'
+                width={50}
+                height={75}
+              />
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-900">Nyx Arcana Studios</p>

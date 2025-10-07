@@ -188,14 +188,13 @@ export default function JobMatchesPage() {
         transition={{ duration: 0.6 }}
         className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
       >
-        <div className="relative">
-          <div className="absolute -left-4 top-0 w-2 h-full bg-black transform -skew-x-12" />
-          <h1 className="text-3xl lg:text-5xl font-black text-black uppercase tracking-wide pl-8 flex items-center gap-3">
-            <Target className="w-8 h-8 text-black" />
-            AI JOB MATCHES
+        <div>
+          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 flex items-center gap-3">
+            <Target className="w-8 h-8 text-violet-600" />
+            <span>AI Job Matches</span>
           </h1>
-          <p className="text-gray-700 font-bold text-lg mt-2 pl-8 uppercase">
-            DISCOVER OPPORTUNITIES TAILORED TO YOUR SKILLS
+          <p className="text-lg text-gray-600 mt-2">
+            Discover opportunities tailored to your skills
           </p>
         </div>
         <div className="flex items-center gap-3">

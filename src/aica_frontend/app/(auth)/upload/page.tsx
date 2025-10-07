@@ -3,7 +3,6 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { NeoCard } from '@/components/ui/neo-card';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useResumeProcessing } from '@/hooks/useResumeProcessing';
 import FileUploader from '@/components/FileUploader';
@@ -12,13 +11,8 @@ import ProcessingStatusDisplay from '@/components/ProcessingStatusDisplay';
 export default function ResumeUpload() {
   const router = useRouter();
 
-  const {
-    selectedFile,
-    isUploading,
-    error,
-    handleFileChange,
-    uploadFile,
-  } = useFileUpload();
+  const { selectedFile, isUploading, error, handleFileChange, uploadFile } =
+    useFileUpload();
 
   const {
     processingStatus,
@@ -51,67 +45,56 @@ export default function ResumeUpload() {
   }, [processingStatus, router]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="w-full space-y-6"
-    >
-      <div className="text-center space-y-3">
-        <h1 className="text-4xl font-black tracking-tight text-gray-900 dark:text-gray-100">
-          UPLOAD RESUME
-        </h1>
-        <p className="text-lg font-bold text-gray-600 dark:text-gray-400">
-          GET STARTED BY UPLOADING YOUR RESUME
-        </p>
-      </div>
+    <div className="flex items-center justify-center px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-xl space-y-8"
+      >
+        <div className="text-start space-y-2">
+          <h1 className="text-3xl font-semibold text-gray-900">
+            AICA, MEET MY RESUME!
+          </h1>
+          <p className="text-gray-500 text-base font-medium">
+            Let AICA analyze your tech and soft skills
+          </p>
+        </div>
 
-      <div className="relative">
-        <div className="absolute -inset-1 bg-violet-600/5 transform rotate-1 rounded-2xl" />
-        <NeoCard variant="elevated" className="relative">
-          <div className="p-8">
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="mb-6"
-              >
-                <div className="relative">
-                  <div className="absolute -inset-1 bg-red-500 rotate-1"></div>
-                  <div className="relative bg-red-50 dark:bg-red-950 border-2 border-red-600 p-4 text-center">
-                    <p className="text-red-700 dark:text-red-300 font-bold text-sm tracking-wide">
-                      {error.toUpperCase()}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all p-8 space-y-6">
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-3 border border-red-200 bg-red-50 rounded-lg"
+            >
+              <p className="text-sm text-red-600">{error}</p>
+            </motion.div>
+          )}
 
-            <FileUploader
-              selectedFile={selectedFile}
-              isUploading={isUploading}
-              error={error}
-              onFileChange={handleFileChange}
-              onUpload={handleUpload}
-              onSkip={() => router.push('/dashboard')}
-            />
+          <FileUploader
+            selectedFile={selectedFile}
+            isUploading={isUploading}
+            error={error}
+            onFileChange={handleFileChange}
+            onUpload={handleUpload}
+          />
 
-            {processingStatus !== undefined && processingStatus !== null && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-8"
-              >
-                <ProcessingStatusDisplay
-                  status={processingStatus}
-                  pollCount={pollCount}
-                  onRetry={handleUpload}
-                />
-              </motion.div>
-            )}
-          </div>
-        </NeoCard>
-      </div>
-    </motion.div>
+          {processingStatus && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <ProcessingStatusDisplay
+                status={processingStatus}
+                pollCount={pollCount}
+                onRetry={handleUpload}
+              />
+            </motion.div>
+          )}
+        </div>
+      </motion.div>
+    </div>
   );
 }

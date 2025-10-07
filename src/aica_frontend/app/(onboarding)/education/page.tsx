@@ -102,117 +102,113 @@ export default function EducationPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8 }}
-      className="p-12"
+      transition={{ duration: 0.6 }}
+      className="p-8"
     >
       {/* Header Section */}
-      <div className="text-center mb-12">
-        <div className="w-24 h-24 bg-gradient-to-br from-violet-600 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-violet-600/25">
-          <GraduationCap className="w-12 h-12 text-white" />
+      <div className="text-center mb-8">
+        <div className="w-16 h-16 bg-violet-100 rounded-xl flex items-center justify-center mx-auto mb-6">
+          <GraduationCap className="w-8 h-8 text-violet-600" />
         </div>
-        <h1 className="text-5xl lg:text-6xl font-black text-gray-900 dark:text-white uppercase tracking-wider mb-6">
-          EDUCATION BACKGROUND
+        <h1 className="text-3xl font-bold text-gray-900 mb-3">
+          Education background
         </h1>
-        <p className="text-2xl text-gray-700 dark:text-gray-300 font-bold max-w-2xl mx-auto">
-          ADD YOUR EDUCATIONAL QUALIFICATIONS TO STRENGTHEN YOUR PROFILE
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          Add your educational qualifications to strengthen your profile
         </p>
       </div>
 
       {/* Content Section */}
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Education List */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-3xl font-black text-black uppercase tracking-wide">
-              YOUR EDUCATION
+            <h3 className="text-xl font-semibold text-gray-900">
+              Your education
             </h3>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button
+                <button
                   onClick={() => handleOpenDialog()}
                   disabled={saving}
-                  className="bg-green-400 border-4 border-black px-8 py-4 font-black text-xl text-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 flex items-center gap-3"
+                  className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
-                  <Plus className="w-6 h-6" />
-                  ADD EDUCATION
-                </Button>
+                  <Plus className="w-4 h-4" />
+                  Add education
+                </button>
               </DialogTrigger>
 
-              <DialogContent className="bg-white border-4 border-black p-8 max-w-2xl w-full shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-h-[90vh] overflow-y-auto">
+              <DialogContent className="bg-white border border-gray-200 p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="mb-6">
-                  <h2 className="text-3xl font-black text-black uppercase tracking-wider mb-2">
-                    {editingEducation ? 'EDIT EDUCATION' : 'ADD EDUCATION'}
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    {editingEducation ? 'Edit education' : 'Add education'}
                   </h2>
-                  <p className="text-lg font-bold text-black uppercase">
-                    {editingEducation ? 'UPDATE YOUR EDUCATION DETAILS' : 'ADD YOUR EDUCATIONAL BACKGROUND'}
+                  <p className="text-gray-600">
+                    {editingEducation ? 'Update your education details' : 'Add your educational background'}
                   </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="bg-yellow-200 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                    <Label htmlFor="institution_name" className="flex items-center gap-3 mb-3">
-                      <div className="w-6 h-6 bg-red-500 border-2 border-black"></div>
-                      <span className="text-lg font-black text-black uppercase">Institution Name *</span>
+                  <div className="space-y-3">
+                    <Label htmlFor="institution_name" className="text-sm font-semibold text-gray-900">
+                      Institution Name *
                     </Label>
                     <Input
                       id="institution_name"
                       type="text"
-                      placeholder="UNIVERSITY OF EXAMPLE"
+                      placeholder="University of Example"
                       value={formData.institution_name}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('institution_name', e.target.value)}
                       required
-                      className="w-full p-3 text-lg font-bold bg-white border-4 border-black uppercase placeholder:text-gray-500 focus:outline-none focus:bg-yellow-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-yellow-200 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                      <Label htmlFor="degree_type" className="flex items-center gap-3 mb-3">
-                        <div className="w-6 h-6 bg-blue-500 border-2 border-black"></div>
-                        <span className="text-lg font-black text-black uppercase">Degree Type *</span>
+                    <div className="space-y-3">
+                      <Label htmlFor="degree_type" className="text-sm font-semibold text-gray-900">
+                        Degree Type *
                       </Label>
                       <select
                         id="degree_type"
                         value={formData.degree_type}
                         onChange={(e) => handleInputChange('degree_type', e.target.value)}
                         required
-                        className="w-full p-3 text-lg font-bold bg-white border-4 border-black uppercase focus:outline-none focus:bg-yellow-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                       >
-                        <option value="">SELECT DEGREE TYPE</option>
-                        <option value="Bachelor's">BACHELOR DEGREE</option>
-                        <option value="Master's">MASTER DEGREE</option>
-                        <option value="PhD">PHD</option>
-                        <option value="Associate">ASSOCIATE</option>
-                        <option value="Diploma">DIPLOMA</option>
-                        <option value="Certificate">CERTIFICATE</option>
-                        <option value="High School">HIGH SCHOOL</option>
+                        <option value="">Select degree type</option>
+                        <option value="Bachelor's">Bachelor&apos;s</option>
+                        <option value="Master's">Master&apos;s</option>
+                        <option value="PhD">PhD</option>
+                        <option value="Associate">Associate</option>
+                        <option value="Diploma">Diploma</option>
+                        <option value="Certificate">Certificate</option>
+                        <option value="High School">High School</option>
                       </select>
                     </div>
 
-                    <div className="bg-yellow-200 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                      <Label htmlFor="field_of_study" className="flex items-center gap-3 mb-3">
-                        <div className="w-6 h-6 bg-green-500 border-2 border-black"></div>
-                        <span className="text-lg font-black text-black uppercase">Field of Study *</span>
+                    <div className="space-y-3">
+                      <Label htmlFor="field_of_study" className="text-sm font-semibold text-gray-900">
+                        Field of Study *
                       </Label>
                       <Input
                         id="field_of_study"
                         type="text"
-                        placeholder="COMPUTER SCIENCE"
+                        placeholder="Computer Science"
                         value={formData.field_of_study}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('field_of_study', e.target.value)}
                         required
-                        className="w-full p-3 text-lg font-bold bg-white border-4 border-black uppercase placeholder:text-gray-500 focus:outline-none focus:bg-yellow-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-yellow-200 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                      <Label htmlFor="start_date" className="flex items-center gap-3 mb-3">
-                        <div className="w-6 h-6 bg-purple-500 border-2 border-black"></div>
-                        <span className="text-lg font-black text-black uppercase">Start Date *</span>
+                    <div className="space-y-3">
+                      <Label htmlFor="start_date" className="text-sm font-semibold text-gray-900">
+                        Start Date *
                       </Label>
                       <Input
                         id="start_date"
@@ -220,14 +216,13 @@ export default function EducationPage() {
                         value={formData.start_date}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('start_date', e.target.value)}
                         required
-                        className="w-full p-3 text-lg font-bold bg-white border-4 border-black focus:outline-none focus:bg-yellow-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                       />
                     </div>
 
-                    <div className="bg-yellow-200 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                      <Label htmlFor="end_date" className="flex items-center gap-3 mb-3">
-                        <div className="w-6 h-6 bg-orange-500 border-2 border-black"></div>
-                        <span className="text-lg font-black text-black uppercase">End Date</span>
+                    <div className="space-y-3">
+                      <Label htmlFor="end_date" className="text-sm font-semibold text-gray-900">
+                        End Date
                       </Label>
                       <Input
                         id="end_date"
@@ -235,44 +230,44 @@ export default function EducationPage() {
                         value={formData.end_date}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('end_date', e.target.value)}
                         disabled={formData.is_current}
-                        className="w-full p-3 text-lg font-bold bg-white border-4 border-black focus:outline-none focus:bg-yellow-100 disabled:opacity-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 disabled:opacity-50"
                       />
                     </div>
                   </div>
 
-                  <div className="bg-yellow-200 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                    <label className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        id="is_current"
-                        checked={formData.is_current}
-                        onChange={(e) => handleInputChange('is_current', e.target.checked)}
-                        className="w-6 h-6 border-4 border-black"
-                      />
-                      <span className="text-lg font-black text-black uppercase ml-3">I AM CURRENTLY STUDYING HERE</span>
-                    </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="is_current"
+                      checked={formData.is_current}
+                      onChange={(e) => handleInputChange('is_current', e.target.checked)}
+                      className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
+                    />
+                    <Label htmlFor="is_current" className="text-sm font-medium text-gray-900">
+                      I am currently studying here
+                    </Label>
                   </div>
 
-                  <div className="flex gap-6 pt-6">
+                  <div className="flex gap-4 pt-6">
                     <Button
                       type="button"
                       onClick={handleCloseDialog}
-                      className="flex-1 bg-gray-400 border-4 border-black p-4 font-black text-xl text-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow"
+                      className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded-lg transition-colors"
                     >
-                      CANCEL
+                      Cancel
                     </Button>
                     <Button
                       type="submit"
                       disabled={saving}
-                      className="flex-1 bg-red-500 border-4 border-black p-4 font-black text-xl text-white uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 flex items-center justify-center gap-3"
+                      className="flex-1 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {saving ? (
                         <>
-                          <div className="w-6 h-6 bg-white border-2 border-black animate-spin"></div>
-                          SAVING...
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Saving...
                         </>
                       ) : (
-                        editingEducation ? 'UPDATE' : 'ADD'
+                        editingEducation ? 'Update' : 'Add'
                       )}
                     </Button>
                   </div>
@@ -287,16 +282,16 @@ export default function EducationPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="text-center py-16 bg-gray-200 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                className="text-center py-12 bg-gray-50 border border-gray-200 rounded-lg"
               >
-                <div className="w-20 h-20 bg-black border-4 border-black flex items-center justify-center mx-auto mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                  <GraduationCap className="w-10 h-10 text-white" />
+                <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <GraduationCap className="w-6 h-6 text-gray-500" />
                 </div>
-                <h3 className="text-2xl font-black text-black uppercase tracking-wider mb-4">
-                  NO EDUCATION ADDED YET
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  No education added yet
                 </h3>
-                <p className="text-lg font-bold text-black uppercase max-w-md mx-auto">
-                  ADD YOUR EDUCATIONAL BACKGROUND TO HELP MATCH YOU WITH RELEVANT OPPORTUNITIES
+                <p className="text-gray-600 max-w-md mx-auto">
+                  Add your educational background to help match you with relevant opportunities
                 </p>
               </motion.div>
             ) : (
@@ -307,43 +302,45 @@ export default function EducationPage() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-white border-4 border-black p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                  className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h4 className="text-xl font-black text-black uppercase mb-2">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">
                         {edu.degree_type} in {edu.field_of_study}
                       </h4>
-                      <div className="flex items-center text-lg font-bold text-black mb-2">
-                        <div className="w-6 h-6 bg-blue-500 border-2 border-black mr-3"></div>
-                        <span className="uppercase">{edu.institution_name}</span>
-                      </div>
-                      <div className="flex items-center text-lg font-bold text-black mb-2">
-                        <div className="w-6 h-6 bg-green-500 border-2 border-black mr-3"></div>
-                        <span className="uppercase">
-                          {new Date(edu.start_date).getFullYear()} - {
-                            edu.is_current ? 'PRESENT' :
-                            edu.end_date ? new Date(edu.end_date).getFullYear() :
-                            'PRESENT'
-                          }
-                        </span>
+                      <div className="space-y-1 text-sm text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <span>{edu.institution_name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span>
+                            {new Date(edu.start_date).getFullYear()} - {
+                              edu.is_current ? 'Present' :
+                              edu.end_date ? new Date(edu.end_date).getFullYear() :
+                              'Present'
+                            }
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-3">
-                      <Button
+                    <div className="flex gap-2">
+                      <button
                         onClick={() => handleOpenDialog(edu)}
                         disabled={saving}
-                        className="w-12 h-12 bg-yellow-400 border-4 border-black flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50"
+                        className="p-2 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
                       >
-                        <Edit className="w-6 h-6 text-black" />
-                      </Button>
-                      <Button
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => handleDelete(edu.id)}
                         disabled={saving}
-                        className="w-12 h-12 bg-red-500 border-4 border-black flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50"
+                        className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
                       >
-                        <Trash2 className="w-6 h-6 text-white" />
-                      </Button>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 </motion.div>
@@ -353,23 +350,23 @@ export default function EducationPage() {
         </div>
 
         {/* Navigation */}
-        <div className="flex gap-6 pt-8">
-          <Button
+        <div className="flex gap-4 pt-6">
+          <button
             onClick={handleBack}
             disabled={saving}
-            className="flex-1 bg-gray-400 border-4 border-black p-6 font-black text-xl text-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 flex items-center justify-center gap-3"
+            className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            <ArrowLeft className="w-6 h-6" />
-            BACK
-          </Button>
-          <Button
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+          <button
             onClick={handleContinue}
             disabled={saving}
-            className="flex-1 bg-red-500 border-4 border-black p-6 font-black text-xl text-white uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 flex items-center justify-center gap-3"
+            className="flex-1 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            CONTINUE
-            <ArrowRight className="w-6 h-6" />
-          </Button>
+            Continue
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </motion.div>

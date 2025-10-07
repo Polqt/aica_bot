@@ -57,133 +57,117 @@ export default function ProfilePage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8 }}
-      className="p-12"
+      transition={{ duration: 0.6 }}
+      className="p-8"
     >
       {/* Header Section */}
-      <div className="text-center mb-12">
-        <div className="w-24 h-24 bg-gradient-to-br from-violet-600 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-violet-600/25">
-          <User className="w-12 h-12 text-white" />
+      <div className="text-center mb-8">
+        <div className="w-16 h-16 bg-violet-100 rounded-xl flex items-center justify-center mx-auto mb-6">
+          <User className="w-8 h-8 text-violet-600" />
         </div>
-        <h1 className="text-5xl lg:text-6xl font-black text-gray-900 dark:text-white uppercase tracking-wider mb-6">
-          TELL US ABOUT YOURSELF
+        <h1 className="text-3xl font-bold text-gray-900 mb-3">
+          Tell us about yourself
         </h1>
-        <p className="text-2xl text-gray-700 dark:text-gray-300 font-bold max-w-2xl mx-auto">
-          START BUILDING YOUR PROFESSIONAL PROFILE WITH OUR AI-POWERED CAREER ASSISTANT
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          Start building your professional profile with our AI-powered career assistant
         </p>
       </div>
 
       {/* Form Section */}
-      <div className="max-w-4xl mx-auto">
-        <form onSubmit={handleSubmit} className="space-y-8">
+      <div className="max-w-2xl mx-auto">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Full Name */}
-          <div className="bg-gradient-to-r from-yellow-200 to-orange-200 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-3xl p-8 border-4 border-black shadow-xl">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-red-500 border-4 border-black rounded-2xl flex items-center justify-center shadow-lg">
-                <User className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-2xl font-black text-black uppercase tracking-wide">
-                FULL NAME *
-              </h3>
-            </div>
+          <div className="space-y-3">
+            <label htmlFor="full_name" className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+              <User className="w-4 h-4" />
+              Full Name *
+            </label>
             <input
               id="full_name"
               type="text"
-              placeholder="JOHN DOE"
+              placeholder="John Doe"
               value={formData.full_name || ''}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('full_name', e.target.value)}
               required
-              className="w-full p-6 text-2xl font-black bg-white border-4 border-black uppercase placeholder:text-gray-500 focus:outline-none focus:bg-yellow-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
             />
           </div>
 
           {/* Contact Info Grid */}
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-gradient-to-r from-blue-200 to-cyan-200 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-3xl p-8 border-4 border-black shadow-xl">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-blue-500 border-4 border-black rounded-2xl flex items-center justify-center shadow-lg">
-                  <Phone className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-2xl font-black text-black uppercase tracking-wide">
-                  PHONE NUMBER
-                </h3>
-              </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <label htmlFor="phone" className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                <Phone className="w-4 h-4" />
+                Phone Number
+              </label>
               <input
                 id="phone"
                 type="tel"
                 placeholder="+1 (555) 123-4567"
                 value={formData.phone || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('phone', e.target.value)}
-                className="w-full p-6 text-2xl font-black bg-white border-4 border-black placeholder:text-gray-500 focus:outline-none focus:bg-blue-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
               />
             </div>
 
-            <div className="bg-gradient-to-r from-green-200 to-emerald-200 dark:from-green-900/20 dark:to-emerald-900/20 rounded-3xl p-8 border-4 border-black shadow-xl">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-green-500 border-4 border-black rounded-2xl flex items-center justify-center shadow-lg">
-                  <MapPin className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-2xl font-black text-black uppercase tracking-wide">
-                  LOCATION
-                </h3>
-              </div>
+            <div className="space-y-3">
+              <label htmlFor="location" className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                <MapPin className="w-4 h-4" />
+                Location
+              </label>
               <input
                 id="location"
                 type="text"
-                placeholder="NEW YORK, NY"
+                placeholder="New York, NY"
                 value={formData.location || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('location', e.target.value)}
-                className="w-full p-6 text-2xl font-black bg-white border-4 border-black uppercase placeholder:text-gray-500 focus:outline-none focus:bg-green-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
               />
             </div>
           </div>
 
           {/* LinkedIn URL */}
-          <div className="bg-gradient-to-r from-purple-200 to-pink-200 dark:from-purple-900/20 dark:to-pink-900/20 rounded-3xl p-8 border-4 border-black shadow-xl">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-purple-500 border-4 border-black rounded-2xl flex items-center justify-center shadow-lg">
-                <Mail className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-2xl font-black text-black uppercase tracking-wide">
-                LINKEDIN URL
-              </h3>
-            </div>
+          <div className="space-y-3">
+            <label htmlFor="linkedin_url" className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+              <Mail className="w-4 h-4" />
+              LinkedIn URL
+            </label>
             <input
               id="linkedin_url"
               type="url"
-              placeholder="HTTPS://LINKEDIN.COM/IN/JOHNDOE"
+              placeholder="https://linkedin.com/in/johndoe"
               value={formData.linkedin_url || ''}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('linkedin_url', e.target.value)}
-              className="w-full p-6 text-2xl font-black bg-white border-4 border-black placeholder:text-gray-500 focus:outline-none focus:bg-purple-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
             />
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-8 pt-8">
+          <div className="flex gap-4 pt-6">
             <button
               type="button"
               onClick={handleSkip}
               disabled={saving}
-              className="flex-1 bg-gray-400 border-4 border-black p-8 font-black text-2xl text-black uppercase shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50"
+              className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded-lg transition-colors disabled:opacity-50"
             >
-              SKIP FOR NOW
+              Skip for now
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 border-4 border-black p-8 font-black text-2xl text-white uppercase shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-4"
+              className="flex-1 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {saving ? (
                 <>
-                  <div className="w-8 h-8 bg-white border-4 border-black animate-spin"></div>
-                  SAVING...
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Saving...
                 </>
               ) : (
                 <>
-                  CONTINUE
-                  <ArrowRight className="w-8 h-8" />
+                  Continue
+                  <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>

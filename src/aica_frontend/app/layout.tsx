@@ -4,7 +4,6 @@ import './globals.css';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 import { cn } from '@/lib/utils';
-import Footer from '@/components/Footer';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -132,7 +131,6 @@ export default function RootLayout({
 
             {/* Content */}
             <main className="relative z-10">{children}</main>
-            <Footer />
           </div>
 
           <Toaster
