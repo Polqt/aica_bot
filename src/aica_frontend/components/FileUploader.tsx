@@ -4,12 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { FileUpload } from '@/components/ui/file-upload';
 import { Button } from '@/components/ui/button';
-import {
-  CheckCircle,
-  Loader2,
-  AlertCircle,
-  Upload,
-} from 'lucide-react';
+import { CheckCircle, Loader2, AlertCircle, Upload } from 'lucide-react';
 import { formatFileSize } from '@/lib/utils/processing';
 import { MAX_FILE_SIZE_MB } from '@/lib/constants/upload';
 
@@ -67,7 +62,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         <Button
           onClick={onUpload}
           disabled={!selectedFile || isUploading || !!error}
-          className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-all"
+          className="flex-1 h-11 bg-`blue`-600 hover:bg-blue-700 text-white font-medium rounded-md transition-all"
         >
           {isUploading ? (
             <>

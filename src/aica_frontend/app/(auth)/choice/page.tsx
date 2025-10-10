@@ -119,7 +119,7 @@ export default function ChoicePage() {
         </button>
 
         <button
-          onClick={() => router.push('/onboarding')}
+          onClick={() => router.push('/profile')}
           className="group bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl p-6 text-left hover:shadow-md transition-all"
         >
           <div className="flex items-center gap-4">

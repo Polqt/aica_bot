@@ -3,35 +3,65 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, ArrowRight, Zap, Plus, X, Star } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Zap, X, Star, Check } from 'lucide-react';
 import { useResumeBuilder } from '@/hooks/useResumeBuilder';
 import { apiClient } from '@/lib/api-client';
 import { toast } from 'sonner';
+import skillsData from '@/data/skills.json';
 
 export default function SkillsPage() {
   const router = useRouter();
   const { skills, addSkill, deleteSkill, loadResumeData, loading, saving } = useResumeBuilder();
-  const [newSkill, setNewSkill] = useState('');
-  const [proficiencyLevel, setProficiencyLevel] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadResumeData();
   }, [loadResumeData]);
 
-  const handleAddSkill = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Initialize selected skills from existing skills
+  useEffect(() => {
+    const existingSkillNames = new Set(skills.map(skill => skill.skill_name));
+    setSelectedSkills(existingSkillNames);
+  }, [skills]);
 
-    if (!newSkill.trim()) {
+  const handleSkillToggle = async (skillName: string) => {
+    const isSelected = selectedSkills.has(skillName);
+
+    if (isSelected) {
+      // Remove skill
+      const skillToDelete = skills.find(s => s.skill_name === skillName);
+      if (skillToDelete) {
+        await deleteSkill(skillToDelete.id);
+        setSelectedSkills(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(skillName);
+          return newSet;
+        });
+      }
+    } else {
+      // Add skill
+      await addSkill({
+        skill_name: skillName,
+      });
+      setSelectedSkills(prev => new Set([...prev, skillName]));
+    }
+  };
+
+  const handleAddCustomSkill = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const skillName = (e.target as HTMLFormElement).skill_name.value.trim();
+
+    if (!skillName) {
       toast.error('Please enter a skill name');
       return;
     }
 
     await addSkill({
-      skill_name: newSkill.trim(),
-      proficiency_level: proficiencyLevel || undefined,
+      skill_name: skillName,
     });
-    setNewSkill('');
-    setProficiencyLevel('');
+    setSelectedSkills(prev => new Set([...prev, skillName]));
+    (e.target as HTMLFormElement).reset();
   };
 
   const handleDeleteSkill = async (id: string) => {
@@ -59,13 +89,6 @@ export default function SkillsPage() {
     router.push('/experience');
   };
 
-  const proficiencyOptions = [
-    { value: '', label: 'Not specified' },
-    { value: 'Beginner', label: 'Beginner' },
-    { value: 'Intermediate', label: 'Intermediate' },
-    { value: 'Advanced', label: 'Advanced' },
-    { value: 'Expert', label: 'Expert' },
-  ];
 
   if (loading) {
     return (
@@ -97,62 +120,92 @@ export default function SkillsPage() {
 
       {/* Content Section */}
       <div className="space-y-6">
-        {/* Add Skill Form */}
-        <form onSubmit={handleAddSkill} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center">
-              <Plus className="w-5 h-5 text-violet-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900">
-              Add new skill
+        {/* Tech Stack Selection */}
+        <div className="space-y-6">
+          {/* Category Selection */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">
+              Select your tech stack
             </h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 space-y-3">
-              <label htmlFor="skill_name" className="text-sm font-semibold text-gray-900">
-                Skill Name *
-              </label>
-              <input
-                id="skill_name"
-                type="text"
-                placeholder="JavaScript, Python, React..."
-                value={newSkill}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewSkill(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label htmlFor="proficiency" className="text-sm font-semibold text-gray-900">
-                Proficiency
-              </label>
-              <select
-                id="proficiency"
-                value={proficiencyLevel}
-                onChange={(e) => setProficiencyLevel(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-              >
-                {proficiencyOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {skillsData.categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)}
+                  className={`p-3 rounded-lg border-2 text-left transition-all ${
+                    selectedCategory === category.id
+                      ? 'border-violet-500 bg-violet-50 text-violet-700'
+                      : 'border-gray-200 hover:border-gray-300 bg-gray-50 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="font-medium text-sm">{category.name}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {category.skills.length} skills
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="mt-6">
-            <button
-              type="submit"
-              disabled={saving || !newSkill.trim()}
-              className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+          {/* Skills Selection */}
+          {selectedCategory && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm"
             >
-              <Plus className="w-4 h-4" />
-              {saving ? 'Adding...' : 'Add skill'}
-            </button>
-          </div>
-        </form>
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                {skillsData.categories.find(cat => cat.id === selectedCategory)?.name}
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {skillsData.categories
+                  .find(cat => cat.id === selectedCategory)
+                  ?.skills.map((skill) => {
+                    const isSelected = selectedSkills.has(skill) || skills.some(s => s.skill_name === skill);
+                    return (
+                      <button
+                        key={skill}
+                        onClick={() => handleSkillToggle(skill)}
+                        disabled={saving}
+                        className={`p-3 rounded-lg border-2 text-left transition-all disabled:opacity-50 ${
+                          isSelected
+                            ? 'border-green-500 bg-green-50 text-green-700'
+                            : 'border-gray-200 hover:border-gray-300 bg-gray-50 hover:bg-gray-100'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{skill}</span>
+                          {isSelected && <Check className="w-4 h-4 text-green-600" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Custom Skill Form */}
+          <form onSubmit={handleAddCustomSkill} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">
+              Add custom skill
+            </h4>
+            <div className="flex gap-3">
+              <input
+                name="skill_name"
+                type="text"
+                placeholder="Enter a custom skill..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+              />
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                {saving ? 'Adding...' : 'Add'}
+              </button>
+            </div>
+          </form>
+        </div>
 
         {/* Skills List */}
         <div className="space-y-4">
@@ -194,16 +247,9 @@ export default function SkillsPage() {
                         <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
                           <Star className="w-4 h-4 text-yellow-600" />
                         </div>
-                        <div>
-                          <span className="text-sm font-semibold text-gray-900">
-                            {skill.skill_name}
-                          </span>
-                          {skill.proficiency_level && (
-                            <div className="bg-violet-100 text-violet-700 px-2 py-1 mt-1 rounded text-xs font-medium">
-                              {skill.proficiency_level}
-                            </div>
-                          )}
-                        </div>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {skill.skill_name}
+                        </span>
                       </div>
                       <button
                         onClick={() => handleDeleteSkill(skill.id)}
@@ -220,7 +266,6 @@ export default function SkillsPage() {
           </AnimatePresence>
         </div>
 
-        {/* Navigation */}
         <div className="flex gap-4 pt-6">
           <button
             onClick={handleBack}

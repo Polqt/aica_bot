@@ -27,11 +27,10 @@ export const metadata: Metadata = {
     title: 'AICA - AI Career Assistant',
     description:
       'Find your dream tech job with AI-powered resume analysis and job matching.',
-    url: 'https://aica.app',
     siteName: 'AICA',
     images: [
       {
-        url: '/nyxarcanalogotransparent-02.png',
+        url: '/NYXARCANALOGO_TRANSPARENT-02.png',
         width: 1200,
         height: 630,
         alt: 'AICA - AI Career Assistant',
@@ -39,27 +38,6 @@ export const metadata: Metadata = {
     ],
     locale: 'en_US',
     type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'AICA - AI Career Assistant',
-    description:
-      'Find your dream tech job with AI-powered resume analysis and job matching.',
-    images: ['/nyxarcanalogotransparent-02.png'],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
-  verification: {
-    google: 'your-google-site-verification-code',
   },
 };
 

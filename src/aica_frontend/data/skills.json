@@ -1,0 +1,127 @@
+{
+  "categories": [
+    {
+      "id": "frontend",
+      "name": "Frontend Development",
+      "skills": [
+        "React",
+        "Vue.js",
+        "Angular",
+        "Next.js",
+        "Nuxt.js",
+        "Svelte",
+        "JavaScript",
+        "TypeScript",
+        "HTML",
+        "CSS",
+        "Sass/SCSS",
+        "Tailwind CSS",
+        "Bootstrap",
+        "Material-UI",
+        "Chakra UI",
+        "Styled Components"
+      ]
+    },
+    {
+      "id": "backend",
+      "name": "Backend Development",
+      "skills": [
+        "Node.js",
+        "Python",
+        "Django",
+        "Flask",
+        "FastAPI",
+        "Java",
+        "Spring Boot",
+        "C#",
+        ".NET",
+        "PHP",
+        "Laravel",
+        "Ruby",
+        "Ruby on Rails",
+        "Go",
+        "Rust",
+        "GraphQL",
+        "REST APIs"
+      ]
+    },
+    {
+      "id": "database",
+      "name": "Databases",
+      "skills": [
+        "PostgreSQL",
+        "MySQL",
+        "MongoDB",
+        "Redis",
+        "SQLite",
+        "Firebase",
+        "Supabase",
+        "Elasticsearch",
+        "Cassandra",
+        "DynamoDB"
+      ]
+    },
+    {
+      "id": "devops",
+      "name": "DevOps & Cloud",
+      "skills": [
+        "Docker",
+        "Kubernetes",
+        "AWS",
+        "Azure",
+        "Google Cloud Platform",
+        "Terraform",
+        "Ansible",
+        "Jenkins",
+        "GitHub Actions",
+        "GitLab CI/CD",
+        "Nginx",
+        "Apache"
+      ]
+    },
+    {
+      "id": "mobile",
+      "name": "Mobile Development",
+      "skills": [
+        "React Native",
+        "Flutter",
+        "Swift",
+        "Kotlin",
+        "Ionic",
+        "Xamarin"
+      ]
+    },
+    {
+      "id": "data",
+      "name": "Data Science & AI",
+      "skills": [
+        "Pandas",
+        "NumPy",
+        "Scikit-learn",
+        "TensorFlow",
+        "PyTorch",
+        "Jupyter",
+        "Matplotlib",
+        "Seaborn",
+        "Tableau",
+        "Power BI"
+      ]
+    },
+    {
+      "id": "tools",
+      "name": "Development Tools",
+      "skills": [
+        "Git",
+        "GitHub",
+        "GitLab",
+        "VS Code",
+        "IntelliJ IDEA",
+        "Postman",
+        "Figma",
+        "Slack",
+        "Notion",
+        "Jira"
+      ]
+    }
+  ]
+}
