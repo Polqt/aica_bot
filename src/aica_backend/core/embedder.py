@@ -14,17 +14,22 @@ class TextEmbedder:
 
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
         """Initialize embedder with optimized model for semantic similarity."""
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name=f"sentence-transformers/{model_name}",
-            model_kwargs={'device': 'cpu'},  # Use CPU for consistency
-            encode_kwargs={'normalize_embeddings': True}  # Normalize for better cosine similarity
-        )
-        self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=500,
-            chunk_overlap=50,
-            length_function=len,
-            separators=["\n\n", "\n", ". ", ", ", " ", ""]
-        )
+        try:
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name=f"sentence-transformers/{model_name}",
+                model_kwargs={'device': 'cpu'},  # Use CPU for consistency
+                encode_kwargs={'normalize_embeddings': True}  # Normalize for better cosine similarity
+            )
+            self.text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=400,  # Smaller chunks for better precision
+                chunk_overlap=50,
+                length_function=len,
+                separators=["\n\n", "\n", ". ", "! ", "? ", ", ", " ", ""]
+            )
+            logger.info("✅ TextEmbedder initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize TextEmbedder: {e}")
+            raise
     
     def create_embeddings(self, texts: List[str], metadatas: List[dict] = None) -> List[List[float]]:
         """Create embeddings for multiple texts with error handling."""
@@ -116,6 +121,7 @@ class VectorJobStore:
         logger.info("Created new FAISS index")
     
     def add_job(self, job_id: str, job_content: str, metadata: dict = None) -> None:
+        """Add a job to the vector store with error handling."""
         try:
             if metadata is None:
                 metadata = {}
@@ -128,6 +134,10 @@ class VectorJobStore:
             # Enhanced chunking: Split job content intelligently
             chunks = self._create_job_chunks(job_content, metadata)
             
+            if not chunks:
+                logger.warning(f"No chunks created for job {job_id}, using raw content")
+                chunks = [job_content]
+            
             documents = [
                 Document(page_content=chunk, metadata=metadata.copy()) 
                 for chunk in chunks
@@ -135,21 +145,26 @@ class VectorJobStore:
             
             if self.vector_store is None:
                 self.vector_store = FAISS.from_documents(documents, self.embedder.embeddings)
+                logger.info(f"Created new vector store with job {job_id}")
             else:
                 self.vector_store.add_documents(documents)
             
-            logger.debug(f"Added job {job_id} with {len(documents)} chunks")
+            logger.debug(f"✅ Added job {job_id} with {len(documents)} chunks to vector store")
             self.save()
+            
         except Exception as e:
-            logger.error(f"Error adding job {job_id} to vector store: {e}")
+            logger.error(f"❌ Error adding job {job_id} to vector store: {e}")
+            # Don't raise - allow other jobs to be indexed
     
     def _create_job_chunks(self, job_content: str, metadata: Dict) -> List[str]:
+        """Create semantic chunks from job content with context preservation."""
         chunks = []
         
-        # Always include a summary chunk with key information
+        # Create a comprehensive summary chunk with key information
+        # This ensures critical info is always retrieved
         summary_parts = []
         if metadata.get("title"):
-            summary_parts.append(f"Title: {metadata['title']}")
+            summary_parts.append(f"Job Title: {metadata['title']}")
         if metadata.get("company"):
             summary_parts.append(f"Company: {metadata['company']}")
         if metadata.get("location"):
@@ -160,26 +175,42 @@ class VectorJobStore:
             chunks.append(summary)
         
         # Split full content into semantic chunks
+        # RecursiveCharacterTextSplitter will preserve context
         content_chunks = self.embedder.split_text(job_content)
-        chunks.extend(content_chunks)
+        
+        # Add metadata context to each chunk for better matching
+        enriched_chunks = []
+        job_title = metadata.get("title", "")
+        
+        for chunk in content_chunks:
+            # Prepend title to chunk for context (helps with retrieval)
+            if job_title and job_title.lower() not in chunk.lower():
+                enriched_chunk = f"[{job_title}] {chunk}"
+                enriched_chunks.append(enriched_chunk)
+            else:
+                enriched_chunks.append(chunk)
+        
+        chunks.extend(enriched_chunks)
         
         return chunks
     
     def search_similar_jobs(self, query_text: str, k: int = 10, score_threshold: float = 0.3) -> List[dict]:
+        """Search for similar jobs using semantic similarity with intelligent ranking."""
         if self.vector_store is None:
             logger.warning("Vector store not initialized")
             return []
         
         try:
             # Search for similar job chunks with relevance scores
-            # Note: FAISS returns L2 distance (lower is better)
+            # FAISS similarity_search_with_relevance_scores returns (doc, score)
+            # where higher score = better match
             results = self.vector_store.similarity_search_with_relevance_scores(
                 query_text, 
-                k=k * 3,  # Get more results to aggregate by job
+                k=k * 4,  # Get more results to aggregate and re-rank
                 score_threshold=score_threshold
             )
             
-            # Deduplicate by job_id and aggregate scores
+            # Deduplicate by job_id and aggregate scores intelligently
             job_scores: Dict[str, Dict] = {}
             
             for doc, relevance_score in results:
@@ -194,28 +225,38 @@ class VectorJobStore:
                         "job_id": job_id,
                         "metadata": doc.metadata,
                         "scores": [],
-                        "chunks": []
+                        "chunks": [],
+                        "best_score": 0
                     }
                 
                 job_scores[job_id]["scores"].append(relevance_score)
                 job_scores[job_id]["chunks"].append(doc.page_content)
+                
+                # Track best chunk score
+                if relevance_score > job_scores[job_id]["best_score"]:
+                    job_scores[job_id]["best_score"] = relevance_score
             
-            # Calculate weighted average scores
+            # Calculate intelligent weighted scores
             job_matches = []
             for job_data in job_scores.values():
                 scores = job_data["scores"]
                 if not scores:
                     continue
                 
-                # Use weighted average (prioritize best matches)
+                # Sort scores in descending order
                 sorted_scores = sorted(scores, reverse=True)
                 
-                # Weight: 50% best match, 30% second best, 20% average of rest
+                # Intelligent scoring strategy:
+                # - Best match is most important (50%)
+                # - Second best adds confidence (25%)
+                # - Average of remaining chunks (15%)
+                # - Number of matching chunks bonus (10%)
                 if len(sorted_scores) >= 2:
                     weighted_score = (
                         sorted_scores[0] * 0.5 +
-                        sorted_scores[1] * 0.3 +
-                        (sum(sorted_scores[2:]) / len(sorted_scores[2:]) * 0.2 if len(sorted_scores) > 2 else 0)
+                        sorted_scores[1] * 0.25 +
+                        (sum(sorted_scores[2:]) / max(len(sorted_scores[2:]), 1) * 0.15) +
+                        (min(len(scores) / 5, 1.0) * 0.1)  # Bonus for multiple matches (max 10%)
                     )
                 else:
                     weighted_score = sorted_scores[0]
@@ -225,14 +266,19 @@ class VectorJobStore:
                     "similarity_score": weighted_score,
                     "metadata": job_data["metadata"],
                     "num_matches": len(scores),
-                    "best_chunk_score": max(scores)
+                    "best_chunk_score": job_data["best_score"],
+                    "coverage": len(scores)  # How many chunks matched
                 })
             
             # Sort by weighted similarity score (higher is better)
             job_matches.sort(key=lambda x: x["similarity_score"], reverse=True)
             
-            # Return top k results
-            return job_matches[:k]
+            # Return top k results with quality threshold
+            filtered_matches = [m for m in job_matches if m["similarity_score"] >= score_threshold]
+            
+            logger.info(f"Found {len(filtered_matches)} jobs matching query (from {len(results)} chunks)")
+            
+            return filtered_matches[:k]
             
         except Exception as e:
             logger.error(f"Error searching similar jobs: {e}")

@@ -2,49 +2,66 @@ from langchain.prompts import ChatPromptTemplate
 
 def create_comprehensive_skills_prompt() -> ChatPromptTemplate:
     return ChatPromptTemplate.from_messages([
-        ("system", """You are an expert resume parser. Your task: Extract EVERY skill mentioned in the resume.
+        ("system", """You are an expert resume parser with ONE MISSION: Extract EVERY SINGLE skill from resumes.
 
-CRITICAL RULE: Extract ALL skills - technical AND soft skills. No skill should be missed.
+⚠️ CRITICAL: Do NOT miss skills. Be AGGRESSIVE in extraction. When in doubt, INCLUDE IT.
+
+EXTRACTION STRATEGY:
+1. **Skills Sections**: Extract EVERYTHING listed under skills/technologies/tools
+2. **Work Experience**: Extract ALL technologies mentioned ("using X", "with Y", "in Z")
+3. **Projects**: Extract ALL tech from project descriptions
+4. **Achievements**: Extract skills from accomplishment statements
+5. **Certifications**: Extract technologies from certs
+6. **Education**: Extract relevant coursework technologies
+
+TECHNICAL SKILLS - Extract ALL mentions of:
+• Programming languages: Python, JavaScript, Java, C++, Go, Rust, TypeScript, etc.
+• Frameworks: React, Angular, Vue, Django, Flask, FastAPI, Spring Boot, Node.js, etc.
+• Databases: MySQL, PostgreSQL, MongoDB, Redis, DynamoDB, Elasticsearch, etc.
+• Cloud: AWS, Azure, GCP, services like EC2, S3, Lambda, Cloud Functions, etc.
+• DevOps: Docker, Kubernetes, Jenkins, GitHub Actions, CI/CD, Terraform, etc.
+• Tools: Git, VS Code, Jira, Postman, npm, pip, Maven, etc.
+• APIs: REST, GraphQL, gRPC, WebSocket, etc.
+• Testing: Jest, Pytest, Selenium, Cypress, JUnit, etc.
+• Data: Pandas, NumPy, TensorFlow, PyTorch, Spark, Airflow, etc.
+
+SOFT SKILLS - Extract ALL mentions of:
+• Leadership, Management, Team Leadership, Project Management
+• Communication, Presentation, Technical Writing, Documentation
+• Collaboration, Teamwork, Cross-functional, Stakeholder Management
+• Problem Solving, Analytical Thinking, Critical Thinking, Troubleshooting
+• Time Management, Organization, Prioritization, Multitasking
+• Adaptability, Flexibility, Learning Agility, Growth Mindset
+• Customer Service, Client Relations, Empathy, Active Listening
 
 EXTRACTION RULES:
-1. Extract from EVERYWHERE: Skills sections, work experience, projects, achievements, summaries
-2. Extract skills from context: "developed React app" → "React", "using Python" → "Python"
-3. Use standard names: "JavaScript" not "js", "React" not "react.js"
-4. Extract ONLY actual skills, not actions or generic words
+✅ Extract from phrases: "developed with React" → Extract "React"
+✅ Extract from sentences: "skilled in Python and Java" → Extract "Python", "Java"
+✅ Extract compound skills: "React.js" → Extract "React"
+✅ Extract variations: "nodejs" → Extract "Node.js"
+✅ Use standard naming: "JavaScript" not "js", "PostgreSQL" not "postgres"
+✅ Extract EVERYTHING - better to over-extract than miss something
 
-WHAT TO EXTRACT:
-- ALL programming languages (Python, Java, JavaScript, C++, etc.)
-- ALL frameworks & libraries (React, Django, Spring, FastAPI, etc.)
-- ALL databases (MySQL, MongoDB, PostgreSQL, Redis, etc.)
-- ALL cloud platforms (AWS, Azure, GCP, etc.)
-- ALL tools (Git, Docker, Kubernetes, Jenkins, etc.)
-- ALL soft skills explicitly mentioned (Leadership, Communication, Teamwork, etc.)
+❌ DO NOT extract: Job titles, company names, generic verbs, dates
 
-WHERE TO LOOK:
-- Skills sections
-- Work experience ("built with X", "using Y")
-- Projects ("developed in Z")
-- Achievements ("improved with A")
-- Certifications
-
-EXAMPLES:
-"Developed web apps using React and Node.js" → Extract: React, Node.js
-"Built REST APIs with FastAPI" → Extract: REST API, FastAPI
-"Strong leadership and communication" → Extract: Leadership, Communication
-
-DO NOT EXTRACT:
-- Actions only: "developed", "built", "managed"
-- Generic words: "experience", "knowledge"
-- Company names or dates"""),
-        ("human", """Extract ALL skills from this resume:
+QUALITY CHECK:
+- Minimum 10-15 technical skills (for tech resumes)
+- Minimum 5-8 soft skills
+- If you extract fewer, RE-READ the resume and extract more"""),
+        ("human", """Extract EVERY skill from this resume. Be thorough and aggressive:
 
 {resume_text}
 
 INSTRUCTIONS:
-1. Extract EVERY skill mentioned (technical AND soft skills)
-2. Check skills sections, work history, projects, achievements, certifications
-3. Extract skills from context (e.g., "built with React" → extract "React")
-4. Remove duplicates and use standard naming
+1. Read the ENTIRE resume carefully
+2. Extract ALL technical skills (languages, frameworks, databases, tools, cloud, etc.)
+3. Extract ALL soft skills (leadership, communication, problem-solving, etc.)
+4. Look in: Skills sections, work experience, projects, achievements, certifications
+5. Extract skills from context: "built API with FastAPI" → extract "API" and "FastAPI"
+6. Use proper naming conventions
+7. Remove duplicates
+
+GOAL: Extract a COMPREHENSIVE list - aim for 15+ technical skills and 8+ soft skills minimum.
 
 {format_instructions}""")
     ])

@@ -30,7 +30,7 @@ class JobMatcher:
                 logger.error("❌ ANTHROPIC_API_KEY environment variable is not set!")
                 raise ValueError("ANTHROPIC_API_KEY is required")
             
-            logger.info(f"✅ ANTHROPIC_API_KEY found (starts with: {api_key[:10]}...)")
+            logger.info("✅ ANTHROPIC_API_KEY found")
             logger.info("Initializing ChatAnthropic LLM...")
             
             self.llm = ChatAnthropic(
@@ -48,9 +48,11 @@ class JobMatcher:
         
         # Initialize vector search components
         try:
+            logger.info("Initializing vector search with FAISS...")
             self.embedder = TextEmbedder()
             self.vector_store = VectorJobStore(self.embedder)
-            self.use_vector_search = True
+            self.use_vector_search = True  # ENABLED for better semantic matching
+            logger.info("✅ Vector search (FAISS) enabled successfully")
         except Exception as e:
             logger.warning(f"Vector search initialization failed: {str(e)}")
             self.embedder = None
@@ -90,6 +92,7 @@ Provide a detailed match analysis.\n{format_instructions}""")
         resume_text: str,
         top_k: int = 20
     ) -> List[JobMatch]:
+        """Find matching jobs using vector search with RAG."""
         search_text = self._create_search_text_from_resume_text(resume_text)
         similar_jobs = self.vector_store.search_similar_jobs(search_text, k=top_k)
         
@@ -99,7 +102,13 @@ Provide a detailed match analysis.\n{format_instructions}""")
             if not job_content:
                 continue
             
-            match_result = await self._evaluate_text_based_match(resume_text, job_content)
+            # RAG: Use vector similarity context to augment LLM evaluation
+            match_result = await self._evaluate_match_with_context(
+                resume_text, 
+                job_content,
+                job_data["similarity_score"],
+                job_data.get("num_matches", 1)
+            )
             
             job_match = JobMatch(
                 job_id=job_data["job_id"],
@@ -334,15 +343,45 @@ Provide a detailed match analysis.\n{format_instructions}""")
         return "\n".join(text_parts)
     
     def _create_search_text_from_resume_text(self, resume_text: str) -> str:
-        if len(resume_text) < 500:
+        """Create optimized search query from resume text for better retrieval."""
+        # For short text, use as-is
+        if len(resume_text) < 300:
             return resume_text
-        else:
-            key_terms = []
-            lines = resume_text.lower().split('\n')
-            for line in lines:
-                if any(keyword in line for keyword in ['skill', 'technology', 'experience', 'proficient']):
-                    key_terms.append(line.strip())
-            return ' '.join(key_terms[:10])
+        
+        # For longer text, extract key terms intelligently
+        lines = resume_text.split('\n')
+        key_segments = []
+        
+        # Priority 1: Skills sections (most important)
+        for i, line in enumerate(lines):
+            line_lower = line.lower()
+            if any(keyword in line_lower for keyword in ['skill', 'technology', 'proficient', 'expertise', 'competencies']):
+                # Include this line and next 3-5 lines
+                key_segments.extend(lines[i:i+5])
+        
+        # Priority 2: Technical terms and experience indicators
+        technical_pattern = r'\b(python|java|react|node|aws|docker|sql|api|cloud|database|framework|library)\b'
+        for line in lines:
+            if len(line) > 10 and (
+                'experience' in line.lower() or 
+                'developed' in line.lower() or
+                'built' in line.lower() or
+                'using' in line.lower() or
+                'with' in line.lower()
+            ):
+                # Check if line contains technical terms
+                import re
+                if re.search(technical_pattern, line, re.IGNORECASE):
+                    key_segments.append(line)
+        
+        # Combine and limit length
+        search_text = ' '.join(key_segments[:15])  # Top 15 most relevant segments
+        
+        # If we didn't find enough, fall back to beginning of resume
+        if len(search_text) < 100:
+            search_text = resume_text[:1000]
+        
+        return search_text
     
     async def _get_job_content(self, job_id: str) -> Optional[str]:
         try:
@@ -358,6 +397,92 @@ Provide a detailed match analysis.\n{format_instructions}""")
         except Exception as e:
             logger.error(f"Error fetching job {job_id}: {str(e)}")
         return None
+    
+    async def _evaluate_match_with_context(
+        self,
+        resume_text: str,
+        job_content: str,
+        similarity_score: float,
+        num_matches: int
+    ) -> MatchResult:
+        """RAG: Evaluate match using retrieved context to augment LLM analysis."""
+        try:
+            # Create context-aware prompt that includes retrieval information
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", """You are an expert job matching system with access to semantic search results.
+                    
+Your task: Analyze how well a candidate matches a job posting, considering both the content 
+and the semantic similarity score from our retrieval system.
+
+Provide:
+1. Match score (0-100): Weight both skills alignment AND semantic similarity
+2. Matching skills: List specific skills the candidate has that match requirements
+3. Missing skills: Critical skills needed but candidate lacks
+4. Detailed reasoning: Explain WHY this is a good/poor match based on actual skills and experience
+
+Be thorough, accurate, and honest in your assessment."""),
+                ("human", """**RETRIEVAL CONTEXT:**
+- Semantic Similarity: {similarity_score:.1%} (based on {num_matches} matching content chunks)
+- This indicates the overall conceptual alignment between candidate and role
+
+**CANDIDATE PROFILE:**
+{resume_text}
+
+**JOB POSTING:**
+{job_content}
+
+**ANALYSIS INSTRUCTIONS:**
+1. Consider BOTH the semantic similarity ({similarity_score:.1%}) and specific skill matches
+2. Higher semantic similarity suggests strong conceptual fit, but verify with actual skills
+3. Identify concrete matching skills (programming languages, frameworks, tools, etc.)
+4. List critical missing skills that would prevent success in this role
+5. Provide honest, actionable reasoning
+
+{format_instructions}""")
+            ])
+            
+            formatted_prompt = prompt.format_messages(
+                resume_text=resume_text[:2000],  # Limit context size
+                job_content=job_content[:1500],
+                similarity_score=similarity_score,
+                num_matches=num_matches,
+                format_instructions=self.parser.get_format_instructions()
+            )
+            
+            response = await self.llm.ainvoke(formatted_prompt)
+            match_result = self.parser.parse(response.content)
+            
+            # Boost score slightly if semantic similarity is very high
+            if similarity_score > 0.8:
+                match_result.match_score = min(100.0, match_result.match_score * 1.1)
+            
+            return match_result
+        
+        except Exception as e:
+            logger.error(f"RAG match evaluation failed: {str(e)}")
+            # Fallback: Use semantic similarity to estimate match
+            estimated_score = similarity_score * 100
+            return MatchResult(
+                match_score=estimated_score,
+                is_match=estimated_score >= 50,
+                matching_skills=["Skills analysis unavailable - based on semantic similarity"],
+                missing_skills=["Unable to determine specific skill gaps"],
+                reason=f"Match estimated from semantic similarity: {similarity_score:.1%}. "
+                       f"This job appears {self._get_similarity_description(similarity_score)} aligned with your profile."
+            )
+    
+    def _get_similarity_description(self, score: float) -> str:
+        """Convert similarity score to human-readable description."""
+        if score >= 0.8:
+            return "very strongly"
+        elif score >= 0.65:
+            return "strongly"
+        elif score >= 0.5:
+            return "moderately"
+        elif score >= 0.35:
+            return "somewhat"
+        else:
+            return "weakly"
     
     async def _evaluate_text_based_match(
         self,

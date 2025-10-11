@@ -1,5 +1,6 @@
 import traceback
 import asyncio
+import logging
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, BackgroundTasks, Request
 from slowapi import Limiter
@@ -13,6 +14,7 @@ from services.job_matching import JobMatchingService
 from datetime import datetime
 
 
+logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter()
@@ -187,6 +189,9 @@ async def logout():
     return {"message": "Logged out successfully"}
 
 async def process_resume_background(user_id: str, file_content: bytes, file_type: str):
+    """
+    Process resume in background: parse → extract skills → generate AI-powered job matches
+    """
     db = UserDatabase()
     
     try:
@@ -194,72 +199,77 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
         if not user:
             return
     
+        # Step 1: Parse resume and extract skills
+        logger.info(f"🔍 Starting resume parsing for user {user_id}")
         db.update_user_profile(user_id, {"processing_step": "parsing"})
-        await asyncio.sleep(2)
         
         parser = ResumeParser()
         await parser.process_and_store_resume(user_id, file_content, file_type)
         
-        # Use skill-based job matching
+        logger.info(f"✅ Resume parsed successfully for user {user_id}")
+        
+        # Step 2: Generate AI-powered job matches
+        logger.info(f"🤖 Starting AI job matching for user {user_id}")
         db.update_user_profile(user_id, {"processing_step": "matching"})
         
-        # Small delay to show matching step
-        await asyncio.sleep(2)
         try:
-            # Get user skills
+            # Get user skills (from parsed resume)
             user_skills = db.get_user_skills(user_id)
             if not user_skills:
+                logger.warning(f"⚠️ No skills found for user {user_id}")
                 matches = []
             else:
+                logger.info(f"📊 Found {len(user_skills)} skills for user {user_id}")
                 
                 # Get available jobs
                 job_db = JobDatabase()
                 jobs = job_db.get_jobs_for_matching(limit=100)
                 
                 if not jobs:
+                    logger.warning("⚠️ No jobs available for matching")
                     matches = []
                 else:
-                    # Use simple skill-based matching
+                    logger.info(f"🎯 Matching against {len(jobs)} available jobs")
+                    
+                    # Use JobMatchingService with AI analysis
                     job_matching_service = JobMatchingService()
                     
-                    # Get potential matches using fast screening
-                    potential_matches = await job_matching_service._fast_similarity_screening(user_skills, jobs, 20)
+                    # This will use AI reasoning generation for top matches
+                    matches = await job_matching_service.find_job_matches(user_id, limit=20)
                     
-                    # Convert to JobMatchResult using simple calculation
-                    matches = []
-                    for job in potential_matches[:10]:  # Top 10 matches
-                        try:
-                            simple_match = await job_matching_service._simple_calculate_job_match(user_skills, job)
-                            matches.append(simple_match)
-                        except Exception as match_error:
-                            continue
+                    logger.info(f"✅ Generated {len(matches)} AI-powered job matches")
                     
-                    # Save matches to database
+                    # Save matches with AI reasoning to database
                     if matches:
                         try:
-                            await job_matching_service.save_job_matches(user_id, matches)
-                        except Exception:
+                            saved_matches = await job_matching_service.save_job_matches(user_id, matches)
+                            logger.info(f"💾 Saved {len(saved_matches)} matches with AI reasoning")
+                        except Exception as save_error:
+                            logger.error(f"❌ Error saving matches: {save_error}")
                             traceback.print_exc()
                     else:
-                        print("No valid matches generated")
+                        logger.info("ℹ️ No matches generated (threshold not met)")
                         
-        except Exception:
+        except Exception as matching_error:
+            logger.error(f"❌ Error in job matching: {matching_error}")
             traceback.print_exc()
             matches = []
         
+        # Step 3: Finalize processing
+        logger.info(f"🏁 Finalizing processing for user {user_id}")
         db.update_user_profile(user_id, {"processing_step": "finalizing"})
-        
-        # Small delay to show finalizing step
-        await asyncio.sleep(2)
         
         db.update_user_profile(user_id, {
             "resume_processed": True,
             "profile_completed": True,
             "processing_step": "completed",
-            "matches_generated": True
+            "matches_generated": len(matches) > 0
         })
         
+        logger.info(f"✅ Resume processing completed for user {user_id}")
+        
     except Exception as e:
+        logger.error(f"❌ Fatal error in resume processing for user {user_id}: {e}")
         traceback.print_exc()
         
         try:
@@ -268,6 +278,8 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
                 "processing_step": "error",
                 "processing_error": str(e)
             })
+        except Exception as db_error:
+            logger.error(f"❌ Error updating error status: {db_error}")
         except Exception as update_error:
             print(f"Failed to update error status for user {user_id}: {str(update_error)}")
         

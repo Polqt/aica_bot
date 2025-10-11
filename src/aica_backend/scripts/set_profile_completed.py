@@ -1,14 +1,7 @@
-#!/usr/bin/env python3
-"""
-Script to manually set profile_completed = true for users who have resume builder data
-Run this to fix existing users who completed onboarding before the flag was added.
-"""
-
 import sys
 import os
 from pathlib import Path
 
-# Add the parent directory to the path
 script_dir = Path(__file__).resolve().parent
 backend_dir = script_dir.parent
 sys.path.insert(0, str(backend_dir))
@@ -18,12 +11,9 @@ from database.user_db import UserDatabase
 def main():
     db = UserDatabase()
 
-    # Get all users
     try:
         response = db.client.table("users").select("id, email").execute()
         users = response.data if response.data else []
-
-        print(f"Found {len(users)} users")
 
         for user in users:
             user_id = user["id"]

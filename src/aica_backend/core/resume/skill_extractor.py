@@ -242,15 +242,27 @@ class SkillExtractor:
     
     @classmethod
     def _extract_technical_skills(cls, text_lower: str) -> List[str]:
-        """Extract technical skills using regex pattern matching."""
+        """Extract technical skills using aggressive pattern matching."""
         found_skills = []
         
         for skill in cls.TECHNICAL_KEYWORDS:
-            # Create pattern that handles variations
-            pattern = r'\b' + re.escape(skill).replace(r'\.', r'\.?') + r'\b'
-            if re.search(pattern, text_lower, re.IGNORECASE):
+            # Create flexible pattern that handles variations and context
+            # Match word boundaries but also allow for common prefixes/suffixes
+            patterns = [
+                r'\b' + re.escape(skill).replace(r'\.', r'\.?') + r'\b',  # Exact match
+                r'\b' + re.escape(skill).replace(r'\.', r'\.?') + r's?\b',  # Plural
+                r'\b' + re.escape(skill.replace('.', '')) + r'\b',  # No dots version
+            ]
+            
+            matched = False
+            for pattern in patterns:
+                if re.search(pattern, text_lower, re.IGNORECASE):
+                    matched = True
+                    break
+            
+            if matched:
                 # Capitalize properly based on known patterns
-                if skill in ['aws', 'gcp', 'api', 'sql', 'html', 'css', 'php', 'ios', 'iot', 'jwt', 'rest', 'soap', 'xml', 'json', 'yaml', 'ci/cd', 'tdd', 'bdd', 'mvc', 'mvvm', 'nlp', 'ddd', 'sso', 'iam', 'ssl', 'tls', 'cnn', 'rnn', 'lstm', 'ux', 'ui', 'ai', 'ml', 'bi']:
+                if skill in ['aws', 'gcp', 'api', 'sql', 'html', 'css', 'php', 'ios', 'iot', 'jwt', 'rest', 'soap', 'xml', 'json', 'yaml', 'ci/cd', 'tdd', 'bdd', 'mvc', 'mvvm', 'nlp', 'ddd', 'sso', 'iam', 'ssl', 'tls', 'cnn', 'rnn', 'lstm', 'ux', 'ui', 'ai', 'ml', 'bi', 'http', 'https', 'ftp', 'ssh', 'tcp', 'udp', 'dns']:
                     found_skills.append(skill.upper())
                 elif '.' in skill or skill.endswith('js'):
                     found_skills.append(skill)  # Keep as-is for tech with dots or js suffix
@@ -262,12 +274,25 @@ class SkillExtractor:
     
     @classmethod
     def _extract_soft_skills(cls, text_lower: str) -> List[str]:
-        """Extract soft skills using keyword matching."""
+        """Extract soft skills using aggressive keyword matching."""
         found_skills = []
         
         for skill in cls.SOFT_KEYWORDS:
-            # More flexible matching for soft skills (allow within phrases)
-            if skill in text_lower:
+            # More flexible matching - check if skill appears in text
+            # Also check for common variations
+            variations = [
+                skill,
+                skill.replace('-', ' '),  # "problem-solving" → "problem solving"
+                skill.replace(' ', '-'),  # "problem solving" → "problem-solving"
+            ]
+            
+            matched = False
+            for variation in variations:
+                if variation in text_lower:
+                    matched = True
+                    break
+            
+            if matched:
                 found_skills.append(skill.title())
         
         # Remove duplicates while preserving order
