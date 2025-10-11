@@ -24,11 +24,6 @@ import {
 } from 'lucide-react';
 import { useSavedJobs } from '@/hooks/useSavedJobs';
 import { SavedJob } from '@/types/jobMatch';
-import {
-  getConfidenceColor,
-  getConfidenceIcon,
-  getMatchScoreColor,
-} from '@/lib/utils/getConfidence';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
 
@@ -286,50 +281,54 @@ export default function SavedJobsPage() {
                         </div>
                       </div>
 
-                      <div className="space-y-3 text-sm text-gray-700 font-bold uppercase">
+                      <div className="space-y-2 text-sm text-gray-500">
                         <div className="flex items-center">
-                          <MapPin className="w-5 h-5 mr-3 text-black" />
+                          <MapPin className="w-4 h-4 mr-1.5" />
                           {job.location}
                         </div>
                         {job.salary && (
                           <div className="flex items-center">
-                            <DollarSign className="w-5 h-5 mr-3 text-black" />
+                            <DollarSign className="w-4 h-4 mr-1.5" />
                             {job.salary}
                           </div>
                         )}
                         <div className="flex items-center">
-                          <Clock className="w-5 h-5 mr-3 text-black" />
-                          SAVED {job.savedDate || job.saved_at}
+                          <Clock className="w-4 h-4 mr-1.5" />
+                          Saved {job.savedDate || job.saved_at}
                         </div>
                       </div>
 
                       {/* Skills and Coverage */}
-                      <div className="space-y-3 mt-4">
-                        <div className="flex flex-wrap gap-2">
+                      <div className="space-y-2.5 mt-3">
+                        <div className="flex flex-wrap gap-1.5">
                           {job.matched_skills &&
                             job.matched_skills
                               .slice(0, 2)
                               .map((tag, tagIndex) => (
                                 <Badge
                                   key={tagIndex}
-                                  className="text-sm bg-violet-600 text-white border-2 border-black font-bold uppercase px-3 py-1"
+                                  variant="secondary"
+                                  className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
                                 >
                                   {tag}
                                 </Badge>
                               ))}
                           {job.matched_skills &&
                             job.matched_skills.length > 2 && (
-                              <Badge className="text-sm bg-black text-white border-2 border-black font-bold uppercase px-3 py-1">
-                                +{job.matched_skills.length - 2} MORE
+                              <Badge
+                                variant="secondary"
+                                className="px-2 py-0.5 text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200"
+                              >
+                                +{job.matched_skills.length - 2} more
                               </Badge>
                             )}
                         </div>
 
                         {job.skill_coverage !== undefined && (
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1 bg-gray-200 border-2 border-black rounded-full h-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
                               <div
-                                className="bg-black h-3 rounded-full transition-all duration-300"
+                                className="bg-blue-600 h-full transition-all duration-150 rounded-full"
                                 style={{
                                   width: `${Math.round(
                                     job.skill_coverage * 100,
@@ -337,7 +336,7 @@ export default function SavedJobsPage() {
                                 }}
                               ></div>
                             </div>
-                            <span className="text-sm font-black text-black min-w-[2.5rem] uppercase">
+                            <span className="text-xs font-medium text-gray-600 min-w-[2.5rem]">
                               {Math.round(job.skill_coverage * 100)}%
                             </span>
                           </div>
@@ -353,69 +352,58 @@ export default function SavedJobsPage() {
 
         <div className="lg:col-span-3 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-black scrollbar-track-transparent">
           {selectedJob ? (
-            <Card className="bg-white border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] transition-all duration-200 rounded-lg">
-              <CardHeader className="border-b border-gray-200">
+            <Card className="bg-white border border-gray-200 rounded-lg shadow-sm">
+              <CardHeader className="border-b border-gray-100 pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-3xl font-black text-black uppercase tracking-wide mb-3">
+                    <CardTitle className="text-2xl text-gray-900 mb-2 font-semibold">
                       {selectedJob.title}
                     </CardTitle>
-                    <CardDescription className="flex flex-wrap items-center gap-6 text-gray-700 font-bold uppercase text-lg">
+                    <CardDescription className="flex flex-wrap items-center gap-3 text-gray-500 text-sm">
                       <span className="flex items-center">
-                        <Building className="w-6 h-6 mr-3 text-black" />
+                        <Building className="w-4 h-4 mr-1.5" />
                         {selectedJob.company}
                       </span>
                       <span className="flex items-center">
-                        <MapPin className="w-6 h-6 mr-3 text-black" />
+                        <MapPin className="w-4 h-4 mr-1.5" />
                         {selectedJob.location}
                       </span>
                       {selectedJob.salary && (
                         <span className="flex items-center">
-                          <DollarSign className="w-6 h-6 mr-3 text-black" />
+                          <DollarSign className="w-4 h-4 mr-1.5" />
                           {selectedJob.salary}
                         </span>
                       )}
                       <Badge
-                        className={`border-2 ${getConfidenceColor(
-                          selectedJob.confidence &&
-                            selectedJob.confidence.trim()
-                            ? selectedJob.confidence
-                            : 'Unknown',
-                        )} flex items-center gap-2 px-4 py-2 rounded-lg font-bold uppercase`}
+                        className={`px-2 py-0.5 text-xs font-medium ${
+                          selectedJob.confidence === 'high'
+                            ? 'bg-green-50 text-green-700 border border-green-200'
+                            : selectedJob.confidence === 'medium'
+                            ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                            : 'bg-gray-50 text-gray-700 border border-gray-200'
+                        }`}
                       >
-                        {getConfidenceIcon(
-                          selectedJob.confidence &&
-                            selectedJob.confidence.trim()
-                            ? selectedJob.confidence
-                            : 'Unknown',
-                        )}
-                        <span className="font-black ml-2">
-                          {(selectedJob.confidence &&
+                        {(selectedJob.confidence &&
+                        selectedJob.confidence.trim()
+                          ? selectedJob.confidence
+                          : 'Unknown'
+                        )
+                          .charAt(0)
+                          .toUpperCase() +
+                          (selectedJob.confidence &&
                           selectedJob.confidence.trim()
                             ? selectedJob.confidence
                             : 'Unknown'
-                          )
-                            .charAt(0)
-                            .toUpperCase() +
-                            (selectedJob.confidence &&
-                            selectedJob.confidence.trim()
-                              ? selectedJob.confidence
-                              : 'Unknown'
-                            ).slice(1)}
-                        </span>
+                          ).slice(1)}
                       </Badge>
                       <span className="flex items-center">
-                        <Clock className="w-6 h-6 mr-3 text-black" />
-                        SAVED {selectedJob.savedDate || selectedJob.saved_at}
+                        <Clock className="w-4 h-4 mr-1.5" />
+                        Saved {selectedJob.savedDate || selectedJob.saved_at}
                       </span>
                     </CardDescription>
                   </div>
-                  <div className="text-center">
-                    <div
-                      className={`text-3xl font-black ${getMatchScoreColor(
-                        selectedJob.match_score || selectedJob.matchScore || 0,
-                      )}`}
-                    >
+                  <div className="text-center ml-4">
+                    <div className="text-2xl font-semibold text-gray-900">
                       {(
                         (selectedJob.match_score ||
                           selectedJob.matchScore ||
@@ -423,60 +411,54 @@ export default function SavedJobsPage() {
                       ).toFixed(0)}
                       %
                     </div>
-                    <div className="text-sm font-black text-gray-700 uppercase">
-                      MATCH
-                    </div>
+                    <div className="text-xs text-gray-500">Match</div>
                   </div>
                 </div>
               </CardHeader>
 
-              <CardContent className="p-8 space-y-8">
+              <CardContent className="p-6 space-y-6">
                 {/* AI Reasoning Section */}
                 {selectedJob.ai_reasoning &&
                   selectedJob.ai_reasoning.trim() && (
-                    <div className="bg-gray-100 border-4 border-black rounded-2xl p-6">
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="w-8 h-8 bg-black rounded-2xl flex items-center justify-center">
-                          <span className="text-white text-sm font-black">
-                            AI
-                          </span>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center font-semibold text-xs">
+                          AI
                         </div>
-                        <h3 className="text-2xl font-black text-black uppercase tracking-wide">
-                          AI ANALYSIS
+                        <h3 className="text-base font-medium text-gray-900">
+                          AI Analysis
                         </h3>
                       </div>
-                      <p className="text-gray-700 font-bold leading-relaxed text-lg">
+                      <p className="text-gray-700 leading-relaxed text-sm">
                         {selectedJob.ai_reasoning}
                       </p>
                     </div>
                   )}
 
                 {/* Skill Analysis Section */}
-                <div className="grid gap-6">
+                <div className="grid gap-4">
                   {/* Skill Coverage */}
                   {selectedJob.skill_coverage !== undefined &&
                     selectedJob.skill_coverage >= 0 && (
-                      <div className="bg-green-100 border-4 border-black rounded-2xl p-6">
-                        <h3 className="text-2xl font-black text-black mb-4 flex items-center gap-4 uppercase tracking-wide">
-                          <div className="w-8 h-8 bg-black rounded-2xl flex items-center justify-center">
-                            <span className="text-white text-sm font-black">
-                              ✓
-                            </span>
+                      <div className="bg-white border border-gray-200 rounded-lg p-5">
+                        <h3 className="text-base font-medium text-gray-900 mb-4 flex items-center gap-2">
+                          <div className="w-5 h-5 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-semibold">
+                            ✓
                           </div>
-                          SKILL COVERAGE
+                          Skill Coverage
                         </h3>
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-lg font-black text-gray-700 uppercase">
-                              MATCH RATE
+                            <span className="text-sm text-gray-600">
+                              Match rate
                             </span>
-                            <span className="text-2xl font-black text-black">
+                            <span className="text-base font-medium text-gray-900">
                               {Math.round(selectedJob.skill_coverage * 100)}%
                             </span>
                           </div>
-                          <div className="w-full bg-gray-200 border-2 border-black rounded-full h-4">
+                          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                             <div
-                              className="bg-black h-4 rounded-full transition-all duration-500 ease-out"
+                              className="bg-blue-600 h-full transition-all duration-500 ease-out rounded-full"
                               style={{
                                 width: `${Math.round(
                                   selectedJob.skill_coverage * 100,
@@ -484,7 +466,7 @@ export default function SavedJobsPage() {
                               }}
                             ></div>
                           </div>
-                          <p className="text-sm font-bold text-gray-600 uppercase">
+                          <p className="text-xs text-gray-500">
                             {selectedJob.matched_skills?.length || 0} of{' '}
                             {(selectedJob.matched_skills?.length || 0) +
                               (selectedJob.missing_critical_skills?.length ||
@@ -499,19 +481,18 @@ export default function SavedJobsPage() {
                   {selectedJob.matched_skills &&
                     selectedJob.matched_skills.length > 0 && (
                       <div>
-                        <h3 className="text-2xl font-black text-black mb-4 flex items-center gap-4 uppercase tracking-wide">
-                          <div className="w-8 h-8 bg-violet-600 border-2 border-black rounded-2xl flex items-center justify-center">
-                            <span className="text-white text-sm font-black">
-                              ★
-                            </span>
+                        <h3 className="text-base font-medium text-gray-900 mb-3 flex items-center gap-2">
+                          <div className="w-5 h-5 bg-green-600 text-white rounded flex items-center justify-center text-xs font-semibold">
+                            ★
                           </div>
-                          YOUR MATCHING SKILLS
+                          Your Matching Skills
                         </h3>
-                        <div className="flex flex-wrap gap-3">
+                        <div className="flex flex-wrap gap-2">
                           {selectedJob.matched_skills.map((skill, index) => (
                             <Badge
                               key={index}
-                              className="bg-violet-600 text-white border-2 border-black font-bold uppercase px-4 py-2 text-sm"
+                              variant="secondary"
+                              className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
                             >
                               {skill}
                             </Badge>
@@ -523,41 +504,39 @@ export default function SavedJobsPage() {
                   {/* Missing Critical Skills */}
                   {selectedJob.missing_critical_skills &&
                     selectedJob.missing_critical_skills.length > 0 && (
-                      <div className="bg-yellow-100 border-4 border-black rounded-2xl p-6">
-                        <h3 className="text-2xl font-black text-black mb-4 flex items-center gap-4 uppercase tracking-wide">
-                          <div className="w-8 h-8 bg-black rounded-2xl flex items-center justify-center">
-                            <span className="text-white text-sm font-black">
-                              ⚠
-                            </span>
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
+                        <h3 className="text-base font-medium text-gray-900 mb-3 flex items-center gap-2">
+                          <div className="w-5 h-5 bg-amber-600 text-white rounded flex items-center justify-center text-xs font-semibold">
+                            !
                           </div>
-                          SKILLS TO DEVELOP
+                          Skills to Develop
                         </h3>
-                        <div className="flex flex-wrap gap-3">
+                        <div className="flex flex-wrap gap-2 mb-3">
                           {selectedJob.missing_critical_skills.map(
                             (skill, index) => (
                               <Badge
                                 key={index}
-                                variant="outline"
-                                className="border-2 border-black text-black font-bold uppercase px-4 py-2 text-sm bg-yellow-200"
+                                variant="secondary"
+                                className="px-2 py-0.5 text-xs font-medium bg-white text-amber-700 border border-amber-300"
                               >
                                 {skill}
                               </Badge>
                             ),
                           )}
                         </div>
-                        <p className="text-sm font-bold text-gray-700 uppercase mt-3">
-                          CONSIDER LEARNING THESE SKILLS TO IMPROVE YOUR MATCH
-                          RATE
+                        <p className="text-xs text-amber-700">
+                          Consider learning these skills to improve your match
+                          rate
                         </p>
                       </div>
                     )}
                 </div>
 
                 <div>
-                  <h3 className="text-2xl font-black text-black mb-4 uppercase tracking-wide">
-                    JOB DESCRIPTION
+                  <h3 className="text-base font-medium text-gray-900 mb-3">
+                    Job Description
                   </h3>
-                  <p className="text-gray-700 font-bold leading-relaxed text-lg">
+                  <p className="text-gray-700 leading-relaxed text-sm">
                     {selectedJob.description}
                   </p>
                 </div>
@@ -565,14 +544,15 @@ export default function SavedJobsPage() {
                 {selectedJob.matched_skills &&
                   selectedJob.matched_skills.length > 0 && (
                     <div>
-                      <h3 className="text-2xl font-black text-black mb-4 uppercase tracking-wide">
-                        MATCHED SKILLS
+                      <h3 className="text-base font-medium text-gray-900 mb-3">
+                        Matched Skills
                       </h3>
-                      <div className="flex flex-wrap gap-3">
+                      <div className="flex flex-wrap gap-2">
                         {selectedJob.matched_skills.map((tag, index) => (
                           <Badge
                             key={index}
-                            className="bg-violet-600 text-white border-2 border-black font-bold uppercase px-4 py-2 text-sm"
+                            variant="secondary"
+                            className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
                           >
                             {tag}
                           </Badge>
@@ -584,16 +564,18 @@ export default function SavedJobsPage() {
                 {selectedJob.requirements &&
                   selectedJob.requirements.length > 0 && (
                     <div>
-                      <h3 className="text-2xl font-black text-black mb-4 uppercase tracking-wide">
-                        REQUIREMENTS
+                      <h3 className="text-base font-medium text-gray-900 mb-3">
+                        Requirements
                       </h3>
-                      <ul className="space-y-3">
+                      <ul className="space-y-2">
                         {selectedJob.requirements.map((req, index) => (
                           <li
                             key={index}
-                            className="flex items-start gap-4 text-gray-700 font-bold text-lg"
+                            className="flex items-start gap-2 text-gray-700 text-sm"
                           >
-                            <span className="text-black mt-1 text-xl">✓</span>
+                            <span className="text-green-600 mt-0.5 text-base">
+                              ✓
+                            </span>
                             {req}
                           </li>
                         ))}
@@ -603,14 +585,15 @@ export default function SavedJobsPage() {
 
                 {selectedJob.tags && selectedJob.tags.length > 0 && (
                   <div>
-                    <h3 className="text-2xl font-black text-black mb-4 uppercase tracking-wide">
-                      REQUIRED SKILLS
+                    <h3 className="text-base font-medium text-gray-900 mb-3">
+                      Required Skills
                     </h3>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-2">
                       {selectedJob.tags.map((tag, index) => (
                         <Badge
                           key={index}
-                          className="bg-violet-600 text-white border-2 border-black font-bold uppercase px-4 py-2 text-sm"
+                          variant="secondary"
+                          className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
                         >
                           {tag}
                         </Badge>
@@ -619,37 +602,36 @@ export default function SavedJobsPage() {
                   </div>
                 )}
 
-                <div className="flex gap-6 pt-6 border-t-4 border-black">
+                <div className="flex gap-3 pt-4 border-t border-gray-100">
                   <Button
-                    className="flex-1 bg-violet-600 text-white border-4 border-black hover:bg-black hover:text-white font-black uppercase tracking-wide py-4 shadow-[8px_8px_0px_0px_black] hover:shadow-[12px_12px_0px_0px_black] transition-all duration-200"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-150"
                     onClick={() =>
                       selectedJob && window.open(selectedJob.url, '_blank')
                     }
                   >
-                    <ExternalLink className="w-5 h-5 mr-3" />
-                    APPLY NOW
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Apply now
                   </Button>
                   <Button
-                    variant="neutral"
-                    className="bg-black text-white border-2 border-black hover:bg-white hover:text-black font-black uppercase py-4 flex-1"
+                    className="bg-white text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300 font-medium py-2.5 rounded-lg flex-1 shadow-sm hover:shadow-md transition-all duration-150"
                     onClick={() => handleRemoveJob(selectedJob.job_id)}
                     disabled={removingJobId === selectedJob.job_id}
                   >
                     {removingJobId === selectedJob.job_id ? (
-                      <RefreshCw className="w-5 h-5 mr-3 animate-spin" />
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
-                      <BookmarkMinus className="w-5 h-5 mr-3" />
+                      <BookmarkMinus className="w-4 h-4 mr-2" />
                     )}
-                    REMOVE
+                    Remove
                   </Button>
                 </div>
               </CardContent>
             </Card>
           ) : (
-            <Card className="h-full flex items-center justify-center bg-white border-4 border-black">
+            <Card className="h-full flex items-center justify-center bg-white border border-gray-200 rounded-lg shadow-sm">
               <CardContent>
-                <p className="text-gray-700 font-bold uppercase tracking-wide">
-                  SELECT A JOB TO VIEW DETAILS
+                <p className="text-gray-500 text-sm">
+                  Select a job to view details
                 </p>
               </CardContent>
             </Card>

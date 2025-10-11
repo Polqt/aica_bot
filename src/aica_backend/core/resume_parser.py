@@ -1,5 +1,21 @@
+import asyncio
+import os
+import re
 import warnings
+import PyPDF2
+import docx
 
+from typing import Dict, List, Optional, Tuple
+from io import BytesIO
+from fastapi import logger
+
+from langchain_anthropic import ChatAnthropic
+from langchain.prompts import ChatPromptTemplate
+from langchain.output_parsers import PydanticOutputParser
+import mammoth
+
+from aica_backend.database.models.user_models import UserSkillCreate
+from aica_backend.database.user_db import UserDatabase
 from core.resume import (
     ResumeParser,
     ResumeSkills,
@@ -24,12 +40,6 @@ __all__ = [
 
 # Legacy class reference for backward compatibility
 class LegacyResumeParser:
-    """Advanced resume parser for RAG job matching application.
-
-    Handles various resume formats and extracts comprehensive information
-    including skills, personal info, experience, and education.
-    """
-
     SUPPORTED_FILE_TYPES = {
         "application/pdf": "PDF",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "DOCX",
@@ -95,7 +105,6 @@ class LegacyResumeParser:
             return None
     
     def _create_comprehensive_prompt(self) -> ChatPromptTemplate:
-        """Create balanced prompt for extracting comprehensive skills from resumes."""
         return ChatPromptTemplate.from_messages([
             ("system", """You are an elite resume parser specialized in extracting ALL skills for AI-powered job matching. Your extraction MUST be exhaustive yet precise.
 
@@ -217,7 +226,6 @@ class LegacyResumeParser:
         ])
         
     def _create_info_prompt(self) -> ChatPromptTemplate:
-        """Create prompt for extracting personal information comprehensively."""
         return ChatPromptTemplate.from_messages([
             ("system", """You are an expert at extracting personal and contact information from resumes of all styles and formats.
 
@@ -716,8 +724,6 @@ class LegacyResumeParser:
         return None
 
     def _extract_job_titles(self, text: str) -> List[str]:
-        """Extract job titles from resume text."""
-        # Look for common job title patterns
         title_patterns = [
             r'(?:^|\n)([A-Z][^.\n]{10,50}?)(?:\n|$)',  # Lines that look like job titles
             r'(?:position|role|title)[:\s]*([A-Z][^.\n]{5,30})',  # Explicit position mentions

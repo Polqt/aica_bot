@@ -230,24 +230,24 @@ export default function JobMatchesPage() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Card className="bg-white border-4 border-black shadow-[6px_6px_0px_0px_black]">
-            <CardContent className="py-6">
+          <Card className="bg-blue-50 border border-blue-200 shadow-sm">
+            <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <RefreshCw className="h-6 w-6 animate-spin text-black mr-4" />
+                  <RefreshCw className="h-5 w-5 animate-spin text-blue-600 mr-3" />
                   <div>
-                    <h3 className="font-black text-black uppercase tracking-wide">
+                    <h3 className="font-medium text-blue-900">
                       {processingStatus === 'parsing' &&
-                        'ANALYZING YOUR RESUME...'}
+                        'Analyzing your resume...'}
                       {processingStatus === 'matching' &&
-                        'FINDING PERFECT MATCHES...'}
+                        'Finding perfect matches...'}
                       {processingStatus === 'finalizing' &&
-                        'FINALIZING RESULTS...'}
+                        'Finalizing results...'}
                       {processingStatus === 'processing' &&
-                        'PROCESSING YOUR PROFILE...'}
+                        'Processing your profile...'}
                     </h3>
-                    <p className="text-gray-700 font-bold text-sm uppercase">
-                      OUR AI IS WORKING HARD TO FIND THE BEST OPPORTUNITIES.
+                    <p className="text-blue-700 text-sm">
+                      Our AI is working hard to find the best opportunities.
                     </p>
                   </div>
                 </div>
@@ -294,23 +294,23 @@ export default function JobMatchesPage() {
         <div className="lg:col-span-2 space-y-4 overflow-y-auto pr-2">
           {filteredMatches.length === 0 ? (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
               className="flex items-center justify-center h-full min-h-[300px]"
             >
-              <div className="text-center bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_black]">
-                <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-8 h-8 text-white" />
+              <div className="text-center bg-white rounded-lg p-6 max-w-sm">
+                <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-6 h-6 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-black text-black mb-2 uppercase">
+                <h3 className="text-base font-medium text-gray-900 mb-2">
                   {searchTerm || filter !== 'all'
-                    ? 'NO MATCHES FOUND'
-                    : 'NO JOB MATCHES YET'}
+                    ? 'No matches found'
+                    : 'No job matches yet'}
                 </h3>
-                <p className="text-gray-700 font-bold mb-4 max-w-xs uppercase text-sm">
+                <p className="text-sm text-gray-500 mb-4 max-w-xs mx-auto">
                   {searchTerm || filter !== 'all'
-                    ? 'TRY ADJUSTING YOUR SEARCH OR FILTERS'
-                    : 'CLICK "REFRESH MATCHES" TO FIND JOBS TAILORED TO YOUR SKILLS'}
+                    ? 'Try adjusting your search or filters'
+                    : 'Click "Refresh matches" to find jobs tailored to your skills'}
                 </p>
                 {(searchTerm || filter !== 'all') && (
                   <Button
@@ -318,9 +318,9 @@ export default function JobMatchesPage() {
                       setSearchTerm('');
                       setFilter('all');
                     }}
-                    className="bg-black text-white border-2 border-black hover:bg-white hover:text-black font-black uppercase text-sm"
+                    className="bg-white text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300 font-medium px-4 py-2 rounded-md text-sm shadow-sm hover:shadow-md transition-all duration-150"
                   >
-                    CLEAR FILTERS
+                    Clear filters
                   </Button>
                 )}
               </div>
@@ -418,7 +418,7 @@ export default function JobMatchesPage() {
                               }}
                             ></div>
                           </div>
-                          <span className="text-xs font-black text-black min-w-[2.5rem] uppercase">
+                          <span className="text-xs font-medium text-gray-600 min-w-[2.5rem]">
                             {Math.round(match.skill_coverage * 100)}%
                           </span>
                         </div>
@@ -433,36 +433,43 @@ export default function JobMatchesPage() {
 
         <div className="lg:col-span-3 overflow-y-auto pr-2">
           {selectedJob ? (
-            <Card className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_black]">
-              <CardHeader className="border-b-4 border-black">
+            <Card className="bg-white border border-gray-200 rounded-lg shadow-sm">
+              <CardHeader className="border-b border-gray-100 pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-2xl text-black mb-2 font-black uppercase tracking-wide">
+                    <CardTitle className="text-2xl text-gray-900 mb-2 font-semibold">
                       {selectedJob.job_title}
                     </CardTitle>
-                    <CardDescription className="flex flex-wrap items-center gap-4 text-gray-700 font-bold">
-                      <span className="flex items-center uppercase">
-                        <Building className="w-4 h-4 mr-1" />
+                    <CardDescription className="flex flex-wrap items-center gap-3 text-gray-500 text-sm">
+                      <span className="flex items-center">
+                        <Building className="w-4 h-4 mr-1.5" />
                         {selectedJob.company}
                       </span>
                       {selectedJob.location && (
-                        <span className="flex items-center uppercase">
-                          <MapPin className="w-4 h-4 mr-1" />
+                        <span className="flex items-center">
+                          <MapPin className="w-4 h-4 mr-1.5" />
                           {selectedJob.location}
                         </span>
                       )}
-                      <Badge className="border-2 border-black bg-white text-black font-black uppercase text-xs px-3 py-1">
-                        {selectedJob.confidence?.toUpperCase() || 'UNKNOWN'}
+                      <Badge
+                        className={`px-2 py-0.5 text-xs font-medium ${
+                          selectedJob.confidence === 'high'
+                            ? 'bg-green-50 text-green-700 border border-green-200'
+                            : selectedJob.confidence === 'medium'
+                            ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                            : 'bg-gray-50 text-gray-700 border border-gray-200'
+                        }`}
+                      >
+                        {selectedJob.confidence?.charAt(0).toUpperCase() +
+                          selectedJob.confidence?.slice(1) || 'Unknown'}
                       </Badge>
                     </CardDescription>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-black text-black">
+                  <div className="text-center ml-4">
+                    <div className="text-2xl font-semibold text-gray-900">
                       {(selectedJob.match_score * 100).toFixed(0)}%
                     </div>
-                    <div className="text-xs font-black text-gray-700 uppercase">
-                      MATCH
-                    </div>
+                    <div className="text-xs text-gray-500">Match</div>
                   </div>
                 </div>
               </CardHeader>
@@ -470,45 +477,43 @@ export default function JobMatchesPage() {
                 {/* AI Reasoning Section */}
                 {selectedJob.ai_reasoning &&
                   selectedJob.ai_reasoning.trim() && (
-                    <div className="bg-white border-4 border-black p-6 shadow-[4px_4px_0px_0px_black]">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="w-6 h-6 bg-black text-white flex items-center justify-center font-black text-xs">
+                        <div className="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center font-semibold text-xs">
                           AI
                         </div>
-                        <h3 className="text-lg font-black text-black uppercase tracking-wide">
-                          AI ANALYSIS
+                        <h3 className="text-base font-medium text-gray-900">
+                          AI Analysis
                         </h3>
                       </div>
-                      <p className="text-gray-700 leading-relaxed text-sm font-medium">
+                      <p className="text-gray-700 leading-relaxed text-sm">
                         {selectedJob.ai_reasoning}
                       </p>
                     </div>
                   )}
 
-                {/* Skill Analysis Section */}
                 <div className="grid gap-4">
-                  {/* Skill Coverage */}
                   {selectedJob.skill_coverage !== undefined &&
                     selectedJob.skill_coverage >= 0 && (
-                      <div className="bg-white border-4 border-black p-6 shadow-[4px_4px_0px_0px_black]">
-                        <h3 className="text-lg font-black text-black mb-3 flex items-center gap-2 uppercase tracking-wide">
-                          <div className="w-5 h-5 bg-black text-white flex items-center justify-center text-xs font-black">
+                      <div className="bg-white border border-gray-200 rounded-lg p-5">
+                        <h3 className="text-base font-medium text-gray-900 mb-4 flex items-center gap-2">
+                          <div className="w-5 h-5 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-semibold">
                             ✓
                           </div>
-                          SKILL COVERAGE
+                          Skill Coverage
                         </h3>
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-bold text-gray-700 uppercase">
-                              MATCH RATE
+                            <span className="text-sm text-gray-600">
+                              Match rate
                             </span>
-                            <span className="text-lg font-black text-black">
+                            <span className="text-base font-medium text-gray-900">
                               {Math.round(selectedJob.skill_coverage * 100)}%
                             </span>
                           </div>
-                          <div className="w-full bg-gray-200 border-2 border-black h-6">
+                          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                             <div
-                              className="bg-black h-full transition-all duration-500 ease-out"
+                              className="bg-blue-600 h-full transition-all duration-500 ease-out rounded-full"
                               style={{
                                 width: `${Math.round(
                                   selectedJob.skill_coverage * 100,
@@ -516,12 +521,12 @@ export default function JobMatchesPage() {
                               }}
                             ></div>
                           </div>
-                          <p className="text-xs font-bold text-gray-600 uppercase">
-                            {selectedJob.matched_skills?.length || 0} OF{' '}
+                          <p className="text-xs text-gray-500">
+                            {selectedJob.matched_skills?.length || 0} of{' '}
                             {(selectedJob.matched_skills?.length || 0) +
                               (selectedJob.missing_critical_skills?.length ||
                                 0)}{' '}
-                            SKILLS MATCHED
+                            skills matched
                           </p>
                         </div>
                       </div>
@@ -531,17 +536,18 @@ export default function JobMatchesPage() {
                   {selectedJob.matched_skills &&
                     selectedJob.matched_skills.length > 0 && (
                       <div>
-                        <h3 className="text-lg font-black text-black mb-3 flex items-center gap-2 uppercase tracking-wide">
-                          <div className="w-5 h-5 bg-black text-white flex items-center justify-center text-xs font-black">
+                        <h3 className="text-base font-medium text-gray-900 mb-3 flex items-center gap-2">
+                          <div className="w-5 h-5 bg-green-600 text-white rounded flex items-center justify-center text-xs font-semibold">
                             ★
                           </div>
-                          YOUR MATCHING SKILLS
+                          Your Matching Skills
                         </h3>
                         <div className="flex flex-wrap gap-2">
                           {selectedJob.matched_skills.map((skill, index) => (
                             <Badge
                               key={index}
-                              className="bg-black text-white border-2 border-black font-bold uppercase"
+                              variant="secondary"
+                              className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
                             >
                               {skill}
                             </Badge>
@@ -553,42 +559,43 @@ export default function JobMatchesPage() {
                   {/* Missing Critical Skills */}
                   {selectedJob.missing_critical_skills &&
                     selectedJob.missing_critical_skills.length > 0 && (
-                      <div className="bg-white border-4 border-black p-6 shadow-[4px_4px_0px_0px_black]">
-                        <h3 className="text-lg font-black text-black mb-3 flex items-center gap-2 uppercase tracking-wide">
-                          <div className="w-5 h-5 bg-black text-white flex items-center justify-center text-xs font-black">
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
+                        <h3 className="text-base font-medium text-gray-900 mb-3 flex items-center gap-2">
+                          <div className="w-5 h-5 bg-amber-600 text-white rounded flex items-center justify-center text-xs font-semibold">
                             !
                           </div>
-                          SKILLS TO DEVELOP
+                          Skills to Develop
                         </h3>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 mb-3">
                           {selectedJob.missing_critical_skills.map(
                             (skill, index) => (
                               <Badge
                                 key={index}
-                                className="border-2 border-black bg-gray-200 text-black font-bold uppercase"
+                                variant="secondary"
+                                className="px-2 py-0.5 text-xs font-medium bg-white text-amber-700 border border-amber-300"
                               >
                                 {skill}
                               </Badge>
                             ),
                           )}
                         </div>
-                        <p className="text-xs font-bold text-gray-600 mt-2 uppercase">
-                          CONSIDER LEARNING THESE SKILLS TO IMPROVE YOUR MATCH
-                          RATE
+                        <p className="text-xs text-amber-700">
+                          Consider learning these skills to improve your match
+                          rate
                         </p>
                       </div>
                     )}
                 </div>
-                <div className="flex gap-4 pt-4 border-t-4 border-black">
+                <div className="flex gap-3 pt-4 border-t border-gray-100">
                   <Button
-                    className="flex-1 bg-black text-white border-4 border-black hover:bg-violet-600 hover:text-white font-black uppercase tracking-wide py-4 shadow-[6px_6px_0px_0px_black] hover:shadow-[8px_8px_0px_0px_black] transition-all duration-200"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-150"
                     onClick={() => window.open(selectedJob.job_url, '_blank')}
                   >
                     <ExternalLink className="w-4 h-4 mr-2" />
-                    VIEW JOB
+                    View job
                   </Button>
                   <Button
-                    className="flex-1 bg-white text-black border-4 border-black hover:bg-black hover:text-white font-black uppercase tracking-wide py-4 shadow-[6px_6px_0px_0px_black] hover:shadow-[8px_8px_0px_0px_black] transition-all duration-200"
+                    className="flex-1 bg-white text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300 font-medium py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-150"
                     disabled={savingJobId === selectedJob.job_id}
                     onClick={() => {
                       if (savedJobIds.includes(selectedJob.job_id)) {
@@ -604,17 +611,17 @@ export default function JobMatchesPage() {
                       <BookmarkPlus className="w-4 h-4 mr-2" />
                     )}
                     {savedJobIds.includes(selectedJob.job_id)
-                      ? 'UNSAVE'
-                      : 'SAVE'}
+                      ? 'Unsave'
+                      : 'Save'}
                   </Button>
                 </div>
               </CardContent>
             </Card>
           ) : (
-            <Card className="h-full flex items-center justify-center bg-white border-4 border-black shadow-[8px_8px_0px_0px_black]">
+            <Card className="h-full flex items-center justify-center bg-white border border-gray-200 rounded-lg shadow-sm">
               <CardContent>
-                <p className="text-gray-700 font-black uppercase">
-                  SELECT A JOB TO VIEW DETAILS
+                <p className="text-gray-500 text-sm">
+                  Select a job to view details
                 </p>
               </CardContent>
             </Card>

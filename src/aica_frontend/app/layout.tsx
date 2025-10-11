@@ -56,7 +56,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const structuredData = {
-    '@context': 'https://schema.org',
     '@type': 'WebApplication',
     name: 'AICA - AI Career Assistant',
     description:
@@ -64,11 +63,6 @@ export default function RootLayout({
     url: 'https://aica.app',
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Web Browser',
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'USD',
-    },
     creator: {
       '@type': 'Organization',
       name: 'AICA Team',

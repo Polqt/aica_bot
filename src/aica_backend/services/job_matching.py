@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from typing import List, Dict
 from dataclasses import dataclass
 
@@ -10,7 +11,6 @@ from core.embedder import TextEmbedder
 from core.matching import JobMatcher
 
 logger = logging.getLogger(__name__)
-
 
 @dataclass
 class JobMatchResult:
@@ -43,7 +43,18 @@ class JobMatchingService:
         self.user_db = user_db or UserDatabase()
         self.job_db = job_db or JobDatabase()
         self.embedder = TextEmbedder()
-        self.matcher = JobMatcher()  # Our existing AI matcher
+        
+        # Initialize AI matcher
+        try:
+            logger.info("🚀 Initializing JobMatcher with AI capabilities...")
+            self.matcher = JobMatcher()  # Our existing AI matcher
+            logger.info("✅ JobMatcher initialized successfully with AI")
+        except Exception as e:
+            logger.error(f"❌ CRITICAL: Failed to initialize JobMatcher: {str(e)}")
+            logger.error(f"❌ Error type: {type(e).__name__}")
+            import traceback
+            logger.error(f"❌ Traceback: {traceback.format_exc()}")
+            raise  # Re-raise to prevent service from working without AI
 
         # AI matching parameters
         self.MINIMUM_MATCH_SCORE = 0.4  # Lower threshold for AI decisions
@@ -346,19 +357,20 @@ class JobMatchingService:
         user_skills: List[UserSkill], 
         job: Job
     ) -> JobMatchResult:
-        """Fast AI-powered job matching with comprehensive reasoning."""
         # Prepare job context
         job_context = self._prepare_job_context(job)
         
         # Use our enhanced AI matcher for comprehensive analysis
         try:
+            logger.info(f"🔍 Starting AI match for job: {job.title} at {job.company}")
+            
             # Extract skill names from user skills
             user_skill_names = [skill.skill_name for skill in user_skills]
             job_skills = job_context['required_skills']
             
-            # Add timeout to prevent hanging (increased to 20s for comprehensive analysis)
-            import asyncio
-            logger.info(f"🚀 Starting AI compatibility analysis for {job.title} at {job.company}...")
+            logger.info(f"📊 User has {len(user_skill_names)} skills, job requires {len(job_skills)} skills")
+            logger.info(f"🤖 Calling AI matcher.calculate_compatibility()...")
+            
             ai_match_result = await asyncio.wait_for(
                 self.matcher.calculate_compatibility(
                     user_skills=user_skill_names,
@@ -366,9 +378,10 @@ class JobMatchingService:
                     job_title=job.title,
                     company=job.company
                 ),
-                timeout=20.0  # 20 second timeout for detailed AI reasoning
+                timeout=70.0  # 70 second timeout (20 jobs × 3.3s = ~66s)
             )
-            logger.info(f"✅ AI compatibility analysis completed for {job.title}")
+            
+            logger.info(f"✅ AI matcher returned result for {job.title}")
             
             # Extract comprehensive AI insights
             match_score = ai_match_result.get('compatibility_score', 0.0)
@@ -397,10 +410,15 @@ class JobMatchingService:
             )
             
         except asyncio.TimeoutError:
-            logger.warning(f"AI analysis timeout for job {job.id}, using fast fallback")
+            logger.error(f"⏰ AI ANALYSIS TIMEOUT for job {job.id} ({job.title}), using fallback")
             return await self._simple_calculate_job_match(user_skills, job)
         except Exception as e:
-            logger.warning(f"AI analysis failed for job {job.id}: {e}, falling back to simple matching")
+            logger.error(f"❌ AI ANALYSIS FAILED for job {job.id} ({job.title})")
+            logger.error(f"❌ Error type: {type(e).__name__}")
+            logger.error(f"❌ Error message: {str(e)}")
+            logger.error(f"❌ Full error: {repr(e)}")
+            import traceback
+            logger.error(f"❌ Traceback: {traceback.format_exc()}")
             return await self._simple_calculate_job_match(user_skills, job)
 
     async def _simple_calculate_job_match(self, user_skills: List[UserSkill], job: Job) -> JobMatchResult:
@@ -448,6 +466,9 @@ class JobMatchingService:
             # Determine confidence level
             confidence = self._determine_confidence(match_score, skill_coverage)
             
+            # Fallback when AI analysis is not available
+            num_matches = len(all_matched_skills)
+            num_missing = len(missing_skills)
             return JobMatchResult(
                 job=job,
                 match_score=match_score,
@@ -455,8 +476,8 @@ class JobMatchingService:
                 missing_critical_skills=missing_skills,
                 skill_coverage=skill_coverage,
                 confidence=confidence,
-                ai_reasoning="Simple skill matching (AI analysis not available)",
-                skill_gap_analysis={"note": "Basic analysis only"}
+                ai_reasoning=f"**Match Analysis:** Based on keyword matching, you have {num_matches} matching skills out of {len(job_skills)} required ({round(skill_coverage * 100, 1)}% coverage). This is a {confidence} confidence match. {'Strong match - consider applying!' if match_score >= 0.6 else 'Moderate match - review the requirements carefully.' if match_score >= 0.4 else 'Lower match - you may need to develop key skills first.'}",
+                skill_gap_analysis={"note": "Basic keyword analysis", "missing_count": num_missing}
             )
             
         except Exception as e:

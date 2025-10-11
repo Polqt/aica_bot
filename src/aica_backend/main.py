@@ -1,6 +1,7 @@
 import sys
 import uvicorn
 import logging
+import os
 from dotenv import load_dotenv
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -9,9 +10,18 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from pathlib import Path
 
+# Configure logging for Google Cloud
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)s: %(name)s - %(message)s',
+    force=True  # Force reconfiguration
+)
+logger = logging.getLogger(__name__)
+
 env_path = Path(__file__).parent.parent.parent / ".env"
 if env_path.exists():
     load_dotenv(dotenv_path=env_path)
+    logger.info("Loaded .env file from: %s", env_path)
 
 parent_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(parent_dir))
@@ -28,6 +38,26 @@ from api.routes.resume_builder import router as resume_builder_router
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(title="AICA Backend", version="1.0.0")
+
+# Startup event for logging
+@app.on_event("startup")
+async def startup_event():
+    logger.info("="*60)
+    logger.info("AICA BACKEND STARTING UP")
+    logger.info("="*60)
+    logger.info("Python version: %s", sys.version)
+    logger.info("Environment variables loaded:")
+    logger.info("  - ANTHROPIC_API_KEY: %s", "SET" if os.getenv("ANTHROPIC_API_KEY") else "NOT SET")
+    logger.info("  - SUPABASE_URL: %s", "SET" if os.getenv("SUPABASE_URL") else "NOT SET")
+    logger.info("Initializing services...")
+    try:
+        # Test JobMatchingService initialization
+        from services.job_matching import JobMatchingService
+        service = JobMatchingService()
+        logger.info("SUCCESS: JobMatchingService initialized")
+    except Exception as e:
+        logger.error("FAILED: JobMatchingService initialization: %s", str(e))
+    logger.info("="*60)
 
 # Rate limiting setup
 app.state.limiter = limiter

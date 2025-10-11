@@ -25,107 +25,46 @@ class AIAnalyzer:
         try:
             logger.info(f"🤖 Starting AI analysis for {job_title} at {company}...")
             
-            user_skills_text = ", ".join(user_skills) if user_skills else "No skills listed"
-            job_skills_text = ", ".join(job_skills) if job_skills else "No specific skills listed"
-            matched_skills_text = ", ".join(matched_skills) if matched_skills else "None"
-            partial_matches_text = ", ".join(partial_matches) if partial_matches else "None"
-            missing_skills_text = ", ".join(missing_skills) if missing_skills else "None"
+            user_skills_text = ", ".join(user_skills[:20]) if user_skills else "No skills listed"  # Limit to top 20
+            job_skills_text = ", ".join(job_skills[:15]) if job_skills else "No specific skills listed"  # Limit to 15
+            matched_skills_text = ", ".join(matched_skills[:10]) if matched_skills else "None"
+            partial_matches_text = ", ".join(partial_matches[:8]) if partial_matches else "None"
+            missing_skills_text = ", ".join(missing_skills[:10]) if missing_skills else "None"
             
-            analysis_prompt = f"""As an elite technical recruiter and career advisor, provide a comprehensive job fit analysis.
+            # Simplified prompt for faster response (3-5 seconds instead of 10-15 seconds)
+            analysis_prompt = f"""As a technical recruiter, analyze this job match concisely.
+                                **CANDIDATE SKILLS:** {user_skills_text}
+                                **JOB REQUIREMENTS:** {job_skills_text}
+                                **POSITION:** {job_title} at {company}
 
-CANDIDATE'S SKILLS: {user_skills_text}
-JOB REQUIREMENTS: {job_skills_text}
-POSITION: {job_title} at {company}
+                                **MATCH BREAKDOWN:**
+                                • Direct Matches ({len(matched_skills)}): {matched_skills_text}
+                                • Related Skills ({len(partial_matches)}): {partial_matches_text}
+                                • Missing Skills ({len(missing_skills)}): {missing_skills_text}
+                                • Overall Match: {round(compatibility_score * 100, 1)}%
 
-MATCH BREAKDOWN:
-• Direct Matches: {matched_skills_text}
-• Related Skills: {partial_matches_text}
-• Missing Skills: {missing_skills_text}
-• Overall Match: {round(compatibility_score * 100, 1)}%
+                                Provide a focused 250-300 word analysis with:
 
-CRITICAL ANALYSIS RULES:
-1. ACCURACY: Only match skills the candidate ACTUALLY has - no assumptions
-2. HONESTY: Be transparent about gaps and mismatches
-3. FAIRNESS: Consider related skills and transferable competencies
-4. ACTIONABILITY: Provide specific, practical guidance for improvement
+                                **1. SKILL ALIGNMENT** (100-120 words)
+                                - What makes this a {round(compatibility_score * 100, 1)}% match?
+                                - Key strengths that align with the role
+                                - Most important skill gaps
+                                - Transferable skills from related matches
 
-ANALYSIS STRUCTURE:
+                                **2. APPLICATION RECOMMENDATION** (60-80 words)
+                                - Should they apply now? (Strong Yes/Yes/Maybe/Not Yet)
+                                - Why or why not based on actual match quality
+                                - Interview success likelihood  
+                                - Best approach if applying
 
-**SKILLS ALIGNMENT** (200-300 words)
-Evaluate how the candidate's actual skills match the job requirements:
+                                **3. IMPROVEMENT STEPS** (60-80 words)
+                                - Top 2-3 skills to develop for this role
+                                - Realistic timeline for readiness
+                                - Quick wins to boost candidacy
+                                - Alternative roles if better aligned
 
-✓ STRONG MATCHES: List specific skills that directly align
-• Explain WHY each match is valuable for this role
-• Note if skills are core vs. complementary
-
-⚠️ PARTIAL MATCHES: Identify related but not exact skills
-• Example: Has "React" but needs "Vue.js" - related frontend frameworks
-• Explain transferability and learning curve
-
-✗ MISSING CRITICAL SKILLS: Be honest about gaps
-• List key requirements the candidate doesn't have
-• Prioritize by importance (must-have vs. nice-to-have)
-• Estimate learning effort for each gap
-
-**MATCH ASSESSMENT** (100-150 words)
-• Overall compatibility score reasoning
-• Confidence level in the match (High/Medium/Low)
-• Role fit assessment (Excellent/Good/Fair/Poor)
-• Readiness level (Ready Now/Nearly Ready/Needs Development)
-
-**SKILL GAP ANALYSIS** (150-200 words)
-Break down missing skills into categories:
-• CRITICAL GAPS: Must-have skills completely missing
-• TRAINABLE GAPS: Skills that can be learned relatively quickly
-• ADVANCED GAPS: Complex skills requiring significant time investment
-
-For each gap, provide:
-• Difficulty level (Easy/Moderate/Hard)
-• Typical learning timeline (days/weeks/months)
-• Recommended resources (online courses, books, practice projects)
-
-**CAREER RECOMMENDATIONS** (150-200 words)
-Provide actionable next steps:
-
-IF HIGH MATCH (80%+):
-• Emphasize application worthiness
-• Suggest how to highlight relevant experience
-• Recommend interview preparation focus areas
-
-IF MEDIUM MATCH (50-80%):
-• Identify quick wins to improve candidacy
-• Suggest alternative similar positions
-• Provide 30-60-90 day skill development plan
-
-IF LOW MATCH (<50%):
-• Be honest about fit challenges
-• Suggest better-matched alternative roles
-• Provide comprehensive upskilling roadmap
-• Recommend intermediate stepping-stone positions
-
-**STANDOUT STRENGTHS** (50-100 words)
-Highlight candidate's unique value propositions:
-• Rare or highly valuable skills they possess
-• Combinations of skills that create unique expertise
-• Competitive advantages over typical candidates
-
-**FINAL VERDICT** (50-100 words)
-Summary recommendation:
-• Should they apply? (Strongly Yes/Yes/Maybe/Not Yet)
-• Expected interview success likelihood
-• Timeframe to become fully qualified (if not already)
-• One key action item to improve match
-
-TONE & STYLE:
-- Professional but encouraging
-- Honest without being discouraging
-- Specific and actionable
-- Balanced (acknowledge both strengths and gaps)
-- Use clear headings and bullet points
-- Avoid jargon unless explaining it
-- Target total length: 750-1000 words
-
-Focus on being genuinely helpful for the candidate's career development."""
+                                Be honest, specific, and actionable. Focus on what matters most.
+                            """
             
             logger.info("📤 Sending request to Anthropic API...")
             response = await self.llm.ainvoke(analysis_prompt)
@@ -150,18 +89,6 @@ Focus on being genuinely helpful for the candidate's career development."""
         compatibility_score: float,
         job_title: str
     ) -> str:
-        """Generate fallback analysis when AI is unavailable.
-        
-        Args:
-            matched_skills: Skills that match exactly
-            partial_matches: Skills that are related
-            missing_skills: Skills the candidate lacks
-            compatibility_score: Overall match score
-            job_title: Position title
-            
-        Returns:
-            Basic analysis text
-        """
         match_percentage = round(compatibility_score * 100, 1)
         
         analysis_parts = [
