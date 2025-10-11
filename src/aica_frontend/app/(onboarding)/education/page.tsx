@@ -5,17 +5,33 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { ArrowLeft, ArrowRight, GraduationCap, Plus, Edit, Trash2 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+  ArrowLeft,
+  ArrowRight,
+  GraduationCap,
+  Plus,
+  Edit,
+  Trash2,
+} from 'lucide-react';
 import { useResumeBuilder } from '@/hooks/useResumeBuilder';
 import { UserEducation, UserEducationCreate } from '@/types/user';
 
 export default function EducationPage() {
   const router = useRouter();
-  const { education, addEducation, updateEducation, deleteEducation, loadResumeData, loading, saving } = useResumeBuilder();
+  const {
+    education,
+    addEducation,
+    updateEducation,
+    deleteEducation,
+    loadResumeData,
+    loading,
+    saving,
+  } = useResumeBuilder();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingEducation, setEditingEducation] = useState<UserEducation | null>(null);
+  const [editingEducation, setEditingEducation] =
+    useState<UserEducation | null>(null);
   const [formData, setFormData] = useState<UserEducationCreate>({
     institution_name: '',
     degree_type: '',
@@ -63,17 +79,36 @@ export default function EducationPage() {
     resetForm();
   };
 
-  const handleInputChange = (field: keyof UserEducationCreate, value: string | boolean) => {
+  const handleInputChange = (
+    field: keyof UserEducationCreate,
+    value: string | boolean,
+  ) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const formatDateToISO = (dateString: string) => {
+    if (!dateString) return '';
+    // Add the first day of the month to make it a valid ISO date
+    return `${dateString}-01`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const formattedData: UserEducationCreate = {
+      ...formData,
+      start_date: formatDateToISO(formData.start_date),
+      end_date: formData.is_current
+        ? undefined
+        : formData.end_date
+        ? formatDateToISO(formData.end_date)
+        : undefined,
+    };
+
     if (editingEducation) {
-      await updateEducation(editingEducation.id, formData);
+      await updateEducation(editingEducation.id, formattedData);
     } else {
-      await addEducation(formData);
+      await addEducation(formattedData);
     }
     handleCloseDialog();
   };
@@ -94,281 +129,232 @@ export default function EducationPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div>
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      className="p-8"
+      transition={{ duration: 0.4 }}
+      className="relative"
     >
-      {/* Header Section */}
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-violet-100 rounded-xl flex items-center justify-center mx-auto mb-6">
-          <GraduationCap className="w-8 h-8 text-violet-600" />
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">
-          Education background
-        </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Add your educational qualifications to strengthen your profile
-        </p>
-      </div>
-
-      {/* Content Section */}
-      <div className="space-y-6">
-        {/* Education List */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold text-gray-900">
-              Your education
-            </h3>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <button
-                  onClick={() => handleOpenDialog()}
-                  disabled={saving}
-                  className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add education
-                </button>
-              </DialogTrigger>
-
-              <DialogContent className="bg-white border border-gray-200 p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    {editingEducation ? 'Edit education' : 'Add education'}
-                  </h2>
-                  <p className="text-gray-600">
-                    {editingEducation ? 'Update your education details' : 'Add your educational background'}
-                  </p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="institution_name" className="text-sm font-semibold text-gray-900">
-                      Institution Name *
-                    </Label>
-                    <Input
-                      id="institution_name"
-                      type="text"
-                      placeholder="University of Example"
-                      value={formData.institution_name}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('institution_name', e.target.value)}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <Label htmlFor="degree_type" className="text-sm font-semibold text-gray-900">
-                        Degree Type *
-                      </Label>
-                      <select
-                        id="degree_type"
-                        value={formData.degree_type}
-                        onChange={(e) => handleInputChange('degree_type', e.target.value)}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                      >
-                        <option value="">Select degree type</option>
-                        <option value="Bachelor's">Bachelor&apos;s</option>
-                        <option value="Master's">Master&apos;s</option>
-                        <option value="PhD">PhD</option>
-                        <option value="Associate">Associate</option>
-                        <option value="Diploma">Diploma</option>
-                        <option value="Certificate">Certificate</option>
-                        <option value="High School">High School</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label htmlFor="field_of_study" className="text-sm font-semibold text-gray-900">
-                        Field of Study *
-                      </Label>
-                      <Input
-                        id="field_of_study"
-                        type="text"
-                        placeholder="Computer Science"
-                        value={formData.field_of_study}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('field_of_study', e.target.value)}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <Label htmlFor="start_date" className="text-sm font-semibold text-gray-900">
-                        Start Date *
-                      </Label>
-                      <Input
-                        id="start_date"
-                        type="date"
-                        value={formData.start_date}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('start_date', e.target.value)}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                      />
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label htmlFor="end_date" className="text-sm font-semibold text-gray-900">
-                        End Date
-                      </Label>
-                      <Input
-                        id="end_date"
-                        type="date"
-                        value={formData.end_date}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('end_date', e.target.value)}
-                        disabled={formData.is_current}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 disabled:opacity-50"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      id="is_current"
-                      checked={formData.is_current}
-                      onChange={(e) => handleInputChange('is_current', e.target.checked)}
-                      className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
-                    />
-                    <Label htmlFor="is_current" className="text-sm font-medium text-gray-900">
-                      I am currently studying here
-                    </Label>
-                  </div>
-
-                  <div className="flex gap-4 pt-6">
-                    <Button
-                      type="button"
-                      onClick={handleCloseDialog}
-                      className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded-lg transition-colors"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={saving}
-                      className="flex-1 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {saving ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          Saving...
-                        </>
-                      ) : (
-                        editingEducation ? 'Update' : 'Add'
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+      <div className="p-8">
+        <div className="space-y-6 mb-8">
+          <div>
+            <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">
+              Education History
+            </h1>
+            <p className="text-gray-600 text-base mt-1">
+              Add your educational background to strengthen your resume.
+            </p>
           </div>
 
-          <AnimatePresence mode="popLayout">
-            {education.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="text-center py-12 bg-gray-50 border border-gray-200 rounded-lg"
-              >
-                <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <GraduationCap className="w-6 h-6 text-gray-500" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No education added yet
-                </h3>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  Add your educational background to help match you with relevant opportunities
-                </p>
-              </motion.div>
-            ) : (
-              education.map((edu, index) => (
+          <div className="h-[1px] bg-gray-200" />
+        </div>
+
+        <div className="max-w-3xl space-y-6">
+          <div className="space-y-4">
+            <AnimatePresence mode="popLayout">
+              {education?.map(edu => (
                 <motion.div
                   key={edu.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm"
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="group p-4 bg-white border border-gray-200 hover:border-gray-300 rounded-lg transition-all"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                        {edu.degree_type} in {edu.field_of_study}
-                      </h4>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          <span>{edu.institution_name}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span>
-                            {new Date(edu.start_date).getFullYear()} - {
-                              edu.is_current ? 'Present' :
-                              edu.end_date ? new Date(edu.end_date).getFullYear() :
-                              'Present'
-                            }
-                          </span>
-                        </div>
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1 p-2 rounded-md bg-blue-50 text-blue-600">
+                        <GraduationCap className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          {edu.degree_type} in {edu.field_of_study}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-0.5">
+                          {edu.institution_name}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {edu.start_date} -{' '}
+                          {edu.is_current ? 'Present' : edu.end_date}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => handleOpenDialog(edu)}
-                        disabled={saving}
-                        className="p-2 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                        className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(edu.id)}
-                        disabled={saving}
-                        className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                        className="p-1 text-gray-500 hover:text-red-600 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                 </motion.div>
-              ))
-            )}
-          </AnimatePresence>
-        </div>
+              ))}
+            </AnimatePresence>
 
-        {/* Navigation */}
-        <div className="flex gap-4 pt-6">
-          <button
-            onClick={handleBack}
-            disabled={saving}
-            className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
-          <button
-            onClick={handleContinue}
-            disabled={saving}
-            className="flex-1 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            Continue
-            <ArrowRight className="w-4 h-4" />
-          </button>
+            <Button
+              onClick={() => handleOpenDialog()}
+              variant="neutral"
+              className="w-full h-16 border-dashed hover:border-gray-400 hover:bg-gray-50"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Education
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between pt-6 border-t">
+            <Button onClick={handleBack} variant="neutral" className="h-10">
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back
+            </Button>
+            <Button
+              onClick={handleContinue}
+              disabled={!education?.length || saving}
+              className="h-10"
+            >
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  Continue <ArrowRight className="w-4 h-4 ml-2" />
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {editingEducation ? 'Edit Education' : 'Add Education'}
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Fill in your educational background details below.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="institution_name">Institution Name *</Label>
+                <Input
+                  id="institution_name"
+                  value={formData.institution_name}
+                  onChange={e =>
+                    handleInputChange('institution_name', e.target.value)
+                  }
+                  placeholder="University of Example"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="degree_type">Degree Type *</Label>
+                  <Input
+                    id="degree_type"
+                    value={formData.degree_type}
+                    onChange={e =>
+                      handleInputChange('degree_type', e.target.value)
+                    }
+                    placeholder="Bachelor's"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="field_of_study">Field of Study *</Label>
+                  <Input
+                    id="field_of_study"
+                    value={formData.field_of_study}
+                    onChange={e =>
+                      handleInputChange('field_of_study', e.target.value)
+                    }
+                    placeholder="Computer Science"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="start_date">Start Date *</Label>
+                  <Input
+                    id="start_date"
+                    type="month"
+                    value={formData.start_date}
+                    onChange={e =>
+                      handleInputChange('start_date', e.target.value)
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="end_date">End Date</Label>
+                  <Input
+                    id="end_date"
+                    type="month"
+                    value={formData.end_date}
+                    onChange={e =>
+                      handleInputChange('end_date', e.target.value)
+                    }
+                    disabled={formData.is_current}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="is_current"
+                  checked={formData.is_current}
+                  onChange={e =>
+                    handleInputChange('is_current', e.target.checked)
+                  }
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+                />
+                <label
+                  htmlFor="is_current"
+                  className="ml-2 text-sm text-gray-700"
+                >
+                  Currently studying here
+                </label>
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <Button
+                  type="button"
+                  onClick={handleCloseDialog}
+                  variant="neutral"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {editingEducation ? 'Update' : 'Add'} Education
+                </Button>
+              </div>
+            </form>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

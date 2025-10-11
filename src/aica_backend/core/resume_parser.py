@@ -1,49 +1,29 @@
-import re
-import os
-import PyPDF2
-import mammoth
-import docx
-import asyncio
-import logging
+import warnings
 
-from io import BytesIO
-from typing import Dict, List, Optional, Tuple
-from pydantic import BaseModel, Field
-from dataclasses import dataclass
+from core.resume import (
+    ResumeParser,
+    ResumeSkills,
+    PersonalInfo,
+    ParsedResume
+)
 
-from langchain_anthropic import ChatAnthropic
-from langchain.prompts import ChatPromptTemplate
-from langchain.output_parsers import PydanticOutputParser
+# Issue deprecation warning
+warnings.warn(
+    DeprecationWarning,
+    stacklevel=2
+)
 
-from database.user_db import UserDatabase
-from database.models.user_models import UserSkillCreate
+# Re-export for backward compatibility
+__all__ = [
+    "ResumeParser",
+    "ResumeSkills",
+    "PersonalInfo",
+    "ParsedResume"
+]
 
-logger = logging.getLogger(__name__)
 
-# Data Models
-class ResumeSkills(BaseModel):
-    technical_skills: List[str] = Field(description="Technical skills and technologies", default_factory=list)
-    soft_skills: List[str] = Field(description="Soft skills and interpersonal abilities", default_factory=list)
-    experience_years: Optional[int] = Field(description="Years of relevant experience", default=None)
-    job_titles: List[str] = Field(description="Previous job titles", default_factory=list)
-    education_level: Optional[str] = Field(description="Highest education level", default=None)
-    industries: List[str] = Field(description="Industries worked in", default_factory=list)
-
-class PersonalInfo(BaseModel):
-    full_name: Optional[str] = Field(description="Full name of the person", default=None)
-    phone: Optional[str] = Field(description="Phone number", default=None)
-    email: Optional[str] = Field(description="Email address", default=None)
-    location: Optional[str] = Field(description="Location", default=None)
-    linkedin: Optional[str] = Field(description="LinkedIn profile URL", default=None)
-
-@dataclass
-class ParsedResume:
-    raw_text: str
-    skills: ResumeSkills
-    personal_info: PersonalInfo
-    cleaned_text: str
-
-class ResumeParser:
+# Legacy class reference for backward compatibility
+class LegacyResumeParser:
     """Advanced resume parser for RAG job matching application.
 
     Handles various resume formats and extracts comprehensive information
@@ -117,113 +97,121 @@ class ResumeParser:
     def _create_comprehensive_prompt(self) -> ChatPromptTemplate:
         """Create balanced prompt for extracting comprehensive skills from resumes."""
         return ChatPromptTemplate.from_messages([
-            ("system", """You are an expert resume parser for job matching. Extract ALL legitimate skills and competencies from resumes while maintaining high quality and accuracy.
+            ("system", """You are an elite resume parser specialized in extracting ALL skills for AI-powered job matching. Your extraction MUST be exhaustive yet precise.
+
+            CORE MISSION: Extract EVERY single skill mentioned anywhere in the resume - no skill should be missed.
 
             EXTRACTION PHILOSOPHY:
-            1. COMPREHENSIVE: Find every skill mentioned anywhere in the resume
-            2. QUALITY CONTROL: Only extract complete, meaningful skills - not fragments
-            3. CONTEXT AWARE: Understand when words represent skills vs. random text
-            4. JOB MATCHING FOCUSED: Extract skills that would be relevant for job matching
+            1. COMPREHENSIVE: Scan EVERY section, EVERY sentence, EVERY context where skills might appear
+            2. MULTI-PASS: Look for skills in explicit lists, work descriptions, projects, achievements, summaries
+            3. CONTEXT-AWARE: Extract technologies from sentences like "developed React applications" → "React"
+            4. QUALITY: Only extract actual skills/technologies, not actions or incomplete phrases
+            5. NORMALIZATION: Use standard naming (e.g., "JavaScript" not "js", "React" not "react.js")
 
-            SKILL CATEGORIES TO EXTRACT:
+            TECHNICAL SKILLS - MUST EXTRACT FROM EVERYWHERE:
+            
+            Programming Languages:
+            - Python, Java, JavaScript, TypeScript, C++, C#, C, PHP, Ruby, Swift, Kotlin, Go, Rust, Scala, R, MATLAB, Perl, Shell/Bash, PowerShell, Dart, Lua
+            
+            Web Technologies & Frameworks:
+            - Frontend: React, Angular, Vue.js, Next.js, Nuxt.js, Svelte, jQuery, Bootstrap, Tailwind CSS, Material-UI, Ant Design, Sass, SCSS, Less, Webpack, Vite, Parcel
+            - Backend: Node.js, Express.js, Django, Flask, FastAPI, Spring Boot, ASP.NET, ASP.NET Core, Laravel, Ruby on Rails, Phoenix
+            - Full-stack: MEAN, MERN, MEVN, JAMstack
+            
+            Mobile Development:
+            - React Native, Flutter, Swift, Kotlin, Xamarin, Ionic, Cordova, Android SDK, iOS SDK
+            
+            Databases & Data:
+            - SQL: MySQL, PostgreSQL, Oracle, SQL Server, SQLite, MariaDB
+            - NoSQL: MongoDB, Redis, Cassandra, DynamoDB, Couchbase, Neo4j
+            - Data: Pandas, NumPy, Apache Spark, Hadoop, Kafka, Airflow
+            
+            Cloud Platforms & DevOps:
+            - AWS (EC2, S3, Lambda, RDS, etc.), Azure, Google Cloud Platform (GCP), Heroku, DigitalOcean, Vercel, Netlify
+            - Docker, Kubernetes, Jenkins, GitLab CI/CD, GitHub Actions, Travis CI, CircleCI
+            - Terraform, Ansible, Chef, Puppet, CloudFormation
+            
+            AI/ML & Data Science:
+            - TensorFlow, PyTorch, Keras, Scikit-learn, XGBoost, LightGBM
+            - NLP, Computer Vision, Deep Learning, Machine Learning, Neural Networks
+            - Jupyter, Matplotlib, Seaborn, Plotly, Tableau, Power BI
+            
+            Tools & Technologies:
+            - Version Control: Git, GitHub, GitLab, Bitbucket, SVN
+            - Testing: Jest, Mocha, Pytest, JUnit, Selenium, Cypress, Playwright
+            - APIs: REST, GraphQL, SOAP, gRPC, WebSockets
+            - Other: Redis, Elasticsearch, RabbitMQ, Nginx, Apache, Linux, Unix
+            
+            SOFT SKILLS - EXTRACT WHEN CLEARLY MENTIONED:
+            - Leadership: Team Leadership, Project Leadership, Strategic Leadership, Mentorship, Coaching
+            - Communication: Written Communication, Verbal Communication, Presentation Skills, Public Speaking, Stakeholder Management
+            - Collaboration: Teamwork, Cross-functional Collaboration, Remote Collaboration
+            - Problem-Solving: Analytical Thinking, Critical Thinking, Troubleshooting, Root Cause Analysis
+            - Management: Project Management, Product Management, Time Management, Resource Management, Agile, Scrum, Kanban
+            - Interpersonal: Customer Service, Client Relations, Negotiation, Conflict Resolution
+            - Personal: Adaptability, Creativity, Innovation, Self-Motivation, Work Ethic
+            
+            EXTRACTION LOCATIONS (check ALL):
+            ✓ Skills sections (explicit bullet points)
+            ✓ Technical skills sections
+            ✓ Work experience descriptions ("built with React", "using Python")
+            ✓ Project descriptions ("developed in Java", "deployed on AWS")
+            ✓ Summary/Objective sections ("proficient in", "experienced with")
+            ✓ Achievement bullets ("improved performance using Redis")
+            ✓ Certifications and courses (extract technologies mentioned)
+            ✓ Tools and technologies subsections
+            ✓ Certifications and courses (extract technologies mentioned)
+            ✓ Tools and technologies subsections
+            
+            EXTRACTION EXAMPLES:
+            ✓ "Developed web applications using React and Node.js" → ["React", "Node.js"]
+            ✓ "Built REST APIs with FastAPI" → ["REST API", "FastAPI"]
+            ✓ "Deployed microservices on AWS Lambda" → ["Microservices", "AWS", "Lambda"]
+            ✓ "Strong communication and leadership skills" → ["Communication", "Leadership"]
+            ✓ "Proficient in Python and machine learning" → ["Python", "Machine Learning"]
+            
+            AVOID:
+            ✗ Incomplete phrases: "where I can", "gain experience", "looking for"
+            ✗ Actions without skills: "developed", "built", "managed" (without tech context)
+            ✗ Company names, dates, locations
+            ✗ Generic words: "experience", "knowledge", "ability"
+            
+            QUALITY CHECKS:
+            - Each skill should be recognizable on a job posting
+            - Skills should be atomic (not full sentences)
+            - Technical skills should use standard names
+            - Soft skills should be clear competencies"""),
+            ("human", """MULTI-PASS COMPREHENSIVE EXTRACTION - Extract ALL skills for job matching:
 
-            TECHNICAL SKILLS - EXTRACT FROM ANYWHERE:
-            - Programming languages (Python, Java, JavaScript, C++, etc.)
-            - Frameworks and libraries (React, Angular, Django, Node.js, etc.)
-            - Databases (MySQL, PostgreSQL, MongoDB, etc.)
-            - Cloud platforms (AWS, Azure, GCP, etc.)
-            - Tools and technologies (Docker, Kubernetes, Git, etc.)
-            - Operating systems (Linux, Windows, macOS)
-            - Development tools (VS Code, IntelliJ, etc.)
-            - APIs and protocols (REST, GraphQL, etc.)
-            - Any technology mentioned in experience or project descriptions
-
-            SOFT SKILLS - EXTRACT WHEN CLEARLY STATED:
-            - Communication skills
-            - Leadership abilities
-            - Teamwork and collaboration
-            - Problem-solving capabilities
-            - Analytical thinking
-            - Time management
-            - Project management
-            - Customer service
-            - Mentoring and coaching
-            - Adaptability and flexibility
-            - Creativity and innovation
-            - Any interpersonal or professional skill explicitly mentioned
-
-            EXTRACTION RULES:
-            ✓ EXTRACT: "Python", "React", "AWS", "Communication", "Leadership"
-            ✓ EXTRACT: Skills from experience bullet points ("Developed React applications" → "React")
-            ✓ EXTRACT: Skills from project descriptions ("Built with Node.js" → "Node.js")
-            ✓ EXTRACT: Skills from summary sections ("Strong in Python development" → "Python")
-
-            ✗ AVOID: "where I can gain" (incomplete phrase)
-            ✗ AVOID: "developed applications" (action, not skill)
-            ✗ AVOID: "worked on projects" (activity, not skill)
-            ✗ AVOID: Random words or fragments
-
-            SCAN THOROUGHLY:
-            - Skills sections (explicit lists)
-            - Experience descriptions (extract technologies used)
-            - Project details (tools and technologies mentioned)
-            - Summary/Objective sections (mentioned competencies)
-            - Education sections (relevant technical skills)
-            - Any section where skills or technologies are mentioned
-
-            QUALITY ASSURANCE: Each extracted skill should be something that could legitimately appear on a job description or resume skills section."""),
-            ("human", """EXTRACT ALL SKILLS FROM THIS RESUME FOR COMPREHENSIVE JOB MATCHING:
-
+            Resume Text:
             {resume_text}
 
-            COMPREHENSIVE EXTRACTION REQUIREMENTS:
+            EXTRACTION PROCESS:
 
-            1. TECHNICAL SKILLS - FIND EVERY TECHNOLOGY MENTIONED:
-               - Programming languages anywhere in the resume
-               - Frameworks, libraries, and tools used
-               - Databases and data technologies
-               - Cloud platforms and services
-               - Development tools and environments
-               - Operating systems and platforms
-               - Extract from experience descriptions ("developed using React" → "React")
-               - Extract from project sections ("built with Python" → "Python")
-               - Extract from skills sections (explicit lists)
-               - Extract from any technical mentions throughout the resume
+            PASS 1 - EXPLICIT SKILLS SECTIONS:
+            Scan for sections labeled "Skills", "Technical Skills", "Technologies", "Tools", "Competencies"
+            Extract every single item listed
 
-            2. SOFT SKILLS - FIND ALL INTERPERSONAL COMPETENCIES:
-               - Communication and interpersonal skills
-               - Leadership and management abilities
-               - Teamwork and collaboration skills
-               - Problem-solving and analytical capabilities
-               - Time management and organizational skills
-               - Project management expertise
-               - Customer service orientation
-               - Mentoring and coaching abilities
-               - Adaptability and flexibility
-               - Creativity and innovation
-               - Any professional or soft skills explicitly mentioned
+            PASS 2 - WORK EXPERIENCE & PROJECTS:
+            Read through every work experience bullet point and project description
+            Extract technologies, frameworks, tools, and methodologies mentioned
+            Look for patterns: "using [tool]", "with [technology]", "in [language]", "on [platform]"
 
-            3. PERSONAL & PROFESSIONAL INFORMATION:
-               - Full name from resume header
-               - Contact information (phone, email, location, LinkedIn)
-               - Years of experience from work history
-               - Job titles and positions held
-               - Highest education level achieved
-               - Industries and sectors of experience
+            PASS 3 - CONTEXTUAL EXTRACTION:
+            Find skills embedded in achievements and descriptions
+            Extract technical terms that appear in context
+            Identify soft skills explicitly mentioned
 
-            EXTRACTION STRATEGY:
-            - SCAN EVERY SECTION multiple times
-            - Look for skills in context (not just explicit lists)
-            - Extract technologies mentioned in work experience
-            - Find competencies described in achievements
-            - Include skills from project descriptions
-            - Be comprehensive but avoid random phrases
+            PASS 4 - VERIFICATION:
+            Ensure no technology or skill was missed
+            Remove duplicates
+            Normalize naming conventions
 
-            QUALITY CONTROL:
-            - Extract complete, meaningful skills only
-            - Avoid incomplete phrases like "where I can gain"
-            - Focus on actual competencies and technologies
-            - Ensure each skill is job-relevant
+            PROFESSIONAL INFORMATION:
+            - Calculate total years of experience from work history dates
+            - Extract job titles from each position
+            - Identify highest education level
+            - Note industries/sectors mentioned
 
             {format_instructions}""")
         ])
@@ -455,108 +443,241 @@ class ResumeParser:
         )
 
     def _fallback_skills_extraction(self, text: str) -> ResumeSkills:
-        """Comprehensive fallback method for skills extraction."""
+        """Comprehensive fallback method for skills extraction with regex and keyword matching."""
         text_lower = text.lower()
 
-        # Expanded technical skills list - comprehensive coverage
+        # MASSIVELY EXPANDED technical skills list - comprehensive coverage
         technical_keywords = [
             # Programming Languages
             'python', 'java', 'javascript', 'typescript', 'c++', 'c#', 'php', 'ruby',
             'swift', 'kotlin', 'r', 'matlab', 'scala', 'perl', 'bash', 'powershell',
-            'go', 'rust', 'dart', 'lua', 'haskell', 'clojure',
+            'go', 'golang', 'rust', 'dart', 'lua', 'haskell', 'clojure', 'elixir',
+            'objective-c', 'visual basic', 'vb.net', 'fortran', 'cobol', 'assembly',
 
-            # Web Technologies
-            'html', 'css', 'react', 'angular', 'vue', 'node.js', 'node', 'express',
-            'django', 'flask', 'spring', 'laravel', 'asp.net', 'jquery', 'bootstrap',
-            'tailwind css', 'sass', 'less', 'webpack', 'babel', 'vite', 'next.js',
-            'nuxt.js', 'svelte', 'graphql', 'apollo', 'redux', 'zustand',
+            # Web Frontend Technologies
+            'html', 'html5', 'css', 'css3', 'react', 'reactjs', 'react.js', 
+            'angular', 'angularjs', 'angular.js', 'vue', 'vuejs', 'vue.js',
+            'jquery', 'bootstrap', 'tailwind', 'tailwind css', 'tailwindcss',
+            'material-ui', 'mui', 'ant design', 'chakra ui', 'sass', 'scss', 'less',
+            'webpack', 'vite', 'parcel', 'rollup', 'babel', 'eslint', 'prettier',
+            'next.js', 'nextjs', 'nuxt.js', 'nuxtjs', 'gatsby', 'svelte', 'ember',
+            'backbone', 'knockout', 'preact', 'lit', 'stencil', 'alpine.js',
 
-            # Databases
-            'sql', 'mysql', 'postgresql', 'mongodb', 'redis', 'oracle', 'sql server',
-            'dynamodb', 'firebase', 'sqlite', 'elasticsearch', 'cassandra', 'neo4j',
+            # Backend Technologies  
+            'node.js', 'nodejs', 'node', 'express', 'express.js', 'expressjs',
+            'django', 'flask', 'fastapi', 'spring', 'spring boot', 'springboot',
+            'asp.net', 'asp.net core', 'laravel', 'symfony', 'codeigniter',
+            'ruby on rails', 'rails', 'sinatra', 'phoenix', 'elixir', 'nest.js',
+            'koa', 'hapi', 'adonis', 'meteor', 'sails', 'loopback', 'strapi',
 
-            # Cloud Platforms
-            'aws', 'azure', 'google cloud', 'gcp', 'heroku', 'digitalocean', 'vercel',
-            'netlify', 'cloudflare', 'linode', 'vultr', 'ibm cloud',
+            # Databases - SQL
+            'sql', 'mysql', 'postgresql', 'postgres', 'oracle', 'sql server',
+            'sqlite', 'mariadb', 'db2', 'teradata', 'amazon aurora', 'cockroachdb',
+            'snowflake', 'bigquery', 'redshift',
 
-            # DevOps & Tools
-            'docker', 'kubernetes', 'jenkins', 'terraform', 'ansible', 'git', 'github',
-            'gitlab', 'bitbucket', 'jira', 'confluence', 'slack', 'linux', 'ubuntu',
-            'centos', 'nginx', 'apache', 'postman', 'insomnia', 'swagger',
+            # Databases - NoSQL
+            'mongodb', 'mongo', 'redis', 'cassandra', 'dynamodb', 'couchbase',
+            'neo4j', 'arangodb', 'couchdb', 'riak', 'hbase', 'memcached',
+            'elasticsearch', 'solr', 'firebase', 'realm', 'influxdb', 'timescaledb',
 
-            # Data Science & AI
-            'tensorflow', 'pytorch', 'pandas', 'numpy', 'scikit-learn', 'jupyter',
-            'tableau', 'power bi', 'matplotlib', 'seaborn', 'spark', 'hadoop',
-            'kafka', 'airflow', 'mlflow', 'opencv',
+            # Cloud Platforms & Services
+            'aws', 'amazon web services', 'ec2', 's3', 'lambda', 'rds', 'dynamodb',
+            'cloudfront', 'route53', 'elastic beanstalk', 'ecs', 'eks', 'fargate',
+            'azure', 'microsoft azure', 'azure devops', 'azure functions',
+            'google cloud', 'gcp', 'google cloud platform', 'app engine',
+            'cloud functions', 'cloud run', 'heroku', 'digitalocean', 'vercel',
+            'netlify', 'cloudflare', 'linode', 'vultr', 'ibm cloud', 'oracle cloud',
+
+            # DevOps & CI/CD
+            'docker', 'kubernetes', 'k8s', 'jenkins', 'gitlab ci', 'github actions',
+            'travis ci', 'circle ci', 'circleci', 'terraform', 'ansible',
+            'chef', 'puppet', 'cloudformation', 'vagrant', 'packer',
+            'ci/cd', 'continuous integration', 'continuous deployment',
+
+            # Version Control
+            'git', 'github', 'gitlab', 'bitbucket', 'svn', 'subversion',
+            'mercurial', 'perforce', 'cvs',
+
+            # Web Servers & Proxies
+            'nginx', 'apache', 'apache tomcat', 'iis', 'lighttpd', 'caddy',
+            'traefik', 'haproxy', 'varnish',
+
+            # Data Science & AI/ML
+            'tensorflow', 'pytorch', 'keras', 'scikit-learn', 'pandas', 'numpy',
+            'scipy', 'matplotlib', 'seaborn', 'plotly', 'jupyter', 'jupyter notebook',
+            'apache spark', 'pyspark', 'hadoop', 'hive', 'pig', 'kafka',
+            'airflow', 'luigi', 'mlflow', 'kubeflow', 'dask', 'ray',
+            'opencv', 'pillow', 'nltk', 'spacy', 'transformers', 'hugging face',
+            'xgboost', 'lightgbm', 'catboost', 'statsmodels',
+            'machine learning', 'deep learning', 'neural networks', 'cnn', 'rnn',
+            'lstm', 'nlp', 'natural language processing', 'computer vision',
+            'reinforcement learning', 'supervised learning', 'unsupervised learning',
+
+            # Data Visualization & BI
+            'tableau', 'power bi', 'looker', 'qlik', 'quicksight', 'metabase',
+            'superset', 'grafana', 'kibana', 'd3.js', 'd3', 'chart.js',
 
             # Mobile Development
-            'react native', 'flutter', 'ios', 'android', 'xamarin', 'ionic', 'cordova',
+            'react native', 'flutter', 'ios', 'android', 'swift ui', 'xamarin',
+            'ionic', 'cordova', 'phonegap', 'android sdk', 'ios sdk',
+            'kotlin multiplatform', 'nativescript',
 
-            # Testing & Quality
-            'jest', 'mocha', 'cypress', 'selenium', 'playwright', 'testing', 'tdd',
-            'bdd', 'unit testing', 'integration testing',
+            # Testing & Quality Assurance
+            'jest', 'mocha', 'chai', 'jasmine', 'karma', 'cypress', 'selenium',
+            'playwright', 'puppeteer', 'testcafe', 'nightwatch', 'webdriverio',
+            'junit', 'testng', 'pytest', 'unittest', 'nose', 'cucumber',
+            'behave', 'robot framework', 'postman', 'insomnia', 'jmeter',
+            'loadrunner', 'gatling', 'tdd', 'bdd', 'unit testing',
+            'integration testing', 'e2e testing', 'test automation',
 
-            # Other Technologies
-            'agile', 'scrum', 'kanban', 'ci/cd', 'microservices', 'rest api', 'soap',
-            'oauth', 'jwt', 'blockchain', 'ethereum', 'solidity'
+            # API & Protocols
+            'rest', 'rest api', 'restful', 'graphql', 'grpc', 'soap',
+            'websocket', 'webhooks', 'oauth', 'oauth2', 'jwt', 'saml',
+            'openapi', 'swagger', 'json', 'xml', 'yaml', 'protobuf',
+
+            # Messaging & Streaming
+            'rabbitmq', 'activemq', 'zeromq', 'kafka', 'kinesis', 'pub/sub',
+            'mqtt', 'nats', 'pulsar', 'event-driven architecture', 'message queue',
+
+            # Methodologies & Practices
+            'agile', 'scrum', 'kanban', 'lean', 'waterfall', 'devops',
+            'microservices', 'monolithic', 'serverless', 'event-driven',
+            'domain-driven design', 'ddd', 'clean architecture', 'solid',
+            'design patterns', 'mvc', 'mvvm', 'rest architecture',
+
+            # Operating Systems
+            'linux', 'unix', 'ubuntu', 'debian', 'centos', 'red hat', 'fedora',
+            'windows', 'windows server', 'macos', 'ios', 'android',
+
+            # Blockchain & Web3
+            'blockchain', 'ethereum', 'solidity', 'smart contracts', 'web3',
+            'bitcoin', 'cryptocurrency', 'nft', 'defi', 'hyperledger',
+
+            # Security
+            'cybersecurity', 'infosec', 'penetration testing', 'owasp',
+            'ssl', 'tls', 'https', 'authentication', 'authorization',
+            'encryption', 'firewall', 'vpn', 'iam', 'oauth', 'sso',
+
+            # CMS & E-commerce
+            'wordpress', 'drupal', 'joomla', 'magento', 'shopify', 'woocommerce',
+            'contentful', 'strapi', 'ghost', 'sanity',
+
+            # Other Tools & Technologies
+            'jira', 'confluence', 'slack', 'trello', 'asana', 'notion',
+            'figma', 'sketch', 'adobe xd', 'photoshop', 'illustrator',
+            'vs code', 'visual studio', 'intellij', 'pycharm', 'eclipse',
+            'netbeans', 'sublime text', 'atom', 'vim', 'emacs',
+            'raspberry pi', 'arduino', 'iot', 'embedded systems',
         ]
 
-        # Comprehensive soft skills list
+        # EXPANDED soft skills list - more comprehensive
         soft_keywords = [
             # Leadership & Management
-            'leadership', 'management', 'team leadership', 'project management',
-            'strategic planning', 'decision making', 'resource management',
+            'leadership', 'team leadership', 'project leadership', 'strategic leadership',
+            'management', 'team management', 'project management', 'product management',
+            'people management', 'resource management', 'change management',
+            'strategic planning', 'decision making', 'delegation', 'supervision',
+            'executive leadership', 'servant leadership', 'transformational leadership',
 
             # Communication
-            'communication', 'presentation', 'public speaking', 'writing',
-            'negotiation', 'stakeholder management', 'client relations',
+            'communication', 'communication skills', 'verbal communication',
+            'written communication', 'presentation', 'presentation skills',
+            'public speaking', 'technical writing', 'documentation',
+            'stakeholder management', 'client communication', 'reporting',
+            'negotiation', 'persuasion', 'active listening', 'articulation',
+            'cross-cultural communication', 'interpersonal communication',
 
             # Teamwork & Collaboration
-            'teamwork', 'collaboration', 'team player', 'cross-functional',
-            'interpersonal skills', 'relationship building',
+            'teamwork', 'team collaboration', 'collaboration', 'team player',
+            'cross-functional', 'cross-functional collaboration',
+            'interpersonal skills', 'relationship building', 'networking',
+            'partnership', 'cooperative', 'consensus building',
+            'conflict resolution', 'mediation', 'remote collaboration',
 
-            # Problem Solving
-            'problem solving', 'analytical', 'critical thinking', 'troubleshooting',
-            'root cause analysis', 'solution oriented',
+            # Problem Solving & Analysis
+            'problem solving', 'problem-solving', 'analytical', 'analytical thinking',
+            'critical thinking', 'troubleshooting', 'debugging', 'root cause analysis',
+            'solution oriented', 'strategic thinking', 'systems thinking',
+            'logical thinking', 'research', 'data analysis', 'investigation',
+            'innovation', 'creative problem solving', 'decision making',
 
             # Organization & Time Management
-            'organization', 'time management', 'prioritization', 'multitasking',
-            'attention to detail', 'planning', 'scheduling',
+            'organization', 'organizational skills', 'time management',
+            'prioritization', 'multitasking', 'multi-tasking', 'planning',
+            'scheduling', 'attention to detail', 'detail-oriented',
+            'task management', 'workflow management', 'efficiency',
+            'productivity', 'process improvement', 'optimization',
 
-            # Learning & Adaptability
-            'adaptability', 'flexibility', 'learning agility', 'continuous learning',
-            'growth mindset', 'change management',
+            # Adaptability & Learning
+            'adaptability', 'flexibility', 'learning agility', 'fast learner',
+            'quick learner', 'continuous learning', 'self-learning',
+            'growth mindset', 'resilience', 'versatility', 'open-minded',
+            'change management', 'embracing change', 'proactive',
 
-            # Customer & Service
-            'customer service', 'client focus', 'user experience', 'empathy',
-            'conflict resolution', 'service orientation',
+            # Customer & Service Orientation
+            'customer service', 'client service', 'customer focus', 'client focus',
+            'user experience', 'ux', 'customer satisfaction', 'client relations',
+            'customer relations', 'empathy', 'patience', 'service orientation',
+            'customer support', 'technical support', 'help desk',
 
             # Creativity & Innovation
-            'creativity', 'innovation', 'design thinking', 'brainstorming',
-            'ideation', 'creative problem solving',
+            'creativity', 'creative', 'innovation', 'innovative',
+            'design thinking', 'brainstorming', 'ideation', 'imagination',
+            'artistic', 'original thinking', 'out-of-the-box thinking',
+            'creative problem solving', 'inventive',
 
-            # Work Ethic
-            'work ethic', 'reliability', 'accountability', 'initiative',
-            'self-motivation', 'discipline', 'commitment',
+            # Work Ethic & Personal Qualities
+            'work ethic', 'strong work ethic', 'reliability', 'reliable',
+            'accountability', 'responsible', 'initiative', 'self-starter',
+            'self-motivated', 'motivated', 'driven', 'discipline',
+            'commitment', 'dedicated', 'passionate', 'enthusiastic',
+            'professional', 'integrity', 'honesty', 'punctuality',
+            'dependable', 'hardworking', 'diligent', 'persistent',
 
             # Mentoring & Development
-            'mentoring', 'coaching', 'teaching', 'knowledge sharing',
-            'professional development', 'training'
+            'mentoring', 'mentorship', 'coaching', 'teaching', 'training',
+            'knowledge sharing', 'knowledge transfer', 'onboarding',
+            'professional development', 'talent development', 'guidance',
+            'instructing', 'educating', 'facilitating',
+
+            # Business & Strategy
+            'business acumen', 'strategic thinking', 'business strategy',
+            'market analysis', 'competitive analysis', 'financial analysis',
+            'budget management', 'cost optimization', 'roi analysis',
+            'stakeholder management', 'vendor management', 'procurement',
+
+            # Agile & Project Management
+            'agile', 'scrum', 'scrum master', 'kanban', 'sprint planning',
+            'backlog management', 'user stories', 'story pointing',
+            'retrospectives', 'stand-ups', 'product owner', 'pmp',
+            'risk management', 'quality assurance', 'delivery management',
         ]
 
         # Extract with appropriate matching strategies
         found_technical = []
         found_soft = []
 
+        # Use regex for better word boundary matching
         for skill in technical_keywords:
-            # Use word boundaries for technical skills to avoid partial matches
-            if re.search(r'\b' + re.escape(skill) + r'\b', text_lower):
-                found_technical.append(skill)
+            # Create pattern that handles variations
+            pattern = r'\b' + re.escape(skill).replace(r'\.', r'\.?') + r'\b'
+            if re.search(pattern, text_lower, re.IGNORECASE):
+                # Capitalize properly based on known patterns
+                if skill in ['aws', 'gcp', 'api', 'sql', 'html', 'css', 'php', 'ios', 'iot', 'jwt', 'rest', 'soap', 'xml', 'json', 'yaml', 'ci/cd', 'tdd', 'bdd', 'mvc', 'mvvm', 'nlp', 'ddd', 'sso', 'iam', 'ssl', 'tls', 'cnn', 'rnn', 'lstm', 'ux', 'ui', 'ai', 'ml', 'bi']:
+                    found_technical.append(skill.upper())
+                elif '.' in skill or skill.endswith('js'):
+                    found_technical.append(skill)  # Keep as-is for tech with dots or js suffix
+                else:
+                    found_technical.append(skill.title())
 
         for skill in soft_keywords:
             # More flexible matching for soft skills (allow within phrases)
             if skill in text_lower:
-                found_soft.append(skill)
+                found_soft.append(skill.title())
+
+        # Remove duplicates while preserving order
+        found_technical = list(dict.fromkeys(found_technical))
+        found_soft = list(dict.fromkeys(found_soft))
 
         # Extract additional professional information
         experience_years = self._estimate_experience_years(text)

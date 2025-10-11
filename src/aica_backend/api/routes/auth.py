@@ -7,7 +7,7 @@ from slowapi.util import get_remote_address
 from api.utils.auth import get_supabase_client, get_current_user, get_supabase_admin_client
 from database.models.user_models import UserCreate, UserLogin, TokenResponse, ResumeUploadResponse
 from database.user_db import UserDatabase
-from core.resume_parser import ResumeParser
+from core.resume import ResumeParser
 from database.job_db import JobDatabase
 from services.job_matching import JobMatchingService
 from datetime import datetime

@@ -7,7 +7,7 @@ from database.job_db import JobDatabase
 from database.models.user_models import UserSkill, UserJobMatch
 from database.models.job_models import Job
 from core.embedder import TextEmbedder
-from core.matcher import JobMatcher
+from core.matching import JobMatcher
 
 logger = logging.getLogger(__name__)
 
@@ -346,17 +346,19 @@ class JobMatchingService:
         user_skills: List[UserSkill], 
         job: Job
     ) -> JobMatchResult:
+        """Fast AI-powered job matching with comprehensive reasoning."""
         # Prepare job context
         job_context = self._prepare_job_context(job)
         
-        # Use our existing AI matcher for LLM-powered analysis with timeout
+        # Use our enhanced AI matcher for comprehensive analysis
         try:
             # Extract skill names from user skills
             user_skill_names = [skill.skill_name for skill in user_skills]
             job_skills = job_context['required_skills']
             
-            # Add timeout to prevent hanging
+            # Add timeout to prevent hanging (increased to 20s for comprehensive analysis)
             import asyncio
+            logger.info(f"🚀 Starting AI compatibility analysis for {job.title} at {job.company}...")
             ai_match_result = await asyncio.wait_for(
                 self.matcher.calculate_compatibility(
                     user_skills=user_skill_names,
@@ -364,31 +366,39 @@ class JobMatchingService:
                     job_title=job.title,
                     company=job.company
                 ),
-                timeout=5.0  # 5 second timeout for speed
+                timeout=20.0  # 20 second timeout for detailed AI reasoning
             )
+            logger.info(f"✅ AI compatibility analysis completed for {job.title}")
             
-            # Extract AI insights
+            # Extract comprehensive AI insights
             match_score = ai_match_result.get('compatibility_score', 0.0)
             reasoning = ai_match_result.get('ai_reasoning', 'AI analysis completed')
             matched_skills = ai_match_result.get('matched_skills', [])
+            partial_matches = ai_match_result.get('partial_matches', [])
             missing_skills = ai_match_result.get('missing_skills', [])
             skill_gaps = ai_match_result.get('skill_gap_analysis', {})
             
             # Calculate enhanced metrics
-            skill_coverage = self._calculate_skill_coverage(matched_skills, job_context['required_skills'])
-            confidence = self._determine_ai_confidence(match_score, skill_coverage, len(matched_skills))
+            skill_coverage = ai_match_result.get('skill_coverage', 0.0)
+            confidence = ai_match_result.get('confidence', 'low')
+            
+            # Combine matched and partial matches for display
+            all_matched = matched_skills + [f"{skill} (related)" for skill in partial_matches]
             
             return JobMatchResult(
                 job=job,
                 match_score=match_score,
-                matched_skills=matched_skills,
+                matched_skills=all_matched,
                 missing_critical_skills=missing_skills,
                 skill_coverage=skill_coverage,
                 confidence=confidence,
-                ai_reasoning=reasoning,
+                ai_reasoning=reasoning,  # Full comprehensive AI analysis
                 skill_gap_analysis=skill_gaps
             )
             
+        except asyncio.TimeoutError:
+            logger.warning(f"AI analysis timeout for job {job.id}, using fast fallback")
+            return await self._simple_calculate_job_match(user_skills, job)
         except Exception as e:
             logger.warning(f"AI analysis failed for job {job.id}: {e}, falling back to simple matching")
             return await self._simple_calculate_job_match(user_skills, job)

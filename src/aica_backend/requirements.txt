@@ -14,5 +14,6 @@ python-docx==1.1.2
 mammoth==1.8.0
 sentence-transformers==3.3.1
 faiss-cpu==1.9.0
+numpy==1.26.4
 streamlit==1.40.2
 slowapi==0.1.9

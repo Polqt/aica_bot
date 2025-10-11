@@ -3,15 +3,52 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, ArrowRight, Briefcase, Plus, Edit, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Briefcase,
+  Plus,
+  Edit,
+  Trash2,
+} from 'lucide-react';
 import { useResumeBuilder } from '@/hooks/useResumeBuilder';
 import { UserExperience, UserExperienceCreate } from '@/types/user';
 
+const EMPLOYMENT_TYPES = [
+  'Full-time',
+  'Part-time',
+  'Contract',
+  'Temporary',
+  'Internship',
+  'Freelance',
+];
+
 export default function ExperiencePage() {
   const router = useRouter();
-  const { experience, addExperience, updateExperience, deleteExperience, loadResumeData, loading, saving } = useResumeBuilder();
+  const {
+    experience,
+    addExperience,
+    updateExperience,
+    deleteExperience,
+    loadResumeData,
+    loading,
+    saving,
+  } = useResumeBuilder();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingExperience, setEditingExperience] = useState<UserExperience | null>(null);
+  const [editingExperience, setEditingExperience] =
+    useState<UserExperience | null>(null);
   const [formData, setFormData] = useState<UserExperienceCreate>({
     company_name: '',
     job_title: '',
@@ -62,21 +99,40 @@ export default function ExperiencePage() {
     resetForm();
   };
 
-  const handleInputChange = (field: keyof UserExperienceCreate, value: string | boolean) => {
+  const handleInputChange = (
+    field: keyof UserExperienceCreate,
+    value: string | boolean,
+  ) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const formatDateToISO = (dateString: string) => {
+    if (!dateString) return '';
+    // Add the first day of the month to make it a valid ISO date
+    return `${dateString}-01`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const formattedData = {
+      ...formData,
+      start_date: formatDateToISO(formData.start_date),
+      end_date: formData.is_current
+        ? undefined
+        : formData.end_date
+        ? formatDateToISO(formData.end_date)
+        : undefined,
+    };
+
     try {
       if (editingExperience) {
-        await updateExperience(editingExperience.id, formData);
+        await updateExperience(editingExperience.id, formattedData);
       } else {
-        await addExperience(formData);
+        await addExperience(formattedData);
       }
       handleCloseDialog();
-    } catch  {
+    } catch {
       // Error is handled in the hook
     }
   };
@@ -97,304 +153,256 @@ export default function ExperiencePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div>
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      className="p-8"
+      transition={{ duration: 0.4 }}
+      className="relative"
     >
-      {/* Header Section */}
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-violet-100 rounded-xl flex items-center justify-center mx-auto mb-6">
-          <Briefcase className="w-8 h-8 text-violet-600" />
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">
-          Work experience
-        </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Share your professional journey and accomplishments with our AI career assistant
-        </p>
-      </div>
-
-      {/* Content Section */}
-      <div className="space-y-6">
-        {/* Experience List */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold text-gray-900">
-              Your experience
-            </h3>
-            <button
-              onClick={() => handleOpenDialog()}
-              disabled={saving}
-              className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Add experience
-            </button>
+      <div className="p-8">
+        <div className="space-y-6 mb-8">
+          <div>
+            <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">
+              Work Experience
+            </h1>
+            <p className="text-gray-600 text-base mt-1">
+              Add your work history to showcase your professional journey.
+            </p>
           </div>
 
-          <AnimatePresence mode="popLayout">
-            {experience.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="text-center py-12 bg-gray-50 border border-gray-200 rounded-lg"
-              >
-                <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <Briefcase className="w-6 h-6 text-gray-500" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No experience added yet
-                </h3>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  Add your work experience to showcase your professional background
-                </p>
-              </motion.div>
-            ) : (
-              experience.map((exp, index) => (
+          <div className="h-[1px] bg-gray-200" />
+        </div>
+
+        <div className="max-w-3xl space-y-6">
+          <div className="space-y-4">
+            <AnimatePresence mode="popLayout">
+              {experience?.map(exp => (
                 <motion.div
                   key={exp.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm"
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="group p-4 bg-white border border-gray-200 hover:border-gray-300 rounded-lg transition-all"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                        {exp.job_title}
-                      </h4>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          <span>{exp.company_name}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span>
-                            {new Date(exp.start_date).getFullYear()} - {
-                              exp.is_current ? 'Present' :
-                              exp.end_date ? new Date(exp.end_date).getFullYear() :
-                              'Present'
-                            }
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                          <span>{exp.employment_type}</span>
-                        </div>
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1 p-2 rounded-md bg-blue-50 text-blue-600">
+                        <Briefcase className="w-4 h-4" />
                       </div>
-                      {exp.description && (
-                        <p className="text-gray-700 mt-3 leading-relaxed">
-                          {exp.description}
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          {exp.job_title}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-0.5">
+                          {exp.company_name} • {exp.employment_type}
                         </p>
-                      )}
+                        <p className="text-xs text-gray-500 mt-1">
+                          {exp.start_date} -{' '}
+                          {exp.is_current ? 'Present' : exp.end_date}
+                        </p>
+                        {exp.description && (
+                          <p className="text-sm text-gray-600 mt-2 whitespace-pre-line">
+                            {exp.description}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => handleOpenDialog(exp)}
-                        disabled={saving}
-                        className="p-2 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                        className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(exp.id)}
-                        disabled={saving}
-                        className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                        className="p-1 text-gray-500 hover:text-red-600 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                 </motion.div>
-              ))
-            )}
-          </AnimatePresence>
-        </div>
+              ))}
+            </AnimatePresence>
 
-        {/* Navigation */}
-        <div className="flex gap-4 pt-6">
-          <button
-            onClick={handleBack}
-            disabled={saving}
-            className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
-          <button
-            onClick={handleContinue}
-            disabled={saving}
-            className="flex-1 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            Continue
-            <ArrowRight className="w-4 h-4" />
-          </button>
+            <Button
+              onClick={() => handleOpenDialog()}
+              variant="neutral"
+              className="w-full h-16 border-dashed hover:border-gray-400 hover:bg-gray-50"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Experience
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between pt-6 border-t">
+            <Button onClick={handleBack} variant="neutral" className="h-10">
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back
+            </Button>
+            <Button
+              onClick={handleContinue}
+              disabled={!experience?.length || saving}
+              className="h-10"
+            >
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  Continue <ArrowRight className="w-4 h-4 ml-2" />
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Dialog */}
-      {isDialogOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white border border-gray-200 p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-lg">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {editingExperience ? 'Edit experience' : 'Add experience'}
-              </h2>
-              <p className="text-gray-600">
-                {editingExperience ? 'Update your work experience details' : 'Add your professional background'}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogTitle>
+            {editingExperience ? 'Edit Experience' : 'Add Experience'}
+          </DialogTitle>
+          <div className="space-y-6">
+            <div>
+              <p className="text-sm text-gray-600">
+                Fill in your work experience details below.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <label htmlFor="company_name" className="text-sm font-semibold text-gray-900">
-                    Company Name *
-                  </label>
-                  <input
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-1.5">
+                  <Label htmlFor="company_name">Company Name *</Label>
+                  <Input
                     id="company_name"
-                    type="text"
-                    placeholder="Tech Corp Inc."
                     value={formData.company_name}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('company_name', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('company_name', e.target.value)
+                    }
+                    placeholder="Google"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <label htmlFor="job_title" className="text-sm font-semibold text-gray-900">
-                    Job Title *
-                  </label>
-                  <input
+                <div className="col-span-2 md:col-span-1 space-y-1.5">
+                  <Label htmlFor="job_title">Job Title *</Label>
+                  <Input
                     id="job_title"
-                    type="text"
-                    placeholder="Software Engineer"
                     value={formData.job_title}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('job_title', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('job_title', e.target.value)
+                    }
+                    placeholder="Software Engineer"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-3">
-                <label htmlFor="employment_type" className="text-sm font-semibold text-gray-900">
-                  Employment Type *
-                </label>
-                <select
-                  id="employment_type"
-                  value={formData.employment_type}
-                  onChange={(e) => handleInputChange('employment_type', e.target.value)}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                >
-                  <option value="">Select employment type</option>
-                  <option value="Full-time">Full-time</option>
-                  <option value="Part-time">Part-time</option>
-                  <option value="Contract">Contract</option>
-                  <option value="Freelance">Freelance</option>
-                  <option value="Internship">Internship</option>
-                  <option value="Apprenticeship">Apprenticeship</option>
-                </select>
-              </div>
+                <div className="col-span-2 md:col-span-1 space-y-1.5">
+                  <Label htmlFor="employment_type">Employment Type *</Label>
+                  <Select
+                    value={formData.employment_type}
+                    onValueChange={value =>
+                      handleInputChange('employment_type', value)
+                    }
+                  >
+                    <SelectTrigger id="employment_type" className="h-10">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EMPLOYMENT_TYPES.map(type => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <label htmlFor="start_date" className="text-sm font-semibold text-gray-900">
-                    Start Date *
-                  </label>
-                  <input
+                <div className="space-y-1.5">
+                  <Label htmlFor="start_date">Start Date *</Label>
+                  <Input
                     id="start_date"
-                    type="date"
+                    type="month"
                     value={formData.start_date}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('start_date', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('start_date', e.target.value)
+                    }
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <label htmlFor="end_date" className="text-sm font-semibold text-gray-900">
-                    End Date
-                  </label>
-                  <input
+                <div className="space-y-1.5">
+                  <Label htmlFor="end_date">End Date</Label>
+                  <Input
                     id="end_date"
-                    type="date"
+                    type="month"
                     value={formData.end_date}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('end_date', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('end_date', e.target.value)
+                    }
                     disabled={formData.is_current}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 disabled:opacity-50"
+                  />
+                </div>
+
+                <div className="col-span-2 flex items-center">
+                  <input
+                    type="checkbox"
+                    id="is_current"
+                    checked={formData.is_current}
+                    onChange={e =>
+                      handleInputChange('is_current', e.target.checked)
+                    }
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+                  />
+                  <label
+                    htmlFor="is_current"
+                    className="ml-2 text-sm text-gray-700"
+                  >
+                    I currently work here
+                  </label>
+                </div>
+
+                <div className="col-span-2 space-y-1.5">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={e =>
+                      handleInputChange('description', e.target.value)
+                    }
+                    placeholder="Describe your responsibilities and achievements..."
+                    className="h-32 resize-none"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="is_current"
-                  checked={formData.is_current}
-                  onChange={(e) => handleInputChange('is_current', e.target.checked)}
-                  className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
-                />
-                <label htmlFor="is_current" className="text-sm font-medium text-gray-900">
-                  I am currently working here
-                </label>
-              </div>
-
-              <div className="space-y-3">
-                <label htmlFor="description" className="text-sm font-semibold text-gray-900">
-                  Job Description
-                </label>
-                <textarea
-                  id="description"
-                  placeholder="Describe your responsibilities, achievements, and key contributions..."
-                  value={formData.description || ''}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('description', e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 resize-none"
-                />
-              </div>
-
-              <div className="flex gap-4 pt-6">
-                <button
+              <div className="flex gap-3 justify-end pt-4">
+                <Button
                   type="button"
                   onClick={handleCloseDialog}
-                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded-lg transition-colors"
+                  variant="neutral"
                 >
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {saving ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Saving...
-                    </>
-                  ) : (
-                    editingExperience ? 'Update' : 'Add'
-                  )}
-                </button>
+                </Button>
+                <Button type="submit">
+                  {editingExperience ? 'Update' : 'Add'} Experience
+                </Button>
               </div>
             </form>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

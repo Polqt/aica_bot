@@ -2,7 +2,6 @@
 
 import { usePathname } from 'next/navigation';
 import { User, GraduationCap, Briefcase, Zap } from 'lucide-react';
-import Footer from '@/components/Footer';
 
 const steps = [
   { path: '/profile', label: 'Profile', icon: User },
@@ -20,62 +19,72 @@ export default function OnboardingLayout({
   const currentStepIndex = steps.findIndex(step => step.path === pathname);
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-between bg-grid-pattern">
-      <div className="w-full max-w-5xl px-6 py-10">
-        <div className="bg-white/70 backdrop-blur-sm border border-gray-200/60 rounded-2xl shadow-sm mb-10 p-8">
+    <div className="relative min-h-screen flex flex-col items-center">
+      <div className="relative z-10 w-full max-w-4xl px-6 py-12">
+        <div className="mb-12">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">
+            <div className="space-y-1">
+              <h1 className="text-[32px] font-bold text-gray-900 tracking-tight">
                 Complete Your Profile
               </h1>
-              <p className="text-sm text-gray-600 font-medium mt-1">
+              <p className="text-base text-gray-600">
                 Step {currentStepIndex + 1} of {steps.length}
               </p>
             </div>
 
-            <div className="px-4 py-2 bg-violet-100 text-violet-700 font-semibold text-sm rounded-lg">
+            <div className="px-3 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">
               {Math.round(((currentStepIndex + 1) / steps.length) * 100)}%
               Complete
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8">
+          <div className="mt-10 flex justify-center items-center gap-2">
             {steps.map((step, index) => {
               const Icon = step.icon;
               const isCompleted = index < currentStepIndex;
               const isCurrent = index === currentStepIndex;
 
               return (
-                <div key={step.path} className="text-center">
-                  <div
-                    className={`w-14 h-14 mx-auto rounded-xl flex items-center justify-center transition-all duration-300 ${
-                      isCompleted
-                        ? 'bg-green-100 text-green-700 border border-green-300'
-                        : isCurrent
-                        ? 'bg-violet-600 text-white'
-                        : 'bg-gray-100 text-gray-400'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
+                <div key={step.path} className="flex items-center">
+                  {index > 0 && (
+                    <div
+                      className={`h-[2px] w-16 mx-2 ${
+                        isCompleted ? 'bg-blue-600' : 'bg-gray-200'
+                      }`}
+                    />
+                  )}
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                        isCompleted
+                          ? 'bg-blue-600 text-white'
+                          : isCurrent
+                          ? 'bg-white border-2 border-blue-600 text-blue-600'
+                          : 'bg-white border border-gray-200 text-gray-400'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <span
+                      className={`mt-2 text-xs font-medium ${
+                        isCompleted || isCurrent
+                          ? 'text-gray-900'
+                          : 'text-gray-500'
+                      }`}
+                    >
+                      {step.label}
+                    </span>
                   </div>
-                  <h3
-                    className={`mt-3 text-sm font-semibold ${
-                      isCompleted || isCurrent
-                        ? 'text-gray-900'
-                        : 'text-gray-500'
-                    }`}
-                  >
-                    {step.label}
-                  </h3>
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div className="relative z-10">{children}</div>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+          {children}
+        </div>
       </div>
-      <Footer />
     </div>
   );
 }

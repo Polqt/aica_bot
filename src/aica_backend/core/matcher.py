@@ -271,100 +271,198 @@ class JobMatcher:
         return f"Job content for {job_id} - implement database fetch here"
     
     async def calculate_compatibility(self, user_skills: List[str], job_skills: List[str], job_title: str, company: str) -> Dict:
+        """Calculate detailed compatibility between user skills and job requirements with comprehensive AI reasoning."""
         try:
             # Create detailed prompts for AI analysis
-            user_skills_text = ", ".join(user_skills)
-            job_skills_text = ", ".join(job_skills)
+            user_skills_text = ", ".join(user_skills) if user_skills else "No skills listed"
+            job_skills_text = ", ".join(job_skills) if job_skills else "No specific skills listed"
             
-            analysis_prompt = f"""
-            As an expert career counselor and hiring manager, analyze the compatibility between a candidate's skills and job requirements.
+            analysis_prompt = f"""As an elite technical recruiter and career advisor, provide a comprehensive job fit analysis.
 
-            CANDIDATE'S ACTUAL SKILLS: {user_skills_text}
+            CANDIDATE'S SKILLS: {user_skills_text}
             JOB REQUIREMENTS: {job_skills_text}
             POSITION: {job_title} at {company}
 
-            CRITICAL INSTRUCTION: Only consider skills that are EXPLICITLY LISTED in the candidate's skills above. Do NOT suggest or imply skills that are not in their profile, even if they are related or equivalent.
+            CRITICAL ANALYSIS RULES:
+            1. ACCURACY: Only match skills the candidate ACTUALLY has - no assumptions
+            2. HONESTY: Be transparent about gaps and mismatches
+            3. FAIRNESS: Consider related skills and transferable competencies
+            4. ACTIONABILITY: Provide specific, practical guidance for improvement
 
-            ANALYSIS REQUIREMENTS:
-            1. Identify ONLY the skills from the candidate's profile that directly match job requirements
-            2. Calculate compatibility score (0-100) based ONLY on skills the candidate actually has
-            3. List missing skills that are required but not in the candidate's profile
-            4. Assess skill gaps and their impact on job performance
-            5. Provide specific, actionable recommendations for improvement
+            ANALYSIS STRUCTURE:
 
-            IMPORTANT CONSTRAINTS:
-            - Matched skills must be EXACTLY from the candidate's listed skills
-            - Do not assume or suggest unlisted skills (e.g., if candidate has "React" but not "JavaScript", do not list "JavaScript" as matched)
-            - Be honest about skill gaps without making assumptions
-            - Focus on practical career development advice
+            **SKILLS ALIGNMENT** (200-300 words)
+            Evaluate how the candidate's actual skills match the job requirements:
+            
+            ✓ STRONG MATCHES: List specific skills that directly align
+            • Explain WHY each match is valuable for this role
+            • Note if skills are core vs. complementary
+            
+            ⚠️ PARTIAL MATCHES: Identify related but not exact skills
+            • Example: Has "React" but needs "Vue.js" - related frontend frameworks
+            • Explain transferability and learning curve
+            
+            ✗ MISSING CRITICAL SKILLS: Be honest about gaps
+            • List key requirements the candidate doesn't have
+            • Prioritize by importance (must-have vs. nice-to-have)
+            • Estimate learning effort for each gap
 
-            FORMATTING REQUIREMENTS:
-            - Use clear, professional language that anyone can understand
-            - Structure the response with clear sections (Strengths, Gaps, Recommendations)
-            - Avoid technical jargon unless explaining it
-            - Be encouraging and constructive in feedback
-            - Keep the analysis concise but comprehensive - aim for 150-250 words
+            **MATCH ASSESSMENT** (100-150 words)
+            • Overall compatibility score reasoning
+            • Confidence level in the match (High/Medium/Low)
+            • Role fit assessment (Excellent/Good/Fair/Poor)
+            • Readiness level (Ready Now/Nearly Ready/Needs Development)
 
-            Example structure:
-            "Your profile shows strong alignment in [matched skills]. However, this role requires [missing skills] that you haven't listed. Consider [specific recommendations] to improve your fit."
-            """
+            **SKILL GAP ANALYSIS** (150-200 words)
+            Break down missing skills into categories:
+            • CRITICAL GAPS: Must-have skills completely missing
+            • TRAINABLE GAPS: Skills that can be learned relatively quickly
+            • ADVANCED GAPS: Complex skills requiring significant time investment
+            
+            For each gap, provide:
+            • Difficulty level (Easy/Moderate/Hard)
+            • Typical learning timeline (days/weeks/months)
+            • Recommended resources (online courses, books, practice projects)
 
-            # Get AI response
+            **CAREER RECOMMENDATIONS** (150-200 words)
+            Provide actionable next steps:
+            
+            IF HIGH MATCH (80%+):
+            • Emphasize application worthiness
+            • Suggest how to highlight relevant experience
+            • Recommend interview preparation focus areas
+            
+            IF MEDIUM MATCH (50-80%):
+            • Identify quick wins to improve candidacy
+            • Suggest alternative similar positions
+            • Provide 30-60-90 day skill development plan
+            
+            IF LOW MATCH (<50%):
+            • Be honest about fit challenges
+            • Suggest better-matched alternative roles
+            • Provide comprehensive upskilling roadmap
+            • Recommend intermediate stepping-stone positions
+
+            **STANDOUT STRENGTHS** (50-100 words)
+            Highlight candidate's unique value propositions:
+            • Rare or highly valuable skills they possess
+            • Combinations of skills that create unique expertise
+            • Competitive advantages over typical candidates
+
+            **FINAL VERDICT** (50-100 words)
+            Summary recommendation:
+            • Should they apply? (Strongly Yes/Yes/Maybe/Not Yet)
+            • Expected interview success likelihood
+            • Timeframe to become fully qualified (if not already)
+            • One key action item to improve match
+
+            TONE & STYLE:
+            - Professional but encouraging
+            - Honest without being discouraging
+            - Specific and actionable
+            - Balanced (acknowledge both strengths and gaps)
+            - Use clear headings and bullet points
+            - Avoid jargon unless explaining it
+            - Target total length: 750-1000 words
+            
+            Focus on being genuinely helpful for the candidate's career development."""
+
+            # Get comprehensive AI response
             response = await self.llm.ainvoke(analysis_prompt)
-            ai_analysis = response.content
+            ai_reasoning = response.content
 
-            # Calculate basic metrics - STRICT matching only
+            # Calculate precise metrics - STRICT matching only
             matched_skills = []
             missing_skills = []
+            partial_matches = []
 
             # Convert user skills to lowercase for comparison
-            user_skills_lower = [skill.lower().strip() for skill in user_skills]
+            user_skills_lower = {skill.lower().strip(): skill for skill in user_skills}
+            job_skills_original = {skill: skill for skill in job_skills}
 
             for job_skill in job_skills:
                 job_skill_lower = job_skill.lower().strip()
                 skill_matched = False
+                partial_match = False
 
-                # Only match if the job skill is directly represented in user's skills
-                for user_skill_lower in user_skills_lower:
-                    if (user_skill_lower == job_skill_lower or  # Exact match
-                        user_skill_lower in job_skill_lower or  # User skill is substring of job skill
-                        job_skill_lower in user_skill_lower):   # Job skill is substring of user skill
-                        # But only add the ORIGINAL job skill name, not variations
-                        matched_skills.append(job_skill)  # Keep original job skill name
+                # Check for exact or substring matches
+                for user_skill_lower, user_skill_original in user_skills_lower.items():
+                    # Exact match
+                    if user_skill_lower == job_skill_lower:
+                        matched_skills.append(job_skill)
                         skill_matched = True
                         break
+                    # Substring match (user has broader or narrower skill)
+                    elif user_skill_lower in job_skill_lower or job_skill_lower in user_skill_lower:
+                        matched_skills.append(job_skill)
+                        skill_matched = True
+                        break
+                    # Partial/related match using skill mappings
+                    elif self._check_skill_relationship(user_skill_lower, job_skill_lower):
+                        partial_matches.append(job_skill)
+                        partial_match = True
+                        # Don't break - might find exact match
 
-                if not skill_matched:
+                if not skill_matched and not partial_match:
                     missing_skills.append(job_skill)
 
-            # Calculate scores
-            skill_coverage = len(matched_skills) / len(job_skills) if job_skills else 0
-            compatibility_score = min(skill_coverage * 100, 95)  # Cap at 95% for realistic scoring
+            # Calculate comprehensive scores
+            total_required = len(job_skills) if job_skills else 1
+            direct_matches = len(matched_skills)
+            related_matches = len(partial_matches)
+            
+            # Skill coverage: direct matches / total required
+            skill_coverage = direct_matches / total_required
+            
+            # Compatibility score: weighted combination
+            # Direct matches contribute 100%, partial matches contribute 50%
+            weighted_matches = direct_matches + (related_matches * 0.5)
+            compatibility_score = min(weighted_matches / total_required, 0.98)  # Cap at 98% for realism
             
             # Determine confidence level
-            if skill_coverage >= 0.8:
+            if compatibility_score >= 0.8 and skill_coverage >= 0.7:
                 confidence = "high"
-            elif skill_coverage >= 0.5:
+            elif compatibility_score >= 0.55 and skill_coverage >= 0.4:
                 confidence = "medium"
             else:
                 confidence = "low"
 
+            # Categorize missing skills by criticality
+            critical_missing = missing_skills[:3]  # Top 3 most important
+            trainable_missing = missing_skills[3:6] if len(missing_skills) > 3 else []
+            advanced_missing = missing_skills[6:] if len(missing_skills) > 6 else []
+
             return {
-                "compatibility_score": compatibility_score / 100,  # Normalize to 0-1
+                "compatibility_score": compatibility_score,
                 "confidence": confidence,
                 "skill_coverage": skill_coverage,
                 "matched_skills": matched_skills,
+                "partial_matches": partial_matches,
                 "missing_skills": missing_skills,
-                "ai_reasoning": ai_analysis,
+                "ai_reasoning": ai_reasoning,
                 "skill_gap_analysis": {
-                    "critical_gaps": missing_skills[:3],  # Top 3 missing skills
-                    "trainable_skills": missing_skills[3:],  # Other missing skills
-                    "strength_areas": matched_skills[:5]  # Top 5 matched skills
+                    "critical_gaps": critical_missing,
+                    "trainable_skills": trainable_missing,
+                    "advanced_skills": advanced_missing,
+                    "strength_areas": matched_skills[:5],  # Top 5 matched skills
+                    "total_gaps": len(missing_skills),
+                    "gap_severity": "high" if len(critical_missing) > 2 else "medium" if len(critical_missing) > 0 else "low"
+                },
+                "match_metrics": {
+                    "direct_matches": direct_matches,
+                    "related_matches": related_matches,
+                    "total_required": total_required,
+                    "match_percentage": round(compatibility_score * 100, 1)
                 }
             }
 
         except Exception as e:
-            matched_count = len([skill for skill in user_skills if any(self._skills_match(skill.lower(), job_skill.lower()) for job_skill in job_skills)])
+            logger.error(f"AI compatibility calculation failed: {str(e)}")
+            # Fallback to basic calculation
+            matched_count = len([skill for skill in user_skills if any(
+                self._basic_skill_match(skill.lower(), job_skill.lower()) 
+                for job_skill in job_skills
+            )])
             basic_score = matched_count / len(job_skills) if job_skills else 0
             
             return {
@@ -372,14 +470,87 @@ class JobMatcher:
                 "confidence": "low",
                 "skill_coverage": basic_score,
                 "matched_skills": [],
+                "partial_matches": [],
                 "missing_skills": job_skills,
-                "ai_reasoning": f"Basic calculation fallback due to error: {str(e)}",
+                "ai_reasoning": f"Basic calculation used due to error. Match score: {round(basic_score * 100, 1)}%. Please review job requirements and your skills carefully.",
                 "skill_gap_analysis": {
-                    "critical_gaps": job_skills,
-                    "trainable_skills": [],
-                    "strength_areas": []
+                    "critical_gaps": job_skills[:3],
+                    "trainable_skills": job_skills[3:6] if len(job_skills) > 3 else [],
+                    "advanced_skills": [],
+                    "strength_areas": [],
+                    "total_gaps": len(job_skills),
+                    "gap_severity": "unknown"
+                },
+                "match_metrics": {
+                    "direct_matches": matched_count,
+                    "related_matches": 0,
+                    "total_required": len(job_skills),
+                    "match_percentage": round(basic_score * 100, 1)
                 }
             }
+
+    def _check_skill_relationship(self, user_skill: str, job_skill: str) -> bool:
+        """Check if two skills are related through common mappings."""
+        skill_relationships = {
+            # Frontend frameworks
+            'react': ['reactjs', 'react.js', 'react native'],
+            'angular': ['angularjs', 'angular.js'],
+            'vue': ['vuejs', 'vue.js', 'nuxt', 'nuxtjs'],
+            
+            # Backend frameworks
+            'node': ['nodejs', 'node.js', 'express', 'expressjs', 'nest', 'nestjs'],
+            'django': ['python', 'drf', 'django rest framework'],
+            'flask': ['python'],
+            'spring': ['spring boot', 'java', 'springboot'],
+            
+            # Databases
+            'sql': ['mysql', 'postgresql', 'postgres', 'mssql', 'sql server', 'oracle'],
+            'nosql': ['mongodb', 'cassandra', 'couchdb', 'dynamodb'],
+            'mongodb': ['mongo', 'nosql'],
+            'postgresql': ['postgres', 'sql'],
+            
+            # Cloud
+            'aws': ['amazon web services', 'ec2', 's3', 'lambda', 'cloud'],
+            'azure': ['microsoft azure', 'azure devops', 'cloud'],
+            'gcp': ['google cloud', 'google cloud platform', 'cloud'],
+            
+            # Languages
+            'javascript': ['js', 'typescript', 'ts', 'node', 'react', 'angular', 'vue'],
+            'typescript': ['ts', 'javascript', 'js'],
+            'python': ['django', 'flask', 'fastapi', 'pandas'],
+            
+            # DevOps
+            'docker': ['containerization', 'kubernetes', 'k8s'],
+            'kubernetes': ['k8s', 'docker', 'containerization'],
+            'ci/cd': ['jenkins', 'gitlab ci', 'github actions', 'travis'],
+            
+            # Testing
+            'testing': ['jest', 'mocha', 'pytest', 'junit', 'tdd', 'bdd'],
+            'jest': ['testing', 'unit testing', 'react testing'],
+            
+            # Mobile
+            'ios': ['swift', 'objective-c', 'xcode', 'mobile'],
+            'android': ['kotlin', 'java', 'android studio', 'mobile'],
+            'mobile': ['ios', 'android', 'react native', 'flutter'],
+        }
+        
+        # Check direct relationships
+        for key, related_skills in skill_relationships.items():
+            if key in user_skill and job_skill in related_skills:
+                return True
+            if key in job_skill and user_skill in related_skills:
+                return True
+            # Check if both are in the same relationship group
+            if user_skill in related_skills and job_skill in related_skills:
+                return True
+                
+        return False
+
+    def _basic_skill_match(self, user_skill: str, job_skill: str) -> bool:
+        """Basic skill matching for fallback."""
+        return (user_skill == job_skill or 
+                user_skill in job_skill or 
+                job_skill in user_skill)
 
     def _skills_match(self, user_skill: str, job_skill: str) -> bool:
         user_skill = user_skill.lower().strip()

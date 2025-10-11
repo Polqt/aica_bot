@@ -67,7 +67,10 @@ export default function SignupPage() {
         {/* Form */}
         <form onSubmit={handleSignup} className="space-y-4 text-left">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+            <Label
+              htmlFor="email"
+              className="text-sm font-medium text-gray-700"
+            >
               Email
             </Label>
             <Input
@@ -82,12 +85,16 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+            <Label
+              htmlFor="password"
+              className="text-sm font-medium text-gray-700"
+            >
               Password
             </Label>
             <Input
               id="password"
               type="password"
+              autoComplete="new-password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="Enter your password..."
@@ -97,12 +104,16 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+            <Label
+              htmlFor="confirmPassword"
+              className="text-sm font-medium text-gray-700"
+            >
               Confirm Password
             </Label>
             <Input
               id="confirmPassword"
               type="password"
+              autoComplete="new-password"
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
               placeholder="Re-enter your password..."

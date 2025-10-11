@@ -8,16 +8,21 @@ export default function Footer() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center">
-              <Image 
-                src={"/NYXARCANALOGO_TRANSPARENT2-02.png"}
-                alt='Nyx Arcana Studios Logo'
+              <Image
+                src={'/NYXARCANALOGO_TRANSPARENT2-02.png'}
+                alt="Nyx Arcana Studios Logo"
                 width={50}
-                height={75}
+                height={50}
+                style={{ width: 'auto', height: '50px' }}
               />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">Nyx Arcana Studios</p>
-              <p className="text-xs text-gray-500">Building the future of career matching</p>
+              <p className="text-sm font-semibold text-gray-900">
+                Nyx Arcana Studios
+              </p>
+              <p className="text-xs text-gray-500">
+                Building the future of career matching
+              </p>
             </div>
           </div>
 

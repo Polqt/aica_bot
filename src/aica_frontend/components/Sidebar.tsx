@@ -1,18 +1,5 @@
 'use client';
 
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarInset,
-  SidebarProvider,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarRail,
-} from '@/components/ui/sidebar';
 import Link from 'next/link';
 import {
   Home,
@@ -23,7 +10,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import Footer from '@/components/Footer';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarRail } from './ui/sidebar';
 
 function AppSidebar() {
   const { logout } = useAuth();
@@ -121,7 +108,6 @@ export default function SidebarLayout({
       <AppSidebar />
       <SidebarInset>
         <main className="flex flex-col gap-6 p-6">{children}</main>
-        <Footer />
       </SidebarInset>
     </SidebarProvider>
   );
