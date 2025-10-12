@@ -63,6 +63,13 @@ INSTRUCTIONS:
 
 GOAL: Extract a COMPREHENSIVE list - aim for 15+ technical skills and 8+ soft skills minimum.
 
+⚠️ CRITICAL OUTPUT FORMAT:
+- Return ONLY valid JSON
+- NO explanatory text before or after the JSON
+- NO markdown code blocks
+- NO comments or descriptions
+- Just the raw JSON object matching the schema
+
 {format_instructions}""")
     ])
 
@@ -102,6 +109,13 @@ EXTRACTION REQUIREMENTS:
 - LINKEDIN: Find LinkedIn profile URL if present
 
 Look carefully at the beginning of the resume for the name, and scan all sections for contact information.
+
+⚠️ CRITICAL OUTPUT FORMAT:
+- Return ONLY valid JSON
+- NO explanatory text before or after the JSON
+- NO markdown code blocks
+- NO comments or descriptions
+- Just the raw JSON object matching the schema
 
 {format_instructions}""")
     ])

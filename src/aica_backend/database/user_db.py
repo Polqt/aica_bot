@@ -324,8 +324,10 @@ class UserDatabase:
                     match_data["missing_critical_skills"] = []
                     matches.append(UserJobMatch(**match_data))
 
+            logger.info(f"Successfully fetched {len(matches)} job matches for user {user_id}")
             return matches
         except Exception as e:
+            logger.error(f"Error fetching job matches for user {user_id}: {str(e)}")
             return []
 
     def get_user_stats(self, user_id: str) -> Dict[str, Any]:

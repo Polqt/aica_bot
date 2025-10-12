@@ -1,4 +1,6 @@
 import os
+import re
+import json
 import asyncio
 import logging
 from typing import Optional, Tuple, List, Dict
@@ -24,6 +26,27 @@ class ResumeParser:
         self.llm = self._create_llm_client()
         self.skills_parser = PydanticOutputParser(pydantic_object=ResumeSkills)
         self.info_parser = PydanticOutputParser(pydantic_object=PersonalInfo)
+    
+    @staticmethod
+    def _extract_json_from_text(text: str) -> str:
+        """
+        Extract JSON from text that might contain explanatory text or markdown.
+        Handles cases where LLM adds text before/after JSON.
+        """
+        # Try to find JSON object in the text
+        # Look for patterns like { ... } that span multiple lines
+        json_match = re.search(r'\{[\s\S]*\}', text)
+        if json_match:
+            potential_json = json_match.group()
+            try:
+                # Validate it's actual JSON
+                json.loads(potential_json)
+                return potential_json
+            except json.JSONDecodeError:
+                pass
+        
+        # If no valid JSON found, return original text
+        return text
     
     def _create_llm_client(self) -> Optional[ChatAnthropic]:
         try:
@@ -102,7 +125,10 @@ class ResumeParser:
                 format_instructions=self.info_parser.get_format_instructions()
             )
             response = await self.llm.ainvoke(prompt)
-            llm_result = self.info_parser.parse(response.content)
+            
+            # Extract JSON from response (handles cases with extra text)
+            clean_json = self._extract_json_from_text(response.content)
+            llm_result = self.info_parser.parse(clean_json)
             
             # If LLM didn't extract a name, try fallback
             if not llm_result.full_name or len(llm_result.full_name.strip()) < 2:
@@ -131,7 +157,10 @@ class ResumeParser:
                 format_instructions=self.skills_parser.get_format_instructions()
             )
             response = await self.llm.ainvoke(prompt)
-            parsed_skills = self.skills_parser.parse(response.content)
+            
+            # Extract JSON from response (handles cases with extra text)
+            clean_json = self._extract_json_from_text(response.content)
+            parsed_skills = self.skills_parser.parse(clean_json)
             
             # Validate, clean, and normalize skills
             validated_skills = SkillNormalizer.validate_skills(parsed_skills)

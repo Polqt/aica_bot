@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, Check, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useResumeBuilder } from '@/hooks/useResumeBuilder';
+import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Command,
@@ -22,6 +23,11 @@ export default function SkillsPage() {
   const router = useRouter();
   const { skills, addSkill, deleteSkill, loadResumeData, loading, saving } =
     useResumeBuilder();
+  const {
+    status: completionStatus,
+    matchesFound,
+    completeProfileAndMatch,
+  } = useProfileCompletion();
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [showCustomSkillForm, setShowCustomSkillForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,8 +76,7 @@ export default function SkillsPage() {
   };
 
   const handleContinue = async () => {
-    toast.success('Profile setup completed! Redirecting to dashboard...');
-    router.push('/dashboard');
+    await completeProfileAndMatch();
   };
 
   const handleBack = () => router.push('/experience');
@@ -243,13 +248,31 @@ export default function SkillsPage() {
         </Button>
         <Button
           onClick={handleContinue}
-          disabled={!skills.length || saving}
+          disabled={
+            !skills.length ||
+            saving ||
+            completionStatus === 'generating' ||
+            completionStatus === 'matching'
+          }
           size="sm"
         >
           {saving ? (
             <>
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
               Saving...
+            </>
+          ) : completionStatus === 'generating' ||
+            completionStatus === 'matching' ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+              {completionStatus === 'generating'
+                ? 'Processing...'
+                : `Finding Jobs...`}
+            </>
+          ) : completionStatus === 'completed' ? (
+            <>
+              <Check className="w-4 h-4 mr-2" />
+              {matchesFound} Matches Found!
             </>
           ) : (
             <>

@@ -6,7 +6,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import {
   ArrowLeft,
   ArrowRight,
@@ -241,16 +246,13 @@ export default function EducationPage() {
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
+          <DialogTitle>
+            {editingEducation ? 'Edit Education' : 'Add Education'}
+          </DialogTitle>
+          <DialogDescription>
+            Fill in your educational background details below.
+          </DialogDescription>
           <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                {editingEducation ? 'Edit Education' : 'Add Education'}
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Fill in your educational background details below.
-              </p>
-            </div>
-
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="institution_name">Institution Name *</Label>

@@ -1,5 +1,4 @@
 import traceback
-import asyncio
 import logging
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, BackgroundTasks, Request
@@ -465,6 +464,7 @@ async def get_processing_status(current_user: dict = Depends(get_current_user)):
                 matches = job_db.get_user_matches(current_user["id"])
                 match_count = len(matches) if matches else 0
             except Exception as match_error:
+                logger.warning(f"Error getting matches for user {current_user['id']}: {match_error}")
                 match_count = 0
 
             return {
@@ -502,7 +502,13 @@ async def get_processing_status(current_user: dict = Depends(get_current_user)):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve processing status: {str(e)}")
+        logger.error(f"Error in processing status for user {current_user.get('id', 'unknown')}: {str(e)}", exc_info=True)
+        # Return a safe fallback response instead of raising 500 error
+        return {
+            "status": "error",
+            "message": "Unable to retrieve processing status. Please try again.",
+            "step": "error"
+        }
 
 
 @router.post("/generate-matches")
