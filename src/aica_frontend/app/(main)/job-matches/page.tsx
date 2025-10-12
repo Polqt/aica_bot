@@ -3,28 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Search,
-  MapPin,
-  Building,
-  ExternalLink,
-  RefreshCw,
-  Zap,
-  BookmarkPlus,
-  BookmarkCheck,
-  Clock,
-} from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Search, RefreshCw, Zap } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { JobMatch, MatchingStats } from '@/types/jobMatch';
 import { useSavedJobs } from '@/hooks/useSavedJobs';
+import { ProcessingStatusBanner } from '@/components/ProcessingStatusBanner';
+import { JobCard } from '@/components/JobCard';
+import { JobDetails } from '@/components/JobDetails';
 
 export default function JobMatchesPage() {
   const { savedJobIds, savingJobId, saveJob, removeJob, refreshSavedJobs } =
@@ -206,55 +192,21 @@ export default function JobMatchesPage() {
         </div>
       </motion.div>
 
-      {isCheckingStatus && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <Card className="bg-white border border-gray-200 shadow-sm">
-            <CardContent className="flex items-center justify-center py-4">
-              <RefreshCw className="h-4 w-4 animate-spin text-gray-600 mr-2" />
-              <span className="text-gray-600 font-medium">
-                Checking processing status...
-              </span>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+      {isCheckingStatus && <ProcessingStatusBanner status="checking" />}
 
       {(processingStatus === 'processing' ||
         processingStatus === 'parsing' ||
         processingStatus === 'matching' ||
         processingStatus === 'finalizing') && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <Card className="bg-blue-50 border border-blue-200 shadow-sm">
-            <CardContent className="py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <RefreshCw className="h-5 w-5 animate-spin text-blue-600 mr-3" />
-                  <div>
-                    <h3 className="font-medium text-blue-900">
-                      {processingStatus === 'parsing' &&
-                        'Analyzing your resume...'}
-                      {processingStatus === 'matching' &&
-                        'Finding perfect matches...'}
-                      {processingStatus === 'finalizing' &&
-                        'Finalizing results...'}
-                      {processingStatus === 'processing' &&
-                        'Processing your profile...'}
-                    </h3>
-                    <p className="text-blue-700 text-sm">
-                      Our AI is working hard to find the best opportunities.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+        <ProcessingStatusBanner
+          status={
+            processingStatus as
+              | 'processing'
+              | 'parsing'
+              | 'matching'
+              | 'finalizing'
+          }
+        />
       )}
 
       <motion.div
@@ -327,296 +279,28 @@ export default function JobMatchesPage() {
             </motion.div>
           ) : (
             filteredMatches.map((match, index) => (
-              <motion.div
+              <JobCard
                 key={match.job_id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 * index }}
-              >
-                <Card
-                  className={`cursor-pointer transition-all duration-150 hover:bg-gray-50 ${
-                    selectedJob?.job_id === match.job_id
-                      ? 'border-gray-300 bg-gray-50 ring-1 ring-gray-300'
-                      : 'border-transparent hover:border-gray-300'
-                  }`}
-                  onClick={() => setSelectedJob(match)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 mb-1 line-clamp-1">
-                          {match.job_title}
-                        </h3>
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Building className="w-4 h-4 mr-1.5" />
-                          {match.company}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <Badge
-                          className={`px-2 py-0.5 text-xs font-medium ${
-                            match.confidence === 'high'
-                              ? 'bg-green-50 text-green-700 border border-green-200'
-                              : match.confidence === 'medium'
-                              ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                              : 'bg-gray-50 text-gray-700 border border-gray-200'
-                          }`}
-                        >
-                          {match.confidence?.charAt(0).toUpperCase() +
-                            match.confidence?.slice(1) || 'Unknown'}
-                        </Badge>
-                        <span className="text-sm font-medium text-gray-900">
-                          {(match.match_score * 100).toFixed(0)}% Match
-                        </span>
-                      </div>
-                    </div>
-                    <div className="space-y-2 text-sm text-gray-500">
-                      {match.location && (
-                        <div className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-1.5" />
-                          {match.location}
-                        </div>
-                      )}
-                      <div className="flex items-center">
-                        <Clock className="w-4 h-4 mr-1.5" />
-                        Recently posted
-                      </div>
-                    </div>
-                    {/* Skills */}
-                    <div className="space-y-2 mt-3">
-                      <div className="flex flex-wrap gap-1.5">
-                        {match.matched_skills
-                          .slice(0, 2)
-                          .map((tag, tagIndex) => (
-                            <Badge
-                              key={tagIndex}
-                              variant="secondary"
-                              className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
-                            >
-                              {tag}
-                            </Badge>
-                          ))}
-                        {match.matched_skills.length > 2 && (
-                          <Badge
-                            variant="secondary"
-                            className="px-2 py-0.5 text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200"
-                          >
-                            +{match.matched_skills.length - 2} more
-                          </Badge>
-                        )}
-                      </div>
-
-                      {match.skill_coverage !== undefined && (
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
-                            <div
-                              className="bg-blue-600 h-full transition-all duration-150 rounded-full"
-                              style={{
-                                width: `${Math.round(
-                                  match.skill_coverage * 100,
-                                )}%`,
-                              }}
-                            ></div>
-                          </div>
-                          <span className="text-xs font-medium text-gray-600 min-w-[2.5rem]">
-                            {Math.round(match.skill_coverage * 100)}%
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+                job={match}
+                isSelected={selectedJob?.job_id === match.job_id}
+                onClick={() => setSelectedJob(match)}
+                index={index}
+                variant="match"
+              />
             ))
           )}
         </div>
 
         <div className="lg:col-span-3 overflow-y-auto pr-2">
           {selectedJob ? (
-            <Card className="bg-white border border-gray-200 rounded-lg shadow-sm">
-              <CardHeader className="border-b border-gray-100 pb-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-2xl text-gray-900 mb-2 font-semibold">
-                      {selectedJob.job_title}
-                    </CardTitle>
-                    <CardDescription className="flex flex-wrap items-center gap-3 text-gray-500 text-sm">
-                      <span className="flex items-center">
-                        <Building className="w-4 h-4 mr-1.5" />
-                        {selectedJob.company}
-                      </span>
-                      {selectedJob.location && (
-                        <span className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-1.5" />
-                          {selectedJob.location}
-                        </span>
-                      )}
-                      <Badge
-                        className={`px-2 py-0.5 text-xs font-medium ${
-                          selectedJob.confidence === 'high'
-                            ? 'bg-green-50 text-green-700 border border-green-200'
-                            : selectedJob.confidence === 'medium'
-                            ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                            : 'bg-gray-50 text-gray-700 border border-gray-200'
-                        }`}
-                      >
-                        {selectedJob.confidence?.charAt(0).toUpperCase() +
-                          selectedJob.confidence?.slice(1) || 'Unknown'}
-                      </Badge>
-                    </CardDescription>
-                  </div>
-                  <div className="text-center ml-4">
-                    <div className="text-2xl font-semibold text-gray-900">
-                      {(selectedJob.match_score * 100).toFixed(0)}%
-                    </div>
-                    <div className="text-xs text-gray-500">Match</div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                {/* AI Reasoning Section */}
-                {selectedJob.ai_reasoning &&
-                  selectedJob.ai_reasoning.trim() && (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-6 h-6 bg-gray-900 text-white rounded flex items-center justify-center font-semibold text-xs">
-                          AI
-                        </div>
-                        <h3 className="text-base font-medium text-gray-900">
-                          AI Analysis
-                        </h3>
-                      </div>
-                      <p className="text-gray-700 leading-relaxed text-sm">
-                        {selectedJob.ai_reasoning}
-                      </p>
-                    </div>
-                  )}
-
-                <div className="grid gap-4">
-                  {selectedJob.skill_coverage !== undefined &&
-                    selectedJob.skill_coverage >= 0 && (
-                      <div className="bg-white border border-gray-200 rounded-lg p-5">
-                        <h3 className="text-base font-medium text-gray-900 mb-4 flex items-center gap-2">
-                          <div className="w-5 h-5 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-semibold">
-                            ✓
-                          </div>
-                          Skill Coverage
-                        </h3>
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">
-                              Match rate
-                            </span>
-                            <span className="text-base font-medium text-gray-900">
-                              {Math.round(selectedJob.skill_coverage * 100)}%
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                            <div
-                              className="bg-blue-600 h-full transition-all duration-500 ease-out rounded-full"
-                              style={{
-                                width: `${Math.round(
-                                  selectedJob.skill_coverage * 100,
-                                )}%`,
-                              }}
-                            ></div>
-                          </div>
-                          <p className="text-xs text-gray-500">
-                            {selectedJob.matched_skills?.length || 0} of{' '}
-                            {(selectedJob.matched_skills?.length || 0) +
-                              (selectedJob.missing_critical_skills?.length ||
-                                0)}{' '}
-                            skills matched
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                  {/* Matched Skills */}
-                  {selectedJob.matched_skills &&
-                    selectedJob.matched_skills.length > 0 && (
-                      <div>
-                        <h3 className="text-base font-medium text-gray-900 mb-3 flex items-center gap-2">
-                          <div className="w-5 h-5 bg-green-600 text-white rounded flex items-center justify-center text-xs font-semibold">
-                            ★
-                          </div>
-                          Your Matching Skills
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedJob.matched_skills.map((skill, index) => (
-                            <Badge
-                              key={index}
-                              variant="secondary"
-                              className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
-                            >
-                              {skill}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                  {/* Missing Critical Skills */}
-                  {selectedJob.missing_critical_skills &&
-                    selectedJob.missing_critical_skills.length > 0 && (
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
-                        <h3 className="text-base font-medium text-gray-900 mb-3 flex items-center gap-2">
-                          <div className="w-5 h-5 bg-amber-600 text-white rounded flex items-center justify-center text-xs font-semibold">
-                            !
-                          </div>
-                          Skills to Develop
-                        </h3>
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {selectedJob.missing_critical_skills.map(
-                            (skill, index) => (
-                              <Badge
-                                key={index}
-                                variant="secondary"
-                                className="px-2 py-0.5 text-xs font-medium bg-white text-amber-700 border border-amber-300"
-                              >
-                                {skill}
-                              </Badge>
-                            ),
-                          )}
-                        </div>
-                        <p className="text-xs text-amber-700">
-                          Consider learning these skills to improve your match
-                          rate
-                        </p>
-                      </div>
-                    )}
-                </div>
-                <div className="flex gap-3 pt-4 border-t border-gray-100">
-                  <Button
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-150"
-                    onClick={() => window.open(selectedJob.job_url, '_blank')}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    View job
-                  </Button>
-                  <Button
-                    className="flex-1 bg-white text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300 font-medium py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-150"
-                    disabled={savingJobId === selectedJob.job_id}
-                    onClick={() => {
-                      if (savedJobIds.includes(selectedJob.job_id)) {
-                        removeJob(selectedJob.job_id);
-                      } else {
-                        saveJob(selectedJob.job_id);
-                      }
-                    }}
-                  >
-                    {savedJobIds.includes(selectedJob.job_id) ? (
-                      <BookmarkCheck className="w-4 h-4 mr-2" />
-                    ) : (
-                      <BookmarkPlus className="w-4 h-4 mr-2" />
-                    )}
-                    {savedJobIds.includes(selectedJob.job_id)
-                      ? 'Unsave'
-                      : 'Save'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <JobDetails
+              job={selectedJob}
+              variant="match"
+              isSaved={savedJobIds.includes(selectedJob.job_id)}
+              isSaving={savingJobId === selectedJob.job_id}
+              onSave={() => saveJob(selectedJob.job_id)}
+              onUnsave={() => removeJob(selectedJob.job_id)}
+            />
           ) : (
             <Card className="h-full flex items-center justify-center bg-white border border-gray-200 rounded-lg shadow-sm">
               <CardContent>

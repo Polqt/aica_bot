@@ -1,437 +1,451 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import ResumeReuploadModal from '@/components/ResumeReuploadModal';
+import SkillsEditorModal from '@/components/SkillsEditorModal';
 import {
   User,
   Mail,
   Phone,
   MapPin,
-  Calendar,
+  Linkedin,
   GraduationCap,
   Briefcase,
   Code,
-  Award,
-  Edit,
-  Download,
   Upload,
-  Settings,
+  Edit2,
+  FileText,
+  Loader2,
+  Calendar,
 } from 'lucide-react';
-import Link from 'next/link';
-
-const userProfile = {
-  name: 'Alex Johnson',
-  email: 'alex.johnson@email.com',
-  phone: '+1 (555) 123-4567',
-  location: 'San Francisco, CA',
-  bio: 'Passionate full-stack developer with 5+ years of experience in React, Node.js, and cloud technologies. Always eager to learn new technologies and tackle challenging problems.',
-  avatar: '/api/placeholder/150/150',
-  joinDate: 'January 2024',
-  skills: [
-    { name: 'React', level: 'Expert', color: 'bg-blue-600' },
-    { name: 'TypeScript', level: 'Expert', color: 'bg-blue-500' },
-    { name: 'Node.js', level: 'Advanced', color: 'bg-green-600' },
-    { name: 'Python', level: 'Intermediate', color: 'bg-yellow-600' },
-    { name: 'AWS', level: 'Advanced', color: 'bg-orange-600' },
-    { name: 'Docker', level: 'Intermediate', color: 'bg-blue-700' },
-  ],
-  experience: [
-    {
-      title: 'Senior Frontend Developer',
-      company: 'TechCorp Inc.',
-      location: 'San Francisco, CA',
-      period: '2022 - Present',
-      description: 'Led development of customer-facing applications serving 100K+ users. Implemented modern React architecture and improved performance by 40%.',
-    },
-    {
-      title: 'Full Stack Developer',
-      company: 'StartupXYZ',
-      location: 'Remote',
-      period: '2020 - 2022',
-      description: 'Built and maintained multiple web applications using MERN stack. Collaborated with cross-functional teams in agile environment.',
-    },
-  ],
-  education: [
-    {
-      degree: 'Bachelor of Science in Computer Science',
-      school: 'University of California, Berkeley',
-      location: 'Berkeley, CA',
-      period: '2016 - 2020',
-      gpa: '3.8/4.0',
-    },
-  ],
-  certifications: [
-    { name: 'AWS Certified Solutions Architect', issuer: 'Amazon Web Services', date: '2023' },
-    { name: 'React Developer Certification', issuer: 'Meta', date: '2022' },
-  ],
-  stats: {
-    profileViews: 156,
-    applicationsSent: 24,
-    interviewsScheduled: 8,
-    offersReceived: 3,
-  },
-};
+import { useRouter } from 'next/navigation';
+import { useResumeBuilder } from '@/hooks/useResumeBuilder';
 
 export default function UserProfilePage() {
+  const router = useRouter();
+  const { profile, education, experience, skills, loading, loadResumeData } =
+    useResumeBuilder();
+  const [mounted, setMounted] = useState(false);
+  const [showReuploadModal, setShowReuploadModal] = useState(false);
+  const [showSkillsModal, setShowSkillsModal] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    loadResumeData();
+  }, [loadResumeData]);
+
+  if (!mounted || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+          <p className="text-sm text-gray-500">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Group skills by proficiency level (since skill_category doesn't exist in type)
+  const skillsByProficiency = skills.reduce((acc, skill) => {
+    const level = skill.proficiency_level || 'beginner';
+    if (!acc[level]) {
+      acc[level] = [];
+    }
+    acc[level].push(skill);
+    return acc;
+  }, {} as Record<string, typeof skills>);
+
+  const handleUploadClick = () => {
+    // If user has existing data, show modal. Otherwise go directly to upload
+    if (
+      skills.length > 0 ||
+      experience.length > 0 ||
+      education.length > 0 ||
+      profile?.resume_uploaded
+    ) {
+      setShowReuploadModal(true);
+    } else {
+      router.push('/upload');
+    }
+  };
+
   return (
-    <div className="space-y-12">
-      {/* Header */}
+    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+      {/* Resume Reupload Modal */}
+      <ResumeReuploadModal
+        isOpen={showReuploadModal}
+        onClose={() => setShowReuploadModal(false)}
+      />
+
+      {/* Skills Editor Modal */}
+      <SkillsEditorModal
+        isOpen={showSkillsModal}
+        onClose={() => setShowSkillsModal(false)}
+      />
+
+      {/* Header with Actions */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6"
+        transition={{ duration: 0.3 }}
+        className="flex items-center justify-between mb-8"
       >
         <div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 flex items-center gap-3">
-            <User className="w-8 h-8 text-violet-600" />
-            <span>User Profile</span>
-          </h1>
-          <p className="text-lg text-gray-600 mt-2">
-            Manage your professional information and skills
+          <h1 className="text-3xl font-semibold text-gray-900">Profile</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Manage your professional information
           </p>
         </div>
-
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <Button
-            asChild
-            className="bg-black text-white border-4 border-black hover:bg-white hover:text-black font-black uppercase tracking-wide px-8 py-4 shadow-[8px_8px_0px_0px_black] hover:shadow-[12px_12px_0px_0px_black] transition-all duration-200"
+            onClick={handleUploadClick}
+            className="border border-gray-200 hover:bg-gray-50 text-gray-700 bg-white"
           >
-            <Link href="/user-profile/edit">
-              <Edit className="w-5 h-5 mr-3" />
-              EDIT PROFILE
-            </Link>
+            <Upload className="w-4 h-4 mr-2" />
+            Upload Resume
           </Button>
           <Button
-            className="bg-violet-600 text-white border-4 border-black hover:bg-black hover:text-white font-black uppercase tracking-wide px-8 py-4 shadow-[8px_8px_0px_0px_black] hover:shadow-[12px_12px_0px_0px_black] transition-all duration-200"
+            onClick={() => router.push('/profile')}
+            className="bg-gray-900 hover:bg-gray-800 text-white border-0"
           >
-            <Download className="w-5 h-5 mr-3" />
-            DOWNLOAD CV
+            <Edit2 className="w-4 h-4 mr-2" />
+            Edit Profile
           </Button>
         </div>
       </motion.div>
 
-      <div className="grid lg:grid-cols-3 gap-12">
-        {/* Profile Overview */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="lg:col-span-1 space-y-8"
-        >
-          {/* Basic Info Card */}
-          <Card className="bg-white border-4 border-black">
-            <CardHeader className="border-b-4 border-black pb-6">
-              <CardTitle className="text-2xl font-black text-black uppercase tracking-wide">
-                BASIC INFORMATION
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 space-y-6">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-24 h-24 bg-black border-4 border-black rounded-2xl flex items-center justify-center mb-6 shadow-[4px_4px_0px_0px_black]">
-                  <User className="w-12 h-12 text-white" />
-                </div>
-                <h2 className="text-2xl font-black text-black uppercase tracking-wide mb-2">
-                  {userProfile.name}
-                </h2>
-                <p className="text-gray-700 font-bold text-lg">
-                  FULL STACK DEVELOPER
-                </p>
+      {/* Basic Information */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <Card className="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-8">
+            <div className="flex items-start gap-6">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center flex-shrink-0">
+                <User className="w-10 h-10 text-gray-600" />
               </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <Mail className="w-6 h-6 text-black flex-shrink-0" />
-                  <span className="font-bold text-gray-700 uppercase text-sm">
-                    {userProfile.email}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Phone className="w-6 h-6 text-black flex-shrink-0" />
-                  <span className="font-bold text-gray-700 uppercase text-sm">
-                    {userProfile.phone}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <MapPin className="w-6 h-6 text-black flex-shrink-0" />
-                  <span className="font-bold text-gray-700 uppercase text-sm">
-                    {userProfile.location}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Calendar className="w-6 h-6 text-black flex-shrink-0" />
-                  <span className="font-bold text-gray-700 uppercase text-sm">
-                    JOINED {userProfile.joinDate}
-                  </span>
-                </div>
-              </div>
-
-              <div className="bg-gray-100 border-2 border-black rounded-xl p-4">
-                <p className="text-gray-700 font-bold text-sm leading-relaxed">
-                  {userProfile.bio}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Stats Card */}
-          <Card className="bg-white border-4 border-black">
-            <CardHeader className="border-b-4 border-black pb-6">
-              <CardTitle className="text-xl font-black text-black uppercase tracking-wide">
-                ACTIVITY STATS
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-8">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="text-center">
-                  <div className="text-3xl font-black text-black mb-2">
-                    {userProfile.stats.profileViews}
-                  </div>
-                  <div className="text-sm font-bold text-gray-700 uppercase">
-                    PROFILE VIEWS
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-black text-violet-600 mb-2">
-                    {userProfile.stats.applicationsSent}
-                  </div>
-                  <div className="text-sm font-bold text-gray-700 uppercase">
-                    APPLICATIONS
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-black text-green-600 mb-2">
-                    {userProfile.stats.interviewsScheduled}
-                  </div>
-                  <div className="text-sm font-bold text-gray-700 uppercase">
-                    INTERVIEWS
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-black text-yellow-600 mb-2">
-                    {userProfile.stats.offersReceived}
-                  </div>
-                  <div className="text-sm font-bold text-gray-700 uppercase">
-                    OFFERS
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Main Content */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="lg:col-span-2 space-y-8"
-        >
-          {/* Skills Section */}
-          <Card className="bg-white border-4 border-black">
-            <CardHeader className="border-b-4 border-black pb-6">
-              <CardTitle className="text-2xl font-black text-black uppercase tracking-wide flex items-center gap-4">
-                <Code className="w-8 h-8 text-black" />
-                TECHNICAL SKILLS
-              </CardTitle>
-              <CardDescription className="text-gray-700 font-bold text-lg">
-                YOUR PROGRAMMING AND TECHNICAL PROFICIENCIES
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {userProfile.skills.map((skill, index) => (
-                  <div
-                    key={index}
-                    className="bg-gray-100 border-2 border-black rounded-xl p-6 hover:shadow-[4px_4px_0px_0px_black] transition-all duration-300"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-black text-black uppercase tracking-wide">
-                        {skill.name}
-                      </h3>
-                      <Badge className={`${skill.color} text-white border-2 border-black font-bold uppercase px-3 py-1`}>
-                        {skill.level}
-                      </Badge>
-                    </div>
-                    <div className="w-full bg-gray-200 border border-black rounded-full h-3">
-                      <div
-                        className={`h-3 rounded-full transition-all duration-500 ${
-                          skill.level === 'Expert' ? 'bg-green-600' :
-                          skill.level === 'Advanced' ? 'bg-blue-600' :
-                          'bg-yellow-600'
-                        }`}
-                        style={{
-                          width: skill.level === 'Expert' ? '90%' :
-                                 skill.level === 'Advanced' ? '75%' :
-                                 '60%'
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Experience Section */}
-          <Card className="bg-white border-4 border-black">
-            <CardHeader className="border-b-4 border-black pb-6">
-              <CardTitle className="text-2xl font-black text-black uppercase tracking-wide flex items-center gap-4">
-                <Briefcase className="w-8 h-8 text-black" />
-                WORK EXPERIENCE
-              </CardTitle>
-              <CardDescription className="text-gray-700 font-bold text-lg">
-                YOUR PROFESSIONAL JOURNEY AND ACHIEVEMENTS
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-8 space-y-8">
-              {userProfile.experience.map((exp, index) => (
-                <div
-                  key={index}
-                  className="border-l-4 border-black pl-8 pb-8 last:pb-0"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-xl font-black text-black uppercase tracking-wide mb-1">
-                        {exp.title}
-                      </h3>
-                      <div className="flex items-center gap-4 text-gray-700 font-bold uppercase text-sm">
-                        <span className="flex items-center">
-                          <Briefcase className="w-4 h-4 mr-2 text-black" />
-                          {exp.company}
-                        </span>
-                        <span className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-2 text-black" />
-                          {exp.location}
-                        </span>
-                        <span className="flex items-center">
-                          <Calendar className="w-4 h-4 mr-2 text-black" />
-                          {exp.period}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-gray-700 font-bold leading-relaxed">
-                    {exp.description}
+              <div className="flex-1 space-y-4">
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-1">
+                    {profile?.full_name || 'Your Name'}
+                  </h2>
+                  <p className="text-base text-gray-500">
+                    {experience[0]?.job_title || 'Your Position'}
                   </p>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
 
-          {/* Education Section */}
-          <Card className="bg-white border-4 border-black">
-            <CardHeader className="border-b-4 border-black pb-6">
-              <CardTitle className="text-2xl font-black text-black uppercase tracking-wide flex items-center gap-4">
-                <GraduationCap className="w-8 h-8 text-black" />
-                EDUCATION
-              </CardTitle>
-              <CardDescription className="text-gray-700 font-bold text-lg">
-                YOUR ACADEMIC BACKGROUND AND QUALIFICATIONS
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-8 space-y-6">
-              {userProfile.education.map((edu, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-100 border-2 border-black rounded-xl p-6"
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  {profile?.email && (
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      <span>{profile.email}</span>
+                    </div>
+                  )}
+                  {profile?.phone && (
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      <span>{profile.phone}</span>
+                    </div>
+                  )}
+                  {profile?.location && (
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <MapPin className="w-4 h-4 text-gray-400" />
+                      <span>{profile.location}</span>
+                    </div>
+                  )}
+                  {profile?.linkedin_url && (
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Linkedin className="w-4 h-4 text-gray-400" />
+                      <a
+                        href={profile.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-blue-600 transition-colors"
+                      >
+                        LinkedIn Profile
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                {profile?.experience_years && (
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className="bg-gray-100 text-gray-700 border border-gray-200"
+                    >
+                      {profile.experience_years} years of experience
+                    </Badge>
+                    {profile.education_level && (
+                      <Badge
+                        variant="secondary"
+                        className="bg-gray-100 text-gray-700 border border-gray-200"
+                      >
+                        {profile.education_level}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Skills Section */}
+      {skills.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <Card className="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <Code className="w-5 h-5 text-gray-700" />
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Skills
+                  </h3>
+                </div>
+                <Button
+                  onClick={() => setShowSkillsModal(true)}
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-900 bg-transparent hover:bg-gray-50 border-0"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-black text-black uppercase tracking-wide mb-2">
-                        {edu.degree}
-                      </h3>
-                      <div className="space-y-1 text-gray-700 font-bold uppercase text-sm">
-                        <div className="flex items-center">
-                          <GraduationCap className="w-4 h-4 mr-2 text-black" />
-                          {edu.school}
-                        </div>
-                        <div className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-2 text-black" />
-                          {edu.location}
-                        </div>
-                        <div className="flex items-center">
-                          <Calendar className="w-4 h-4 mr-2 text-black" />
-                          {edu.period}
-                        </div>
+                  <Edit2 className="w-4 h-4 mr-1" />
+                  Edit Skills
+                </Button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Display skills grouped by proficiency level */}
+                {Object.entries(skillsByProficiency).map(
+                  ([level, levelSkills]) => (
+                    <div key={level}>
+                      <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+                        {level === 'expert'
+                          ? 'Expert Level'
+                          : level === 'advanced'
+                          ? 'Advanced'
+                          : level === 'intermediate'
+                          ? 'Intermediate'
+                          : 'Beginner'}
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {levelSkills.map(skill => (
+                          <Badge
+                            key={skill.id}
+                            variant="secondary"
+                            className="px-3 py-1 bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 transition-colors"
+                          >
+                            {skill.skill_name}
+                            {skill.proficiency_level && (
+                              <span className="ml-2 text-xs text-gray-500">
+                                {skill.proficiency_level}
+                              </span>
+                            )}
+                          </Badge>
+                        ))}
                       </div>
                     </div>
-                    <Badge className="bg-green-600 text-white border-2 border-black font-bold uppercase px-3 py-1">
-                      GPA: {edu.gpa}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+                  ),
+                )}
+              </div>
             </CardContent>
           </Card>
+        </motion.div>
+      )}
 
-          {/* Certifications Section */}
-          <Card className="bg-white border-4 border-black">
-            <CardHeader className="border-b-4 border-black pb-6">
-              <CardTitle className="text-2xl font-black text-black uppercase tracking-wide flex items-center gap-4">
-                <Award className="w-8 h-8 text-black" />
-                CERTIFICATIONS
-              </CardTitle>
-              <CardDescription className="text-gray-700 font-bold text-lg">
-                YOUR PROFESSIONAL CERTIFICATIONS AND CREDENTIALS
-              </CardDescription>
-            </CardHeader>
+      {/* Experience Section */}
+      {experience.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+        >
+          <Card className="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-8">
-              <div className="grid gap-4">
-                {userProfile.certifications.map((cert, index) => (
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-gray-700" />
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Experience
+                  </h3>
+                </div>
+                <Button
+                  onClick={() => router.push('/experience')}
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-900 bg-transparent hover:bg-gray-50 border-0"
+                >
+                  <Edit2 className="w-4 h-4 mr-1" />
+                  Edit Experience
+                </Button>
+              </div>
+
+              <div className="space-y-6">
+                {experience.map((exp, index) => (
                   <div
-                    key={index}
-                    className="flex items-center justify-between bg-gray-100 border-2 border-black rounded-xl p-6 hover:shadow-[4px_4px_0px_0px_black] transition-all duration-300"
+                    key={exp.id}
+                    className={`${
+                      index !== experience.length - 1
+                        ? 'pb-6 border-b border-gray-100'
+                        : ''
+                    }`}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-black border-2 border-black rounded-xl flex items-center justify-center">
-                        <Award className="w-6 h-6 text-white" />
+                    <div className="space-y-2">
+                      <h4 className="text-base font-medium text-gray-900">
+                        {exp.job_title}
+                      </h4>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
+                        {exp.company_name && (
+                          <span className="flex items-center gap-1">
+                            <Briefcase className="w-3.5 h-3.5 text-gray-400" />
+                            {exp.company_name}
+                          </span>
+                        )}
+                        {(exp.start_date || exp.end_date) && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                            {exp.start_date}
+                            {exp.end_date ? ` - ${exp.end_date}` : ' - Present'}
+                          </span>
+                        )}
                       </div>
-                      <div>
-                        <h3 className="font-black text-black uppercase tracking-wide">
-                          {cert.name}
-                        </h3>
-                        <p className="text-gray-700 font-bold uppercase text-sm">
-                          {cert.issuer} • {cert.date}
+                      {exp.description && (
+                        <p className="text-sm text-gray-600 leading-relaxed mt-2">
+                          {exp.description}
                         </p>
-                      </div>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
+        </motion.div>
+      )}
 
-          {/* Quick Actions */}
-          <Card className="bg-white border-4 border-black">
-            <CardHeader className="border-b-4 border-black pb-6">
-              <CardTitle className="text-xl font-black text-black uppercase tracking-wide">
-                QUICK ACTIONS
-              </CardTitle>
-            </CardHeader>
+      {/* Education Section */}
+      {education.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.4 }}
+        >
+          <Card className="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button className="bg-black text-white border-2 border-black hover:bg-white hover:text-black font-black uppercase py-4">
-                  <Upload className="w-5 h-5 mr-3" />
-                  UPLOAD RESUME
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5 text-gray-700" />
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Education
+                  </h3>
+                </div>
+                <Button
+                  onClick={() => router.push('/education')}
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-900 bg-transparent hover:bg-gray-50 border-0"
+                >
+                  <Edit2 className="w-4 h-4 mr-1" />
+                  Edit Education
                 </Button>
-                <Button className="bg-violet-600 text-white border-2 border-black hover:bg-black hover:text-white font-black uppercase py-4">
-                  <Settings className="w-5 h-5 mr-3" />
-                  ACCOUNT SETTINGS
-                </Button>
+              </div>
+
+              <div className="space-y-6">
+                {education.map((edu, index) => (
+                  <div
+                    key={edu.id}
+                    className={`${
+                      index !== education.length - 1
+                        ? 'pb-6 border-b border-gray-100'
+                        : ''
+                    }`}
+                  >
+                    <div className="space-y-2">
+                      <h4 className="text-base font-medium text-gray-900">
+                        {edu.degree_type}
+                      </h4>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
+                        {edu.institution_name && (
+                          <span className="flex items-center gap-1">
+                            <GraduationCap className="w-3.5 h-3.5 text-gray-400" />
+                            {edu.institution_name}
+                          </span>
+                        )}
+                        {(edu.start_date || edu.end_date) && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                            {edu.start_date}
+                            {edu.end_date ? ` - ${edu.end_date}` : ' - Present'}
+                          </span>
+                        )}
+                      </div>
+                      {edu.field_of_study && (
+                        <p className="text-sm text-gray-600">
+                          Field of Study: {edu.field_of_study}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
         </motion.div>
-      </div>
+      )}
+
+      {/* Empty State */}
+      {!profile?.full_name &&
+        skills.length === 0 &&
+        experience.length === 0 &&
+        education.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          >
+            <Card className="border border-gray-200 rounded-lg shadow-sm">
+              <CardContent className="p-12 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                    <FileText className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">
+                      No profile information yet
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Upload your resume or fill out your profile to get started
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => router.push('/upload')}
+                      className="bg-gray-900 hover:bg-gray-800 text-white border-0"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload Resume
+                    </Button>
+                    <Button
+                      onClick={() => router.push('/profile')}
+                      className="border border-gray-200 hover:bg-gray-50 bg-white text-gray-700"
+                    >
+                      <Edit2 className="w-4 h-4 mr-2" />
+                      Fill Profile Manually
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
     </div>
   );
 }

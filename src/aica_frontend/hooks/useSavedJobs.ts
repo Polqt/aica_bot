@@ -18,15 +18,14 @@ export function useSavedJobs() {
       setSavedJobs(jobs);
       setSavedJobIds(jobs.map(job => job.job_id));
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load saved jobs';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to load saved jobs';
       setError(errorMessage);
       setSavedJobs([]);
       setSavedJobIds([]);
 
-      // Check if it's an authentication error
-      if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
-        toast.error('Session expired. Please log in again.');
-      } else {
+      // Don't show error toast for auth errors (handled by apiClient)
+      if (!errorMessage.includes('Authentication expired')) {
         toast.error('Failed to load saved jobs');
       }
     } finally {
@@ -48,7 +47,8 @@ export function useSavedJobs() {
         setSavedJobIds(prev => [...prev, jobId]);
         toast.success('Job saved successfully');
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to save job';
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to save job';
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -58,24 +58,22 @@ export function useSavedJobs() {
     [savedJobIds],
   );
 
-  const removeJob = useCallback(
-    async (jobId: string) => {
-      setSavingJobId(jobId);
-      try {
-        await apiClient.removeSavedJob(jobId);
-        setSavedJobs(prev => prev.filter(job => job.job_id !== jobId));
-        setSavedJobIds(prev => prev.filter(id => id !== jobId));
-        toast.success('Job removed from saved jobs');
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to remove job';
-        setError(errorMessage);
-        toast.error(errorMessage);
-      } finally {
-        setSavingJobId(null);
-      }
-    },
-    [],
-  );
+  const removeJob = useCallback(async (jobId: string) => {
+    setSavingJobId(jobId);
+    try {
+      await apiClient.removeSavedJob(jobId);
+      setSavedJobs(prev => prev.filter(job => job.job_id !== jobId));
+      setSavedJobIds(prev => prev.filter(id => id !== jobId));
+      toast.success('Job removed from saved jobs');
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to remove job';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setSavingJobId(null);
+    }
+  }, []);
 
   return {
     savedJobIds,

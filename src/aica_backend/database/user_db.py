@@ -246,11 +246,33 @@ class UserDatabase:
             return []
 
     def clear_user_skills(self, user_id: str) -> bool:
+        """Delete all skills for a user (used during resume re-upload with replace mode)"""
         try:
             response = self.client.table("user_skills").delete().eq("user_id", user_id).execute()
-            # Note: Supabase delete doesn't return error for non-existent records
+            logger.info(f"Cleared all skills for user {user_id}")
             return True
         except Exception as e:
+            logger.error(f"Failed to clear skills for user {user_id}: {e}")
+            return False
+    
+    def clear_user_education(self, user_id: str) -> bool:
+        """Delete all education entries for a user (used during resume re-upload with replace mode)"""
+        try:
+            response = self.client.table("user_education").delete().eq("user_id", user_id).execute()
+            logger.info(f"Cleared all education for user {user_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to clear education for user {user_id}: {e}")
+            return False
+    
+    def clear_user_experience(self, user_id: str) -> bool:
+        """Delete all experience entries for a user (used during resume re-upload with replace mode)"""
+        try:
+            response = self.client.table("user_experience").delete().eq("user_id", user_id).execute()
+            logger.info(f"Cleared all experience for user {user_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to clear experience for user {user_id}: {e}")
             return False
     
     def delete_user_skill(self, skill_id: str) -> bool:
@@ -329,6 +351,16 @@ class UserDatabase:
         except Exception as e:
             logger.error(f"Error fetching job matches for user {user_id}: {str(e)}")
             return []
+    
+    def clear_job_matches(self, user_id: str) -> bool:
+        """Delete all job matches for a user (used during resume re-upload with replace mode)"""
+        try:
+            response = self.client.table("user_job_matches").delete().eq("user_id", user_id).execute()
+            logger.info(f"Cleared all job matches for user {user_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to clear job matches for user {user_id}: {e}")
+            return False
 
     def get_user_stats(self, user_id: str) -> Dict[str, Any]:
         try:

@@ -1,18 +1,21 @@
 'use client';
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useResumeProcessing } from '@/hooks/useResumeProcessing';
 import FileUploader from '@/components/FileUploader';
 import ProcessingStatusDisplay from '@/components/ProcessingStatusDisplay';
+import { AlertTriangle } from 'lucide-react';
 
 export default function ResumeUpload() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const mode = searchParams.get('mode') as 'replace' | 'merge' | null;
 
   const { selectedFile, isUploading, error, handleFileChange, uploadFile } =
-    useFileUpload();
+    useFileUpload(mode);
 
   const {
     processingStatus,
@@ -59,6 +62,35 @@ export default function ResumeUpload() {
           <p className="text-gray-500 text-base font-medium">
             Let AICA analyze your tech and soft skills
           </p>
+
+          {/* Mode Indicator */}
+          {mode === 'replace' && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg"
+            >
+              <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+              <p className="text-sm text-red-700">
+                <strong>Replace Mode:</strong> All existing profile data will be
+                cleared
+              </p>
+            </motion.div>
+          )}
+
+          {mode === 'merge' && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg"
+            >
+              <AlertTriangle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              <p className="text-sm text-blue-700">
+                <strong>Merge Mode:</strong> New data will be merged with
+                existing profile
+              </p>
+            </motion.div>
+          )}
         </div>
 
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all p-8 space-y-6">

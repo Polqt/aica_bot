@@ -197,9 +197,15 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
 async def logout():
     return {"message": "Logged out successfully"}
 
-async def process_resume_background(user_id: str, file_content: bytes, file_type: str):
+async def process_resume_background(user_id: str, file_content: bytes, file_type: str, mode: str = None):
     """
     Process resume in background: parse → extract skills → generate AI-powered job matches
+    
+    Args:
+        user_id: User ID
+        file_content: Resume file content
+        file_type: MIME type of the file
+        mode: Processing mode ('replace', 'merge', or None)
     """
     db = UserDatabase()
     
@@ -207,9 +213,25 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
         user = db.get_user_by_id(user_id)
         if not user:
             return
+        
+        # Step 0: Clear existing data if replace mode
+        if mode == "replace":
+            logger.info(f"🗑️ Replace mode: Clearing existing data for user {user_id}")
+            db.update_user_profile(user_id, {"processing_step": "clearing_old_data"})
+            
+            try:
+                # Clear all existing user data
+                db.clear_user_skills(user_id)
+                db.clear_user_education(user_id)
+                db.clear_user_experience(user_id)
+                db.clear_job_matches(user_id)
+                logger.info(f"✅ Successfully cleared old data for user {user_id}")
+            except Exception as clear_error:
+                logger.error(f"⚠️ Error clearing old data for user {user_id}: {clear_error}")
+                # Continue processing even if clearing fails
     
         # Step 1: Parse resume and extract skills
-        logger.info(f"🔍 Starting resume parsing for user {user_id}")
+        logger.info(f"🔍 Starting resume parsing for user {user_id} (mode: {mode or 'default'})")
         db.update_user_profile(user_id, {"processing_step": "parsing"})
         
         parser = ResumeParser()
@@ -297,8 +319,19 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
 async def upload_resume(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    mode: str = None  # Optional: 'replace' or 'merge'
 ):
+    """
+    Upload and process a resume.
+    
+    Args:
+        file: Resume file (PDF, DOC, or DOCX)
+        mode: Optional processing mode
+            - 'replace': Clear all existing profile data before processing
+            - 'merge': Keep existing data and merge with new resume data
+            - None: Default behavior (merge)
+    """
     try:
         # Validate file type
         allowed_types = [
@@ -401,15 +434,24 @@ async def upload_resume(
                 pass
             raise HTTPException(status_code=500, detail="Failed to update user profile")
         
+        # Add background task with mode parameter
         background_tasks.add_task(
             process_resume_background,
             user_id,
             content,
-            file.content_type
+            file.content_type,
+            mode  # Pass the mode to background processing
         )
 
+        # Include mode in response message
+        message = "Resume uploaded successfully and is being processed"
+        if mode == "replace":
+            message = "Resume uploaded successfully. Previous data cleared. Processing new resume..."
+        elif mode == "merge":
+            message = "Resume uploaded successfully. Merging with existing data..."
+
         return ResumeUploadResponse(
-            message="Resume uploaded successfully and is being processed",
+            message=message,
             file_path=file_path,
             processing_status="processing"
         )

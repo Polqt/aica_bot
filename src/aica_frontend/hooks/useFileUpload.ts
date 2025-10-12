@@ -11,12 +11,14 @@ interface ApiError {
   message?: string;
 }
 
-export const useFileUpload = () => {
+type UploadMode = 'replace' | 'merge' | null;
+
+export const useFileUpload = (mode: UploadMode = null) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string>('');
 
-  const { getAuthToken, logout } = useAuth();
+  const { getAuthToken } = useAuth();
 
   const validateFile = useCallback((file: File): string | null => {
     if (
@@ -71,7 +73,13 @@ export const useFileUpload = () => {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const response = await fetch(`${API_BASE_URL}/auth/upload-resume`, {
+      // Build URL with mode parameter if specified
+      let uploadUrl = `${API_BASE_URL}/auth/upload-resume`;
+      if (mode) {
+        uploadUrl += `?mode=${mode}`;
+      }
+
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
         headers: {
@@ -87,6 +95,15 @@ export const useFileUpload = () => {
           errorData.detail || errorData.message || 'Upload failed';
 
         if (response.status === 401) {
+          // Clear expired token and redirect to login
+          localStorage.removeItem('access_token');
+          toast.error('Session expired', {
+            description: 'Please log in again to continue.',
+            duration: 3000,
+          });
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 1500);
           throw new Error('Authentication expired. Please log in again.');
         } else if (response.status === 413) {
           throw new Error(
@@ -106,12 +123,8 @@ export const useFileUpload = () => {
       const errorMessage =
         error instanceof Error ? error.message : 'Upload failed.';
 
-      if (errorMessage.includes('Authentication expired')) {
-        toast.error('Your session has expired. Redirecting to login...');
-        setTimeout(() => {
-          logout();
-        }, 2000);
-      } else {
+      // Don't show duplicate toast for auth errors
+      if (!errorMessage.includes('Authentication expired')) {
         toast.error(errorMessage);
       }
 
@@ -119,7 +132,7 @@ export const useFileUpload = () => {
       setIsUploading(false);
       return false;
     }
-  }, [selectedFile, getAuthToken, logout]);
+  }, [selectedFile, getAuthToken, mode]);
 
   const resetUpload = useCallback(() => {
     setSelectedFile(null);

@@ -11,11 +11,11 @@ import {
   UserExperienceCreate,
   UserSkill,
   UserSkillCreate,
-  ResumeSummary
+  ResumeSummary,
 } from '@/types/user';
 import { SavedJob } from '@/types/jobMatch';
 import { API_BASE_URL, API_ENDPOINTS } from '@/lib/constants/api';
-
+import { toast } from 'sonner';
 
 export class ApiClient {
   private getAuthToken(): string | null {
@@ -38,8 +38,32 @@ export class ApiClient {
     return headers;
   }
 
+  private handleAuthError(): void {
+    if (typeof window === 'undefined') return;
+
+    // Clear the expired token
+    localStorage.removeItem('access_token');
+
+    // Show toast notification
+    toast.error('Session expired', {
+      description: 'Please log in again to continue.',
+      duration: 3000,
+    });
+
+    // Redirect to login after a short delay
+    setTimeout(() => {
+      window.location.href = '/login';
+    }, 1500);
+  }
+
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
+      // Handle authentication errors (401 Unauthorized)
+      if (response.status === 401) {
+        this.handleAuthError();
+        throw new Error('Authentication expired. Please log in again.');
+      }
+
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
         errorData.detail ||
@@ -60,29 +84,38 @@ export class ApiClient {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.UPLOAD_RESUME}`, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await fetch(
+      `${API_BASE_URL}${API_ENDPOINTS.AUTH.UPLOAD_RESUME}`,
+      {
+        method: 'POST',
+        body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
 
     return this.handleResponse<UploadResponse>(response);
   }
 
   async getProcessingStatus(): Promise<ProcessingStatusResponse> {
-    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.PROCESSING_STATUS}`, {
-      headers: this.getHeaders(),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}${API_ENDPOINTS.AUTH.PROCESSING_STATUS}`,
+      {
+        headers: this.getHeaders(),
+      },
+    );
 
     return this.handleResponse<ProcessingStatusResponse>(response);
   }
 
   async getUserProfile(): Promise<UserProfile> {
-    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.PROFILE}`, {
-      headers: this.getHeaders(),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}${API_ENDPOINTS.AUTH.PROFILE}`,
+      {
+        headers: this.getHeaders(),
+      },
+    );
 
     return this.handleResponse<UserProfile>(response);
   }
@@ -104,11 +137,14 @@ export class ApiClient {
     email: string,
     password: string,
   ): Promise<{ access_token?: string; message?: string }> {
-    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.SIGNUP}`, {
-      method: 'POST',
-      headers: this.getHeaders(false),
-      body: JSON.stringify({ email, password }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}${API_ENDPOINTS.AUTH.SIGNUP}`,
+      {
+        method: 'POST',
+        headers: this.getHeaders(false),
+        body: JSON.stringify({ email, password }),
+      },
+    );
 
     return this.handleResponse(response);
   }
@@ -174,7 +210,9 @@ export class ApiClient {
   }
 
   async removeSavedJob(jobId: string): Promise<{ message: string }> {
-    return this.delete<{ message: string }>(`${API_ENDPOINTS.JOBS.SAVED_JOBS}/${jobId}`);
+    return this.delete<{ message: string }>(
+      `${API_ENDPOINTS.JOBS.SAVED_JOBS}/${jobId}`,
+    );
   }
 
   // Resume Builder API methods
@@ -186,7 +224,10 @@ export class ApiClient {
     return this.post<UserEducation>('/resume/education', education);
   }
 
-  async updateEducation(id: string, education: Partial<UserEducationCreate>): Promise<UserEducation> {
+  async updateEducation(
+    id: string,
+    education: Partial<UserEducationCreate>,
+  ): Promise<UserEducation> {
     return this.put<UserEducation>(`/resume/education/${id}`, education);
   }
 
@@ -198,11 +239,16 @@ export class ApiClient {
     return this.get<UserExperience[]>('/resume/experience');
   }
 
-  async addExperience(experience: UserExperienceCreate): Promise<UserExperience> {
+  async addExperience(
+    experience: UserExperienceCreate,
+  ): Promise<UserExperience> {
     return this.post<UserExperience>('/resume/experience', experience);
   }
 
-  async updateExperience(id: string, experience: Partial<UserExperienceCreate>): Promise<UserExperience> {
+  async updateExperience(
+    id: string,
+    experience: Partial<UserExperienceCreate>,
+  ): Promise<UserExperience> {
     return this.put<UserExperience>(`/resume/experience/${id}`, experience);
   }
 
@@ -218,7 +264,10 @@ export class ApiClient {
     return this.post<UserSkill>('/resume/skills', skill);
   }
 
-  async updateSkill(id: string, skill: Partial<UserSkillCreate>): Promise<UserSkill> {
+  async updateSkill(
+    id: string,
+    skill: Partial<UserSkillCreate>,
+  ): Promise<UserSkill> {
     return this.put<UserSkill>(`/resume/skills/${id}`, skill);
   }
 
@@ -238,10 +287,13 @@ export class ApiClient {
     return this.delete<{ message: string }>('/resume/reset');
   }
 
-  async generateMatches(): Promise<{ success: boolean; message: string; matches_found: number }> {
+  async generateMatches(): Promise<{
+    success: boolean;
+    message: string;
+    matches_found: number;
+  }> {
     return this.post('/auth/generate-matches');
   }
 }
 
 export const apiClient = new ApiClient();
-

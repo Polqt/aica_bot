@@ -59,18 +59,16 @@ export default function ChoicePage() {
 
   if (isChecking) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center bg-[#fafafa] dark:bg-[#1a1a1a]">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl p-8 shadow-sm text-center"
-        >
-          <div className="animate-spin w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full mx-auto mb-4" />
-          <h2 className="text-lg font-medium text-gray-800 dark:text-gray-100 tracking-tight">
-            Checking your profile...
-          </h2>
-        </motion.div>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl p-8 shadow-sm text-center"
+      >
+        <div className="animate-spin w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full mx-auto mb-4" />
+        <h2 className="text-lg font-medium text-gray-800 dark:text-gray-100 tracking-tight">
+          Checking your profile...
+        </h2>
+      </motion.div>
     );
   }
 

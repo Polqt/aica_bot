@@ -1,20 +1,32 @@
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Inter, Lora, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 import { cn } from '@/lib/utils';
 
+// Notion Default Font (Sans-serif)
 const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-default',
   display: 'swap',
+  weight: ['400', '500', '600', '700'],
 });
 
+// Notion Serif Font
+const lora = Lora({
+  subsets: ['latin'],
+  variable: '--font-serif',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+});
+
+// Notion Mono Font
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
-  variable: '--font-jetbrains-mono',
+  variable: '--font-mono',
   display: 'swap',
+  weight: ['400', '500', '600', '700'],
 });
 
 export const metadata: Metadata = {
@@ -30,7 +42,7 @@ export const metadata: Metadata = {
     siteName: 'AICA',
     images: [
       {
-        url: '/NYXARCANALOGO_TRANSPARENT-02.png',
+        url: '/AICA Logo.svg',
         width: 1200,
         height: 630,
         alt: 'AICA - AI Career Assistant',
@@ -39,15 +51,6 @@ export const metadata: Metadata = {
     locale: 'en_US',
     type: 'website',
   },
-};
-
-export const viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
-  ],
 };
 
 export default function RootLayout({
@@ -60,7 +63,6 @@ export default function RootLayout({
     name: 'AICA - AI Career Assistant',
     description:
       'AI-powered career assistant that helps you find your dream tech job by analyzing your resume and matching you with the best opportunities.',
-    url: 'https://aica.app',
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Web Browser',
     creator: {
@@ -80,7 +82,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}
+        className={`${inter.variable} ${lora.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}
       >
         <ThemeProvider
           attribute="class"
