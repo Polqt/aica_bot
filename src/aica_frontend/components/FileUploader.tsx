@@ -62,7 +62,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         <Button
           onClick={onUpload}
           disabled={!selectedFile || isUploading || !!error}
-          className="flex-1 h-11 bg-`blue`-600 hover:bg-blue-700 text-white font-medium rounded-md transition-all"
+          className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-all"
         >
           {isUploading ? (
             <>

@@ -7,37 +7,109 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 import { API_BASE_URL } from '@/lib/constants/api';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      // Sign in with Supabase
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-      const data = await response.json();
+      if (authError) {
+        // Check if it's an email verification issue
+        if (
+          authError.message.includes('Email not confirmed') ||
+          authError.message.includes('not verified') ||
+          authError.message.includes('email_not_confirmed')
+        ) {
+          toast.error('Email not verified', {
+            description:
+              'Please verify your email address before logging in. Check your inbox for the verification link.',
+            action: {
+              label: 'Resend Email',
+              onClick: async () => {
+                try {
+                  await supabase.auth.resend({
+                    type: 'signup',
+                    email: email,
+                  });
+                  toast.success('Verification email sent!', {
+                    description: 'Please check your inbox and spam folder.',
+                  });
+                } catch {
+                  toast.error('Failed to resend email', {
+                    description: 'Please try again in a few minutes.',
+                  });
+                }
+              },
+            },
+          });
+        } else if (authError.message.includes('Invalid login credentials')) {
+          toast.error('Incorrect email or password', {
+            description:
+              'The email or password you entered is incorrect. Please try again.',
+          });
+        } else if (authError.message.includes('Email not found')) {
+          toast.error('Account not found', {
+            description:
+              'No account found with this email. Please sign up first.',
+            action: {
+              label: 'Sign up',
+              onClick: () => router.push('/sign-up'),
+            },
+          });
+        } else {
+          toast.error('Unable to log in', {
+            description:
+              "We couldn't log you in. Please check your credentials and try again.",
+          });
+        }
+        setLoading(false);
+        return;
+      }
 
-      if (!response.ok) {
-        setError(data.detail || 'Invalid email or password.');
-      } else {
-        localStorage.setItem('access_token', data.access_token);
-        router.push('/choice');
+      if (authData.user && authData.session) {
+        // Store the access token
+        localStorage.setItem('access_token', authData.session.access_token);
+
+        // Also sync with backend to ensure user exists in database
+        try {
+          await fetch(`${API_BASE_URL}/auth/profile`, {
+            headers: {
+              Authorization: `Bearer ${authData.session.access_token}`,
+            },
+          });
+        } catch {
+          console.log('Backend sync error (non-critical)');
+        }
+
+        toast.success('Welcome back! 👋', {
+          description: 'You have successfully logged in.',
+        });
+
+        // Redirect to choice page
+        setTimeout(() => {
+          router.push('/choice');
+        }, 500);
       }
     } catch {
-      setError('An unexpected error occurred.');
+      toast.error('An unexpected error occurred', {
+        description: 'Please try again later.',
+      });
     } finally {
       setLoading(false);
     }
@@ -92,12 +164,6 @@ export default function LoginPage() {
               className="h-11"
             />
           </div>
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
 
           <Button
             type="submit"

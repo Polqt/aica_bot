@@ -1,21 +1,17 @@
-#!/usr/bin/env python3
-"""
-Quick verification script for RAG system setup.
-Run this after implementing the RAG fixes to ensure everything works.
-"""
 import os
 import sys
 import asyncio
 from pathlib import Path
 
-# Add parent directory (aica_backend) to path
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
+from dotenv import load_dotenv
+env_path = Path(__file__).resolve().parent.parent.parent.parent / '.env'
+load_dotenv(env_path)
+
 def check_env_variables():
-    """Check required environment variables."""
-    print("\n🔍 Checking Environment Variables...")
-    
+
     required_vars = {
         "ANTHROPIC_API_KEY": "LLM analysis",
         "SUPABASE_URL": "Database connection",
@@ -34,9 +30,7 @@ def check_env_variables():
 
 
 def check_vector_store():
-    """Check if FAISS vector store exists."""
-    print("\n🗂️  Checking Vector Store...")
-    
+
     faiss_path = Path("faiss_job_index.faiss")
     pkl_path = Path("faiss_job_index.pkl")
     
@@ -52,9 +46,7 @@ def check_vector_store():
 
 
 def check_dependencies():
-    """Check if required packages are installed."""
-    print("\n📦 Checking Dependencies...")
-    
+
     required_packages = [
         "langchain",
         "langchain_anthropic",
@@ -78,9 +70,7 @@ def check_dependencies():
 
 
 async def test_embedder():
-    """Test TextEmbedder initialization."""
-    print("\n🔬 Testing TextEmbedder...")
-    
+
     try:
         from core.embedder import TextEmbedder
         
@@ -100,9 +90,6 @@ async def test_embedder():
 
 
 async def test_skill_extraction():
-    """Test skill extraction."""
-    print("\n🎯 Testing Skill Extraction...")
-    
     try:
         from core.resume.skill_extractor import SkillExtractor
         
@@ -139,9 +126,6 @@ async def test_skill_extraction():
 
 
 async def test_vector_search():
-    """Test vector search functionality."""
-    print("\n🔍 Testing Vector Search...")
-    
     try:
         from core.embedder import TextEmbedder, VectorJobStore
         
@@ -154,9 +138,8 @@ async def test_vector_search():
         if job_count == 0:
             print(f"  ⚠️  No jobs indexed yet")
             print(f"     Run: python scripts/index_jobs.py")
-            return True  # Not a failure, just needs indexing
-        
-        # Test search
+            return True  
+
         query = "Python developer with React experience"
         results = store.search_similar_jobs(query, k=5)
         
@@ -175,9 +158,6 @@ async def test_vector_search():
 
 
 async def test_matcher():
-    """Test JobMatcher initialization."""
-    print("\n🤝 Testing JobMatcher...")
-    
     try:
         from core.matching.matcher import JobMatcher
         
@@ -197,11 +177,6 @@ async def test_matcher():
 
 
 async def run_all_tests():
-    """Run all verification tests."""
-    print("\n" + "="*60)
-    print("🚀 AICA RAG System Verification")
-    print("="*60)
-    
     results = {}
     
     # Run tests

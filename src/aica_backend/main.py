@@ -8,6 +8,8 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+from scripts.index_jobs import index_all_jobs
+
 from pathlib import Path
 
 # Configure logging for Google Cloud
@@ -43,20 +45,24 @@ app = FastAPI(title="AICA Backend", version="1.0.0")
 @app.on_event("startup")
 async def startup_event():
     logger.info("="*60)
-    logger.info("AICA BACKEND STARTING UP")
+    logger.info("AICA BACKEND STARTING UP (RAG VERSION)")
     logger.info("="*60)
     logger.info("Python version: %s", sys.version)
     logger.info("Environment variables loaded:")
     logger.info("  - ANTHROPIC_API_KEY: %s", "SET" if os.getenv("ANTHROPIC_API_KEY") else "NOT SET")
     logger.info("  - SUPABASE_URL: %s", "SET" if os.getenv("SUPABASE_URL") else "NOT SET")
-    logger.info("Initializing services...")
-    try:
-        # Test JobMatchingService initialization
-        from services.job_matching import JobMatchingService
-        service = JobMatchingService()
-        logger.info("SUCCESS: JobMatchingService initialized")
-    except Exception as e:
-        logger.error("FAILED: JobMatchingService initialization: %s", str(e))
+    
+    # Check FAISS index existence (but don't load it yet - lazy loading)
+    faiss_path = Path(__file__).parent / "faiss_job_index" / "index.faiss"
+    
+    if not faiss_path.exists():
+        logger.warning("⚠️  FAISS index not found at startup")
+        logger.warning("⚠️  Will rebuild on first job matching request")
+    else:
+        logger.info(f"✅ FAISS index found ({faiss_path.stat().st_size / 1024 / 1024:.2f} MB)")
+        logger.info("✅ Will load FAISS on first job matching request (lazy loading)")
+    
+    logger.info("✅ Startup complete - Ready to serve requests")
     logger.info("="*60)
 
 # Rate limiting setup
@@ -86,8 +92,18 @@ async def global_exception_handler(request: Request, exc: Exception):
 
     # Add CORS headers to ALL error responses
     origin = request.headers.get("origin")
-    allowed_origins = ["http://localhost:3000", "https://your-production-frontend-domain.com"]
-    if origin in allowed_origins:
+    # Allow localhost on any port + local network IPs for QA testing
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://localhost:8000", 
+        "http://127.0.0.1:3000",
+        "https://your-production-frontend-domain.com"
+    ]
+    # Allow any local network IP (192.168.x.x, 10.x.x.x, etc.)
+    if origin and (origin.startswith("http://192.168.") or 
+                   origin.startswith("http://10.") or
+                   origin.startswith("http://172.") or
+                   origin in allowed_origins):
         response.headers["Access-Control-Allow-Origin"] = origin
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
@@ -104,8 +120,18 @@ class CORSFixedMiddleware(BaseHTTPMiddleware):
             response = JSONResponse(content={})
             # Set origin based on request
             origin = request.headers.get("origin")
-            allowed_origins = ["http://localhost:3000", "https://your-production-frontend-domain.com"]
-            if origin in allowed_origins:
+            # Allow localhost on any port + local network IPs for QA testing
+            allowed_origins = [
+                "http://localhost:3000",
+                "http://localhost:8000",
+                "http://127.0.0.1:3000", 
+                "https://your-production-frontend-domain.com"
+            ]
+            # Allow any local network IP (192.168.x.x, 10.x.x.x, etc.)
+            if origin and (origin.startswith("http://192.168.") or 
+                           origin.startswith("http://10.") or
+                           origin.startswith("http://172.") or
+                           origin in allowed_origins):
                 response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Credentials"] = "true"
             response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
@@ -117,8 +143,18 @@ class CORSFixedMiddleware(BaseHTTPMiddleware):
 
         # Add CORS headers to ALL responses
         origin = request.headers.get("origin")
-        allowed_origins = ["http://localhost:3000", "https://your-production-frontend-domain.com"]
-        if origin in allowed_origins:
+        # Allow localhost on any port + local network IPs for QA testing
+        allowed_origins = [
+            "http://localhost:3000",
+            "http://localhost:8000",
+            "http://127.0.0.1:3000",
+            "https://your-production-frontend-domain.com"
+        ]
+        # Allow any local network IP (192.168.x.x, 10.x.x.x, etc.)
+        if origin and (origin.startswith("http://192.168.") or 
+                       origin.startswith("http://10.") or
+                       origin.startswith("http://172.") or
+                       origin in allowed_origins):
             response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
@@ -132,7 +168,7 @@ app.add_middleware(CORSFixedMiddleware)
 # Add the standard CORS middleware for preflight handling
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://your-production-frontend-domain.com"],  # Replace with actual production domain
+    allow_origins=["*"],  # Allow all origins for development/QA
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

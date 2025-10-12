@@ -19,9 +19,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter()
 
-@router.post("/signup", response_model=dict)
-@limiter.limit("5/minute")
-async def signup(request: Request, user: UserCreate):
+async def _signup_logic(user: UserCreate):
     try:
         supabase = get_supabase_client()
         
@@ -70,6 +68,18 @@ async def signup(request: Request, user: UserCreate):
         raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Signup failed: {str(e)}")
+
+@router.post("/signup", response_model=dict)
+@limiter.limit("5/minute")
+async def signup(request: Request, user: UserCreate):
+    """Signup endpoint (legacy)"""
+    return await _signup_logic(user)
+
+@router.post("/register", response_model=dict)
+@limiter.limit("5/minute")
+async def register(request: Request, user: UserCreate):
+    """Register endpoint (frontend uses this)"""
+    return await _signup_logic(user)
 
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("10/minute")

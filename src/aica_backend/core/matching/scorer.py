@@ -47,14 +47,6 @@ class MatchScorer:
     
     @staticmethod
     def get_match_statistics(match_scores: List[float]) -> Dict:
-        """Calculate statistics across multiple job matches.
-        
-        Args:
-            match_scores: List of match scores
-            
-        Returns:
-            Dictionary with statistical summary
-        """
         if not match_scores:
             return {
                 "total_jobs": 0,

@@ -1,6 +1,3 @@
-#!/bin/bash
-# Quick setup script for AICA RAG system
-
 echo "╔═══════════════════════════════════════════════════╗"
 echo "║     AICA RAG System - Quick Setup                 ║"
 echo "╚═══════════════════════════════════════════════════╝"

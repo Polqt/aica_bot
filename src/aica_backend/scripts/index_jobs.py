@@ -1,25 +1,27 @@
-"""
-Script to index existing jobs in the vector store.
-Run this after upgrading to the RAG system to index all existing jobs.
-"""
 import asyncio
 import logging
 import sys
 from pathlib import Path
 
-# Add parent directory (aica_backend) to path
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
+from dotenv import load_dotenv
+env_path = Path(__file__).resolve().parent.parent.parent.parent / '.env'
+load_dotenv(env_path)
+
+# Setup logging after dotenv
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.info(f"Loading .env from: {env_path}")
+logger.info(f".env exists: {env_path.exists()}")
+
+# Now import project modules
 from core.embedder import TextEmbedder, VectorJobStore
 from database.job_db import JobDatabase
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 
 async def index_all_jobs():
-    """Index all jobs from the database into the vector store."""
     try:
         # Initialize components
         logger.info("Initializing embedder and vector store...")
@@ -27,9 +29,21 @@ async def index_all_jobs():
         vector_store = VectorJobStore(embedder)
         db = JobDatabase()
         
-        # Get all jobs
-        logger.info("Fetching all jobs from database...")
-        all_jobs = db.get_all_jobs(limit=10000)  # Adjust limit as needed
+        # Get all jobs for indexing (in batches)
+        logger.info("Fetching jobs from database...")
+        batch_size = 1000
+        offset = 0
+        all_jobs = []
+        
+        while True:
+            batch = db.get_jobs_for_indexing(limit=batch_size)
+            if not batch:
+                break
+            all_jobs.extend(batch)
+            offset += batch_size
+            logger.info(f"Fetched {len(all_jobs)} jobs so far...")
+            if len(batch) < batch_size:
+                break  # Last batch
         
         if not all_jobs:
             logger.warning("No jobs found in database")
@@ -73,16 +87,6 @@ async def index_all_jobs():
         # Save the vector store
         logger.info("Saving vector store to disk...")
         vector_store.save()
-        
-        logger.info(f"""
-        ╔═══════════════════════════════════════╗
-        ║     JOB INDEXING COMPLETED           ║
-        ╠═══════════════════════════════════════╣
-        ║  Total Jobs: {len(all_jobs):<23} ║
-        ║  Successfully Indexed: {indexed_count:<11} ║
-        ║  Failed: {failed_count:<27} ║
-        ╚═══════════════════════════════════════╝
-        """)
         
         return indexed_count, failed_count
         

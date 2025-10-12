@@ -11,7 +11,6 @@ warnings.warn(
     stacklevel=2
 )
 
-# Re-export for backward compatibility
 __all__ = [
     "JobMatcher",
     "MatchResult",
