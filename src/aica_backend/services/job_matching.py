@@ -682,41 +682,59 @@ class JobMatchingService:
 
     async def update_matches_for_user(self, user_id: str) -> Dict[str, any]:
         try:
+            # Get existing matches to avoid duplicates (keep previous matches!)
+            existing_matches = self.user_db.get_user_job_matches(user_id)
+            existing_job_ids = {m.job_id for m in existing_matches} if existing_matches else set()
+            
+            logger.info(f"User {user_id} has {len(existing_job_ids)} existing matches")
+            
             # Find AI-powered matches
             matches = await self.find_job_matches(user_id)
             
             if not matches:
                 return {
                     "success": True,
-                    "message": "No AI matches found",
+                    "message": "No new matches found",
                     "matches_found": 0,
                     "matches_saved": 0,
-                    "ai_analysis": "No suitable jobs found using AI matching criteria"
+                    "existing_matches": len(existing_job_ids),
+                    "ai_analysis": "No new suitable jobs found using AI matching criteria"
                 }
             
-            # Save matches
-            saved_matches = await self.save_job_matches(user_id, matches)
+            # Filter out duplicates - only save NEW matches
+            new_matches = [m for m in matches if m.job.id not in existing_job_ids]
+            duplicate_count = len(matches) - len(new_matches)
+            
+            logger.info(f"Found {len(matches)} total matches, {len(new_matches)} are new, {duplicate_count} already exist")
+            
+            # Save only new matches (preserves old ones)
+            saved_matches = await self.save_job_matches(user_id, new_matches)
             
             # Create detailed summary with AI insights
-            high_confidence = [m for m in matches if m.confidence == "high"]
-            medium_confidence = [m for m in matches if m.confidence == "medium"]
+            high_confidence = [m for m in new_matches if m.confidence == "high"]
+            medium_confidence = [m for m in new_matches if m.confidence == "medium"]
             
             summary = {
                 "success": True,
-                "message": f"AI found and saved {len(saved_matches)} job matches",
+                "message": f"Added {len(saved_matches)} new job matches" + (f" ({duplicate_count} already existed)" if duplicate_count > 0 else ""),
                 "matches_found": len(matches),
                 "matches_saved": len(saved_matches),
-                "average_score": sum(m.match_score for m in matches) / len(matches),
+                "existing_matches": len(existing_job_ids),
+                "new_matches": len(saved_matches),
+                "duplicates_skipped": duplicate_count,
+                "total_matches_now": len(existing_job_ids) + len(saved_matches),
+                "average_score": sum(m.match_score for m in new_matches) / len(new_matches) if new_matches else 0,
                 "high_confidence_matches": len(high_confidence),
                 "medium_confidence_matches": len(medium_confidence),
-                "top_match_score": matches[0].match_score if matches else 0,
-                "ai_analysis": f"AI analyzed {len(matches)} potential matches with detailed reasoning",
-                "top_match_reasoning": matches[0].ai_reasoning if matches else None
+                "top_match_score": new_matches[0].match_score if new_matches else 0,
+                "ai_analysis": f"AI analyzed {len(matches)} potential matches, added {len(saved_matches)} new ones",
+                "top_match_reasoning": new_matches[0].ai_reasoning if new_matches else None
             }
             
             return summary
             
         except Exception as e:
+            logger.error(f"Error in update_matches_for_user: {str(e)}")
             return {
                 "success": False,
                 "message": f"Error in AI matching: {str(e)}",

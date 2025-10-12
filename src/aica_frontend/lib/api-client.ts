@@ -291,6 +291,11 @@ export class ApiClient {
     success: boolean;
     message: string;
     matches_found: number;
+    matches_saved: number;
+    existing_matches?: number;
+    new_matches?: number;
+    duplicates_skipped?: number;
+    total_matches_now?: number;
   }> {
     return this.post('/auth/generate-matches');
   }

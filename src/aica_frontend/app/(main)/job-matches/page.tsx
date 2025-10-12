@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, RefreshCw, Zap } from 'lucide-react';
+import { Search, RefreshCw, Zap, Trash2 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { JobMatch, MatchingStats } from '@/types/jobMatch';
 import { useSavedJobs } from '@/hooks/useSavedJobs';
 import { ProcessingStatusBanner } from '@/components/ProcessingStatusBanner';
 import { JobCard } from '@/components/JobCard';
 import { JobDetails } from '@/components/JobDetails';
+import { toast } from 'sonner';
 
 export default function JobMatchesPage() {
   const { savedJobIds, savingJobId, saveJob, removeJob, refreshSavedJobs } =
@@ -100,7 +101,26 @@ export default function JobMatchesPage() {
 
       // Try to generate new matches using current resume builder data
       try {
-        await apiClient.generateMatches();
+        const result = await apiClient.generateMatches();
+
+        // Show success message with details
+        if ((result.new_matches ?? 0) > 0) {
+          toast.success(`Added ${result.new_matches} new job matches!`, {
+            description:
+              (result.duplicates_skipped ?? 0) > 0
+                ? `${result.duplicates_skipped} jobs were already in your matches`
+                : `You now have ${result.total_matches_now} total matches`,
+          });
+        } else if ((result.duplicates_skipped ?? 0) > 0) {
+          toast.info('No new matches found', {
+            description: `All ${result.duplicates_skipped} matching jobs are already in your list`,
+          });
+        } else {
+          toast.info('No new matches found', {
+            description:
+              'Try updating your skills or check back later for new job postings',
+          });
+        }
       } catch {
         await apiClient.post('/jobs/find-matches');
       }
@@ -110,8 +130,43 @@ export default function JobMatchesPage() {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to refresh matches';
       setError(errorMessage);
+      toast.error('Failed to refresh matches', {
+        description: errorMessage,
+      });
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const clearAllMatches = async () => {
+    if (
+      !confirm(
+        'Are you sure you want to clear ALL job matches? This action cannot be undone.',
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await apiClient.delete('/jobs/matches');
+
+      toast.success('All matches cleared', {
+        description: 'You can refresh to find new matches anytime',
+      });
+
+      // Clear local state and reload
+      setJobMatches([]);
+      setSelectedJob(null);
+      await Promise.all([loadJobMatches(), loadStats()]);
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to clear matches';
+      toast.error('Failed to clear matches', {
+        description: errorMessage,
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -177,6 +232,15 @@ export default function JobMatchesPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Button
+            onClick={clearAllMatches}
+            disabled={loading || jobMatches.length === 0}
+            variant="neutral"
+            className="border border-gray-200 hover:border-red-300 hover:bg-red-50 text-gray-700 hover:text-red-600 font-medium px-4 py-2 shadow-sm hover:shadow-md transition-all duration-150 rounded-md flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Clear All
+          </Button>
           <Button
             onClick={refreshMatches}
             disabled={refreshing}

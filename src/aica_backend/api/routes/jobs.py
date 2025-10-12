@@ -259,11 +259,19 @@ class SavedJobResponse(BaseModel):
 async def clear_job_matches(
     current_user: User = Depends(get_current_user)
 ) -> Dict[str, str]:
+    """Clear all job matches for user - fresh start"""
     try:
         matching_service = JobMatchingService()
-        return {"message": "Job matches cleared successfully"}
+        
+        # Delete all matches for the user
+        matching_service.user_db.delete_user_job_matches(current_user.id)
+        
+        logger.info(f"Cleared all job matches for user {current_user.id}")
+        
+        return {"message": "All job matches cleared successfully"}
         
     except Exception as e:
+        logger.error(f"Error clearing job matches for user {current_user.id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error clearing job matches: {str(e)}"
