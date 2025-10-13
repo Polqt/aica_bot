@@ -198,15 +198,6 @@ async def logout():
     return {"message": "Logged out successfully"}
 
 async def process_resume_background(user_id: str, file_content: bytes, file_type: str, mode: str = None):
-    """
-    Process resume in background: parse → extract skills → generate AI-powered job matches
-    
-    Args:
-        user_id: User ID
-        file_content: Resume file content
-        file_type: MIME type of the file
-        mode: Processing mode ('replace', 'merge', or None)
-    """
     db = UserDatabase()
     
     try:
@@ -214,8 +205,8 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
         if not user:
             return
         
-        # Step 0: Clear existing data if replace mode
-        if mode == "replace":
+        # Step 0: Clear existing data if replace mode (or default behavior)
+        if mode == "replace" or mode is None:
             logger.info(f"🗑️ Replace mode: Clearing existing data for user {user_id}")
             db.update_user_profile(user_id, {"processing_step": "clearing_old_data"})
             
@@ -231,7 +222,7 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
                 # Continue processing even if clearing fails
     
         # Step 1: Parse resume and extract skills
-        logger.info(f"🔍 Starting resume parsing for user {user_id} (mode: {mode or 'default'})")
+        logger.info(f"🔍 Starting resume parsing for user {user_id} (mode: {mode or 'replace (default)'})")
         db.update_user_profile(user_id, {"processing_step": "parsing"})
         
         parser = ResumeParser()
@@ -322,16 +313,6 @@ async def upload_resume(
     current_user: dict = Depends(get_current_user),
     mode: str = None  # Optional: 'replace' or 'merge'
 ):
-    """
-    Upload and process a resume.
-    
-    Args:
-        file: Resume file (PDF, DOC, or DOCX)
-        mode: Optional processing mode
-            - 'replace': Clear all existing profile data before processing
-            - 'merge': Keep existing data and merge with new resume data
-            - None: Default behavior (merge)
-    """
     try:
         # Validate file type
         allowed_types = [

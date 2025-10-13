@@ -63,7 +63,6 @@ export default function ResumeUpload() {
             Let AICA analyze your tech and soft skills
           </p>
 
-          {/* Mode Indicator */}
           {mode === 'replace' && (
             <motion.div
               initial={{ opacity: 0, y: -5 }}
@@ -73,21 +72,7 @@ export default function ResumeUpload() {
               <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
               <p className="text-sm text-red-700">
                 <strong>Replace Mode:</strong> All existing profile data will be
-                cleared
-              </p>
-            </motion.div>
-          )}
-
-          {mode === 'merge' && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg"
-            >
-              <AlertTriangle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-              <p className="text-sm text-blue-700">
-                <strong>Merge Mode:</strong> New data will be merged with
-                existing profile
+                cleared and replaced with new resume data
               </p>
             </motion.div>
           )}

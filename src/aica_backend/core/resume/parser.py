@@ -29,10 +29,6 @@ class ResumeParser:
     
     @staticmethod
     def _extract_json_from_text(text: str) -> str:
-        """
-        Extract JSON from text that might contain explanatory text or markdown.
-        Handles cases where LLM adds text before/after JSON.
-        """
         # Try to find JSON object in the text
         # Look for patterns like { ... } that span multiple lines
         json_match = re.search(r'\{[\s\S]*\}', text)

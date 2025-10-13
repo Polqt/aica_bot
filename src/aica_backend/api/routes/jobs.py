@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-
 class JobMatchResponse(BaseModel):
     job_id: str
     job_title: str
@@ -264,14 +263,22 @@ async def clear_job_matches(
         matching_service = JobMatchingService()
         
         # Delete all matches for the user
-        matching_service.user_db.delete_user_job_matches(current_user.id)
+        success = matching_service.user_db.clear_job_matches(current_user.id)
+        
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to clear job matches"
+            )
         
         logger.info(f"Cleared all job matches for user {current_user.id}")
         
         return {"message": "All job matches cleared successfully"}
         
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error clearing job matches for user {current_user.id}: {str(e)}")
+        logger.error(f"Error clearing job matches for user {current_user.id}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error clearing job matches: {str(e)}"
@@ -442,8 +449,7 @@ async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: 
                     ))
 
             return responses
-        
-        # Timeout after 30 seconds
+
         try:
             return await asyncio.wait_for(fetch_saved_jobs(), timeout=30.0)
         except asyncio.TimeoutError:
@@ -452,5 +458,4 @@ async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: 
             
     except Exception as e:
         logger.error(f"Error getting saved jobs for user {current_user.id}: {str(e)}", exc_info=True)
-        # Return empty list instead of raising 500 error
         return []

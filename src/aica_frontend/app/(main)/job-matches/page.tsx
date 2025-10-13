@@ -11,6 +11,7 @@ import { useSavedJobs } from '@/hooks/useSavedJobs';
 import { ProcessingStatusBanner } from '@/components/ProcessingStatusBanner';
 import { JobCard } from '@/components/JobCard';
 import { JobDetails } from '@/components/JobDetails';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
 
 export default function JobMatchesPage() {
@@ -26,6 +27,8 @@ export default function JobMatchesPage() {
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
   const [selectedJob, setSelectedJob] = useState<JobMatch | null>(null);
+  const [showClearDialog, setShowClearDialog] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   const checkProcessingStatus = useCallback(async () => {
     try {
@@ -139,16 +142,8 @@ export default function JobMatchesPage() {
   };
 
   const clearAllMatches = async () => {
-    if (
-      !confirm(
-        'Are you sure you want to clear ALL job matches? This action cannot be undone.',
-      )
-    ) {
-      return;
-    }
-
     try {
-      setLoading(true);
+      setIsClearing(true);
       await apiClient.delete('/jobs/matches');
 
       toast.success('All matches cleared', {
@@ -166,7 +161,7 @@ export default function JobMatchesPage() {
         description: errorMessage,
       });
     } finally {
-      setLoading(false);
+      setIsClearing(false);
     }
   };
 
@@ -233,8 +228,8 @@ export default function JobMatchesPage() {
         </div>
         <div className="flex items-center gap-3">
           <Button
-            onClick={clearAllMatches}
-            disabled={loading || jobMatches.length === 0}
+            onClick={() => setShowClearDialog(true)}
+            disabled={loading || jobMatches.length === 0 || isClearing}
             variant="neutral"
             className="border border-gray-200 hover:border-red-300 hover:bg-red-50 text-gray-700 hover:text-red-600 font-medium px-4 py-2 shadow-sm hover:shadow-md transition-all duration-150 rounded-md flex items-center gap-2"
           >
@@ -376,6 +371,18 @@ export default function JobMatchesPage() {
           )}
         </div>
       </motion.div>
+
+      <ConfirmDialog
+        open={showClearDialog}
+        onOpenChange={setShowClearDialog}
+        title="Clear All Job Matches"
+        description="Are you sure you want to clear ALL job matches? This action cannot be undone. You can refresh to find new matches anytime."
+        confirmText="Clear All"
+        cancelText="Cancel"
+        onConfirm={clearAllMatches}
+        variant="destructive"
+        loading={isClearing}
+      />
     </div>
   );
 }

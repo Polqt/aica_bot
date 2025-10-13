@@ -1,16 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  Home,
-  Briefcase,
-  Bookmark,
-  User,
-  Sparkles,
-  LogOut,
-} from 'lucide-react';
+import { Home, Briefcase, Bookmark, User, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarRail } from './ui/sidebar';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarRail,
+} from './ui/sidebar';
+import Image from 'next/image';
 
 function AppSidebar() {
   const { logout } = useAuth();
@@ -44,18 +50,17 @@ function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              className="bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold uppercase tracking-wide shadow-lg hover:shadow-xl transition-all duration-200 p-6 rounded-lg"
+              className="text-white font-semibold uppercase tracking-wide shadow-lg hover:shadow-xl transition-all duration-200 p-6 rounded-lg"
             >
               <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-white/20">
-                <Sparkles className="size-6 text-white" />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight ml-4">
-                <span className="truncate font-black text-xl text-gray-800">
-                  AICA
-                </span>
-                <span className="truncate text-xs font-bold uppercase text-gray-700">
-                  AI CAREER ASSISTANT
-                </span>
+                <Image
+                  src="/AICA Logo.svg"
+                  alt="Logo"
+                  width={75}
+                  height={75}
+                  className="object-contain"
+                />
+                <span>AICA</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
