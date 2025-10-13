@@ -7,7 +7,7 @@ from database.user_db import UserDatabase
 from database.job_db import JobDatabase
 from database.models.user_models import UserSkill, UserJobMatch
 from database.models.job_models import Job
-from core.embedder import TextEmbedder
+from core.rag import TextEmbedder  # Updated to use new RAG module
 from core.matching import JobMatcher
 
 logger = logging.getLogger(__name__)

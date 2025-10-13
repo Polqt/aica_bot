@@ -11,7 +11,7 @@ from .skill_matcher import SkillMatcher
 from .scorer import MatchScorer
 from .ai_analyzer import AIAnalyzer
 
-from core.embedder import VectorJobStore, TextEmbedder
+from core.rag import VectorJobStore, TextEmbedder 
 from core.resume import ParsedResume
 
 from database.user_db import UserDatabase

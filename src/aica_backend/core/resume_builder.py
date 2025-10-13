@@ -1,4 +1,3 @@
-
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import logging
@@ -334,10 +333,15 @@ class ResumeBuilder:
 
     def clear_user_data(self, user_id: str) -> bool:
         try:
-            self.user_db.client.table("user_education").delete().eq("user_id", user_id).execute()
-            self.user_db.client.table("user_experience").delete().eq("user_id", user_id).execute()
-            self.user_db.client.table("user_skills").delete().eq("user_id", user_id).neq("source", "resume").execute()
+            # Clear all user data
+            self.user_db.clear_user_education(user_id)
+            self.user_db.clear_user_experience(user_id)
+            self.user_db.clear_user_skills(user_id)
+            self.user_db.clear_job_matches(user_id)  # ✅ Now clearing job matches too!
+            
+            logger.info(f"Successfully cleared all data for user {user_id}")
 
+            # Reset profile flags
             self.user_db.update_user_profile(user_id, {
                 "profile_completed": False,
                 "resume_uploaded": False,
@@ -347,5 +351,6 @@ class ResumeBuilder:
             return True
 
         except Exception as e:
+            logger.error(f"Failed to clear user data for {user_id}: {str(e)}")
             return False
         

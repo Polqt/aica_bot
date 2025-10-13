@@ -31,7 +31,6 @@ class AIAnalyzer:
             partial_matches_text = ", ".join(partial_matches[:8]) if partial_matches else "None"
             missing_skills_text = ", ".join(missing_skills[:10]) if missing_skills else "None"
             
-            # Simplified prompt for faster response (3-5 seconds instead of 10-15 seconds)
             analysis_prompt = f"""As a technical recruiter, analyze this job match concisely.
                                 **CANDIDATE SKILLS:** {user_skills_text}
                                 **JOB REQUIREMENTS:** {job_skills_text}
@@ -42,28 +41,34 @@ class AIAnalyzer:
                                 • Related Skills ({len(partial_matches)}): {partial_matches_text}
                                 • Missing Skills ({len(missing_skills)}): {missing_skills_text}
                                 • Overall Match: {round(compatibility_score * 100, 1)}%
+                                
+                                -------------------------------
+                               
+                                 NOW ANALYZE THIS MATCH:
 
-                                Provide a focused 250-300 word analysis with:
+                                 Provide a focused 250-300 word analysis with:
 
                                 **1. SKILL ALIGNMENT** (100-120 words)
+                                Explain the compatibility in depth:
                                 - What makes this a {round(compatibility_score * 100, 1)}% match?
-                                - Key strengths that align with the role
-                                - Most important skill gaps
-                                - Transferable skills from related matches
+                                - Key strengths that align with the role (Identify 3-4 specific skills that directly address the job's core requirements)
+                                - Most important skill gaps (Prioritize the 2-3 missing skills that matter most for this role's success)
+                                - Transferable skills from related matches (Explain how partial matches can bridge gaps or demonstrate capability)
 
                                 **2. APPLICATION RECOMMENDATION** (60-80 words)
+                                Give a clear, actionable verdict:
                                 - Should they apply now? (Strong Yes/Yes/Maybe/Not Yet)
-                                - Why or why not based on actual match quality
+                                - Why or why not based on actual match quality (Reference specific skills, experience level, and market competitiveness).
                                 - Interview success likelihood  
                                 - Best approach if applying
 
                                 **3. IMPROVEMENT STEPS** (60-80 words)
-                                - Top 2-3 skills to develop for this role
-                                - Realistic timeline for readiness
+                                Provide a concrete development roadmap:
+                                - (Prioritize by impact and feasibility - what will close the gap fastest?)                                   - Realistic timeline for readiness
                                 - Quick wins to boost candidacy
-                                - Alternative roles if better aligned
+                                - Alternative roles if better aligned  (Suggest 1-3 specific job titles that might be a stronger match given their current skills)
 
-                                Be honest, specific, and actionable. Focus on what matters most.
+                                Be accurate, specific, and actionable. Focus on what matters most.
                             """
             
             logger.info("📤 Sending request to Anthropic API...")

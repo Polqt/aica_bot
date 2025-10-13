@@ -211,15 +211,24 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
             db.update_user_profile(user_id, {"processing_step": "clearing_old_data"})
             
             try:
-                # Clear all existing user data
+                # Clear all existing user data to ensure clean state
+                logger.info(f"Clearing skills for user {user_id}")
                 db.clear_user_skills(user_id)
+                
+                logger.info(f"Clearing education for user {user_id}")
                 db.clear_user_education(user_id)
+                
+                logger.info(f"Clearing experience for user {user_id}")
                 db.clear_user_experience(user_id)
+                
+                logger.info(f"Clearing job matches for user {user_id}")
                 db.clear_job_matches(user_id)
-                logger.info(f"✅ Successfully cleared old data for user {user_id}")
+                
+                logger.info(f"✅ Successfully cleared all old data for user {user_id}")
             except Exception as clear_error:
                 logger.error(f"⚠️ Error clearing old data for user {user_id}: {clear_error}")
-                # Continue processing even if clearing fails
+                # Continue processing even if clearing fails - this ensures users can still upload
+
     
         # Step 1: Parse resume and extract skills
         logger.info(f"🔍 Starting resume parsing for user {user_id} (mode: {mode or 'replace (default)'})")

@@ -353,13 +353,12 @@ class UserDatabase:
             return []
     
     def clear_job_matches(self, user_id: str) -> bool:
-        """Delete all job matches for a user (used during resume re-upload with replace mode)"""
         try:
             response = self.client.table("user_job_matches").delete().eq("user_id", user_id).execute()
-            logger.info(f"Cleared all job matches for user {user_id}")
+            logger.info(f"✅ Cleared all job matches for user {user_id}")
             return True
         except Exception as e:
-            logger.error(f"Failed to clear job matches for user {user_id}: {e}")
+            logger.error(f"❌ Failed to clear job matches for user {user_id}: {e}")
             return False
 
     def get_user_stats(self, user_id: str) -> Dict[str, Any]:

@@ -8,7 +8,7 @@ sys.path.insert(0, str(project_root))
 
 from core.job_scraper import JobScraper
 from database.job_db import JobDatabase
-from core.embedder import TextEmbedder, VectorJobStore
+from core.rag import TextEmbedder, VectorJobStore  # Updated to use new RAG module
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -2,11 +2,16 @@ import os
 import sys
 import asyncio
 from pathlib import Path
+from dotenv import load_dotenv
+
+from core.rag import TextEmbedder 
+from core.resume.skill_extractor import SkillExtractor
+from core.matching.matcher import JobMatcher
+from core.rag import TextEmbedder, VectorJobStore
 
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
-from dotenv import load_dotenv
 env_path = Path(__file__).resolve().parent.parent.parent.parent / '.env'
 load_dotenv(env_path)
 
@@ -72,8 +77,6 @@ def check_dependencies():
 async def test_embedder():
 
     try:
-        from core.embedder import TextEmbedder
-        
         embedder = TextEmbedder()
         test_text = "Python developer with React experience"
         embedding = embedder.embed_single_text(test_text)
@@ -91,8 +94,6 @@ async def test_embedder():
 
 async def test_skill_extraction():
     try:
-        from core.resume.skill_extractor import SkillExtractor
-        
         test_resume = """
         Senior Software Engineer with 5 years of experience.
         
@@ -127,8 +128,6 @@ async def test_skill_extraction():
 
 async def test_vector_search():
     try:
-        from core.embedder import TextEmbedder, VectorJobStore
-        
         embedder = TextEmbedder()
         store = VectorJobStore(embedder)
         
@@ -159,7 +158,6 @@ async def test_vector_search():
 
 async def test_matcher():
     try:
-        from core.matching.matcher import JobMatcher
         
         matcher = JobMatcher()
         

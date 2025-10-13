@@ -17,7 +17,7 @@ logger.info(f"Loading .env from: {env_path}")
 logger.info(f".env exists: {env_path.exists()}")
 
 # Now import project modules
-from core.embedder import TextEmbedder, VectorJobStore
+from core.rag import TextEmbedder, VectorJobStore  # ✅ Using new RAG module
 from database.job_db import JobDatabase
 
 
