@@ -95,11 +95,8 @@ export const useResumeProcessing = () => {
         toast.success(
           `Resume processed successfully! Found ${matchCount} job matches.`,
         );
-        setTimeout(() => {
-          if (isComponentMountedRef.current) {
-            router.push('/job-matches');
-          }
-        }, 1500);
+        // Don't auto-navigate to job-matches
+        // Let the upload page handle navigation to dashboard instead
       } else if (data.status === 'error') {
         stopPolling();
         toast.error(

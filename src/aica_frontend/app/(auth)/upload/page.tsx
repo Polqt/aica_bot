@@ -40,12 +40,18 @@ export default function ResumeUpload() {
   React.useEffect(() => {
     if (processingStatus === 'completed') {
       const timer = setTimeout(() => {
-        router.push('/dashboard');
+        // After resume replacement, go to user profile instead
+        // This prevents showing stale job matches
+        if (mode === 'replace') {
+          router.push('/user-profile?from=upload');
+        } else {
+          router.push('/dashboard');
+        }
       }, 2000);
 
       return () => clearTimeout(timer);
     }
-  }, [processingStatus, router]);
+  }, [processingStatus, router, mode]);
 
   return (
     <div className="flex items-center justify-center px-6">

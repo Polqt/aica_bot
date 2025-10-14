@@ -232,15 +232,22 @@ class ResumeBuilder:
 
     def delete_skill(self, skill_id: str, user_id: str) -> bool:
         try:
+            logger.info(f"Attempting to delete skill {skill_id} for user {user_id}")
             response = (self.user_db.client.table("user_skills")
                        .delete()
                        .eq("id", skill_id)
                        .eq("user_id", user_id)
                        .execute())
 
-            return len(response.data) > 0
+            success = len(response.data) > 0
+            if success:
+                logger.info(f"Successfully deleted skill {skill_id}")
+            else:
+                logger.warning(f"No skill found with id {skill_id} for user {user_id}")
+            return success
 
         except Exception as e:
+            logger.error(f"Error deleting skill {skill_id} for user {user_id}: {str(e)}", exc_info=True)
             return False
 
     def update_profile(self, user_id: str, profile_data: Dict[str, Any]) -> Optional[UserProfile]:

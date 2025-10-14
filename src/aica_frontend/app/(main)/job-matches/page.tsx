@@ -30,6 +30,7 @@ export default function JobMatchesPage() {
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
   const [selectedJob, setSelectedJob] = useState<JobMatch | null>(null);
   const [showClearDialog, setShowClearDialog] = useState(false);
+  const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [showingRecommendations, setShowingRecommendations] = useState(false);
 
@@ -65,7 +66,12 @@ export default function JobMatchesPage() {
     try {
       setLoading(true);
       setError(null);
-      const matches = await apiClient.get<JobMatch[]>('/jobs/matches');
+
+      // Force cache bypass to ensure fresh data
+      const timestamp = new Date().getTime();
+      const matches = await apiClient.get<JobMatch[]>(
+        `/jobs/matches?_t=${timestamp}`,
+      );
       setJobMatches(matches);
 
       // If no matches, load recommendations
@@ -109,6 +115,25 @@ export default function JobMatchesPage() {
       loadStats();
     }
   }, [isCheckingStatus, loadJobMatches, loadStats]);
+
+  // Reload matches when page becomes visible (e.g., after navigating back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        !isCheckingStatus &&
+        !loading
+      ) {
+        loadJobMatches();
+        loadStats();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isCheckingStatus, loading, loadJobMatches, loadStats]);
 
   const refreshMatches = async () => {
     try {
@@ -175,6 +200,53 @@ export default function JobMatchesPage() {
       });
     } finally {
       setIsClearing(false);
+    }
+  };
+
+  const regenerateAllMatches = async () => {
+    try {
+      setIsClearing(true);
+      setRefreshing(true);
+
+      // Step 1: Clear all existing matches
+      await apiClient.delete('/jobs/matches');
+
+      toast.info('Cleared old matches, generating fresh ones...', {
+        description: 'This may take a moment',
+      });
+
+      // Step 2: Generate completely new matches
+      try {
+        const result = await apiClient.generateMatches();
+
+        if ((result.matches_saved ?? 0) > 0) {
+          toast.success(
+            `Generated ${result.matches_saved} fresh job matches!`,
+            {
+              description: `AI analyzed ${result.matches_found} jobs and found the best matches for you`,
+            },
+          );
+        } else {
+          toast.info('No matches found', {
+            description:
+              'Try updating your skills or check back later for new job postings',
+          });
+        }
+      } catch {
+        await apiClient.post('/jobs/find-matches');
+      }
+
+      // Step 3: Reload the matches
+      await Promise.all([loadJobMatches(), loadStats()]);
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to regenerate matches';
+      toast.error('Failed to regenerate matches', {
+        description: errorMessage,
+      });
+    } finally {
+      setIsClearing(false);
+      setRefreshing(false);
     }
   };
 
@@ -258,18 +330,32 @@ export default function JobMatchesPage() {
             <Trash2 className="w-4 h-4" />
             Clear All
           </Button>
-          <Button
-            onClick={refreshMatches}
-            disabled={refreshing}
-            className="bg-white text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300 font-medium px-4 py-2 shadow-sm hover:shadow-md transition-all duration-150 rounded-md flex items-center gap-2"
-          >
-            {refreshing ? (
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Zap className="w-4 h-4 mr-2" />
-            )}
-            {refreshing ? 'Finding matches...' : 'Refresh matches'}
-          </Button>
+
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={refreshMatches}
+              disabled={refreshing || isClearing}
+              className="bg-white text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300 font-medium px-4 py-2 shadow-sm hover:shadow-md transition-all duration-150 rounded-md flex items-center gap-2"
+            >
+              {refreshing ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Zap className="w-4 h-4 mr-2" />
+              )}
+              {refreshing ? 'Finding matches...' : 'Refresh Matches'}
+            </Button>
+
+            <Button
+              onClick={() => setShowRegenerateDialog(true)}
+              disabled={refreshing || isClearing || jobMatches.length === 0}
+              variant="neutral"
+              className="border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 hover:text-blue-600 font-medium px-4 py-2 shadow-sm hover:shadow-md transition-all duration-150 rounded-md flex items-center gap-2"
+              title="Clear all matches and generate fresh ones from scratch"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Regenerate All
+            </Button>
+          </div>
         </div>
       </motion.div>
 
@@ -410,6 +496,18 @@ export default function JobMatchesPage() {
         onConfirm={clearAllMatches}
         variant="destructive"
         loading={isClearing}
+      />
+
+      <ConfirmDialog
+        open={showRegenerateDialog}
+        onOpenChange={setShowRegenerateDialog}
+        title="Regenerate All Job Matches"
+        description="This will delete all existing matches and generate completely fresh matches based on your current skills. Your saved jobs will NOT be affected. This may take a moment. Continue?"
+        confirmText="Regenerate All"
+        cancelText="Cancel"
+        onConfirm={regenerateAllMatches}
+        variant="default"
+        loading={isClearing || refreshing}
       />
     </div>
   );

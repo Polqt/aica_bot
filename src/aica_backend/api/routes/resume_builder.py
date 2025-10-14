@@ -1,6 +1,6 @@
 import logging
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from pydantic import BaseModel
 
 from api.dependencies import get_current_user
@@ -15,6 +15,23 @@ from database.models.user_models import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+# Background task for regenerating job matches
+async def regenerate_job_matches_background(user_id: str):
+    """Regenerate job matches for a user after skill changes"""
+    try:
+        from services.job_matching import JobMatchingService
+        logger.info(f"🔄 Background task: Regenerating job matches for user {user_id}")
+        matching_service = JobMatchingService()
+        # Clear old matches
+        matching_service.user_db.clear_job_matches(user_id)
+        logger.info(f"🗑️ Cleared old matches for user {user_id}")
+        # Generate new matches
+        result = await matching_service.update_matches_for_user(user_id)
+        logger.info(f"✅ Regenerated {result.get('matches_saved', 0)} new matches for user {user_id}")
+    except Exception as e:
+        logger.error(f"❌ Failed to regenerate matches for user {user_id}: {e}")
 
 
 @router.post("/education", response_model=UserEducation)
@@ -125,11 +142,18 @@ async def delete_experience(
 @router.post("/skills", response_model=UserSkill)
 async def add_skill(
     skill: UserSkillCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user)
 ):
     try:
         builder = ResumeBuilder()
-        return builder.add_skill(current_user.id, skill)
+        result = builder.add_skill(current_user.id, skill)
+        
+        # Trigger job match regeneration in background after adding skill
+        logger.info(f"Scheduling job match regeneration for user {current_user.id} after adding skill")
+        background_tasks.add_task(regenerate_job_matches_background, current_user.id)
+        
+        return result
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -163,16 +187,30 @@ async def update_skill(
 @router.delete("/skills/{skill_id}")
 async def delete_skill(
     skill_id: str,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user)
 ):
     try:
         builder = ResumeBuilder()
         success = builder.delete_skill(skill_id, current_user.id)
         if not success:
+            logger.warning(f"Skill {skill_id} not found for user {current_user.id}")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Skill entry not found")
+        logger.info(f"Successfully deleted skill {skill_id} for user {current_user.id}")
+        
+        # Trigger job match regeneration in background after deleting skill
+        logger.info(f"Scheduling job match regeneration for user {current_user.id} after deleting skill")
+        background_tasks.add_task(regenerate_job_matches_background, current_user.id)
+        
         return {"message": "Skill entry deleted successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete skill")
+        logger.error(f"Error deleting skill {skill_id} for user {current_user.id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Failed to delete skill: {str(e)}"
+        )
 
 
 class ProfileUpdateRequest(BaseModel):

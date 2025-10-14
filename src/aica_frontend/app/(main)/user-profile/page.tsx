@@ -21,22 +21,34 @@ import {
   FileText,
   Loader2,
   Calendar,
+  CheckCircle2,
+  ArrowRight,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useResumeBuilder } from '@/hooks/useResumeBuilder';
 
 export default function UserProfilePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { profile, education, experience, skills, loading, loadResumeData } =
     useResumeBuilder();
   const [mounted, setMounted] = useState(false);
   const [showReuploadModal, setShowReuploadModal] = useState(false);
   const [showSkillsModal, setShowSkillsModal] = useState(false);
+  const [showUploadSuccess, setShowUploadSuccess] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     loadResumeData();
-  }, [loadResumeData]);
+
+    // Check if redirected from upload page after resume replacement
+    const fromUpload = searchParams.get('from');
+    if (fromUpload === 'upload') {
+      setShowUploadSuccess(true);
+      // Auto-hide after 5 seconds
+      setTimeout(() => setShowUploadSuccess(false), 5000);
+    }
+  }, [loadResumeData, searchParams]);
 
   if (!mounted || loading) {
     return (
@@ -75,6 +87,47 @@ export default function UserProfilePage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
+      {/* Success Banner after Resume Upload */}
+      {showUploadSuccess && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="bg-green-50 border border-green-200 rounded-lg p-4"
+        >
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-green-900 mb-1">
+                Resume updated successfully!
+              </h3>
+              <p className="text-sm text-green-800 mb-3">
+                Your profile has been refreshed with new information from your
+                resume. New job matches have been generated based on your
+                updated skills.
+              </p>
+              <Button
+                onClick={() => {
+                  setShowUploadSuccess(false);
+                  router.push('/job-matches');
+                }}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white border-0"
+              >
+                View Job Matches
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+            <button
+              onClick={() => setShowUploadSuccess(false)}
+              className="text-green-600 hover:text-green-800"
+            >
+              <span className="sr-only">Close</span>×
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Resume Reupload Modal */}
       <ResumeReuploadModal
         isOpen={showReuploadModal}
@@ -84,7 +137,11 @@ export default function UserProfilePage() {
       {/* Skills Editor Modal */}
       <SkillsEditorModal
         isOpen={showSkillsModal}
-        onClose={() => setShowSkillsModal(false)}
+        onClose={() => {
+          setShowSkillsModal(false);
+          // Reload data to show updated skills
+          loadResumeData();
+        }}
       />
 
       {/* Header with Actions */}

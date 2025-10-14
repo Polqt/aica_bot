@@ -19,12 +19,24 @@ export default function SkillsEditorModal({
   isOpen,
   onClose,
 }: SkillsEditorModalProps) {
-  const { skills, addSkill, deleteSkill, saving } = useResumeBuilder();
+  const { skills, addSkill, deleteSkill, saving, loadSkills } =
+    useResumeBuilder();
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showCustomSkillForm, setShowCustomSkillForm] = useState(false);
   const [customSkillInput, setCustomSkillInput] = useState('');
+  const [isLoadingSkills, setIsLoadingSkills] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Load skills when modal opens (always refresh to get latest data)
+  useEffect(() => {
+    if (isOpen) {
+      setIsLoadingSkills(true);
+      setHasChanges(false); // Reset changes flag
+      loadSkills().finally(() => setIsLoadingSkills(false));
+    }
+  }, [isOpen, loadSkills]);
 
   // Sync selected skills with loaded skills
   useEffect(() => {
@@ -36,7 +48,6 @@ export default function SkillsEditorModal({
     const isSelected = selectedSkills.has(skillName);
 
     if (isSelected) {
-      // Remove skill
       const skillToDelete = skills.find(s => s.skill_name === skillName);
       if (skillToDelete) {
         try {
@@ -46,9 +57,11 @@ export default function SkillsEditorModal({
             newSet.delete(skillName);
             return newSet;
           });
+          setHasChanges(true);
           toast.success(`Removed "${skillName}"`);
-        } catch {
-          toast.error('Failed to remove skill');
+        } catch (error) {
+          console.error('Failed to remove skill:', error);
+          toast.error(`Failed to remove "${skillName}". Please try again.`);
         }
       }
     } else {
@@ -56,9 +69,11 @@ export default function SkillsEditorModal({
       try {
         await addSkill({ skill_name: skillName });
         setSelectedSkills(prev => new Set([...prev, skillName]));
+        setHasChanges(true);
         toast.success(`Added "${skillName}"`);
-      } catch {
-        toast.error('Failed to add skill');
+      } catch (error) {
+        console.error('Failed to add skill:', error);
+        toast.error(`Failed to add "${skillName}". Please try again.`);
       }
     }
   };
@@ -80,11 +95,13 @@ export default function SkillsEditorModal({
     try {
       await addSkill({ skill_name: skillName });
       setSelectedSkills(prev => new Set([...prev, skillName]));
+      setHasChanges(true);
       toast.success(`Added "${skillName}"`);
       setCustomSkillInput('');
       setShowCustomSkillForm(false);
-    } catch {
-      toast.error('Failed to add custom skill');
+    } catch (error) {
+      console.error('Failed to add custom skill:', error);
+      toast.error(`Failed to add "${skillName}". Please try again.`);
     }
   };
 
@@ -93,6 +110,15 @@ export default function SkillsEditorModal({
     setSelectedCategory(null);
     setShowCustomSkillForm(false);
     setCustomSkillInput('');
+
+    // Show confirmation toast if changes were made
+    if (hasChanges) {
+      toast.success('Your skills have been updated!', {
+        description:
+          'Job matches are being regenerated based on your new skills',
+      });
+    }
+
     onClose();
   };
 
@@ -114,9 +140,8 @@ export default function SkillsEditorModal({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', duration: 0.5 }}
             onClick={e => e.stopPropagation()}
-            className="w-full max-w-5xl h-[90vh] flex flex-col bg-white rounded-lg shadow-2xl overflow-hidden"
+            className="w-full max-w-7xl h-[95vh] flex flex-col bg-white rounded-lg shadow-2xl overflow-hidden"
           >
-            {/* Header - Fixed */}
             <div className="relative bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-blue-100 px-6 py-5 flex-shrink-0">
               <button
                 onClick={handleClose}
@@ -139,10 +164,64 @@ export default function SkillsEditorModal({
               </div>
             </div>
 
-            {/* Content - Scrollable */}
             <div className="flex-1 overflow-y-auto">
               <div className="p-6 space-y-5">
-                {/* Category Filter - Scrollable horizontally on mobile */}
+                <div className="p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-900">
+                        Your Current Skills ({selectedSkills.size})
+                      </h3>
+                      <p className="text-xs text-gray-600 mt-0.5">
+                        Click on any skill below to remove it, or add new skills
+                        from the list
+                      </p>
+                    </div>
+                    {saving && (
+                      <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-100 px-3 py-1.5 rounded-full">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span className="font-medium">Saving...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {isLoadingSkills ? (
+                    <div className="text-center py-6 bg-white rounded-lg border-2 border-dashed border-blue-200">
+                      <Loader2 className="w-5 h-5 animate-spin text-blue-600 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600 font-medium">
+                        Loading your skills...
+                      </p>
+                    </div>
+                  ) : selectedSkills.size > 0 ? (
+                    <div className="flex flex-wrap gap-2 max-h-[140px] overflow-y-auto pr-1">
+                      {Array.from(selectedSkills).map(skill => (
+                        <motion.button
+                          key={skill}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          onClick={() => handleSkillToggle(skill)}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-blue-300 rounded-full text-sm font-medium hover:bg-red-50 hover:border-red-300 transition-all group shadow-sm"
+                        >
+                          <span className="text-gray-800 group-hover:text-red-700">
+                            {skill}
+                          </span>
+                          <X className="w-4 h-4 text-gray-400 group-hover:text-red-600 transition-colors" />
+                        </motion.button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 bg-white rounded-lg border-2 border-dashed border-blue-200">
+                      <p className="text-sm text-gray-600 font-medium">
+                        No skills selected yet
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Choose from the list below or add custom skills
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <ScrollArea className="w-full">
                     <div className="flex gap-2 pb-2">
@@ -290,48 +369,8 @@ export default function SkillsEditorModal({
                     Add Custom Skill
                   </Button>
                 )}
-
-                {/* Selected Skills Display */}
-                <div className="p-4 bg-blue-50/30 rounded-lg border border-blue-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-gray-800">
-                      Your Selected Skills ({selectedSkills.size})
-                    </h3>
-                    {saving && (
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Saving...</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {selectedSkills.size > 0 ? (
-                    <div className="flex flex-wrap gap-2 max-h-[100px] overflow-y-auto pr-1">
-                      {Array.from(selectedSkills).map(skill => (
-                        <motion.button
-                          key={skill}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          onClick={() => handleSkillToggle(skill)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 rounded-full text-sm hover:bg-blue-50 hover:border-blue-300 transition-all group"
-                        >
-                          <span className="text-gray-700">{skill}</span>
-                          <X className="w-3.5 h-3.5 text-gray-400 group-hover:text-red-500 transition-colors" />
-                        </motion.button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-600">
-                      No skills selected. Choose from the list above or add
-                      custom skills.
-                    </p>
-                  )}
-                </div>
               </div>
             </div>
-
-            {/* Footer - Fixed */}
             <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50/50 flex-shrink-0">
               <p className="text-xs text-gray-500">
                 Changes are saved automatically

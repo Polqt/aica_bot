@@ -43,8 +43,6 @@ export const metadata: Metadata = {
     images: [
       {
         url: '/AICA Logo.svg',
-        width: 1200,
-        height: 630,
         alt: 'AICA - AI Career Assistant',
       },
     ],
