@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
+from core.matching.matcher import JobMatcher
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 env_path = Path(__file__).resolve().parent.parent.parent.parent / '.env'
 load_dotenv(env_path)
@@ -18,9 +20,7 @@ print(f"   SUPABASE_KEY: {'✅ Set' if supabase_key else '❌ Missing'}")
 print()
 
 print("2️⃣  RAG Implementation:")
-try:
-    from core.matching.matcher import JobMatcher
-    
+try:    
     # Check if method exists
     has_rag_method = hasattr(JobMatcher, '_evaluate_match_with_context')
     print(f"   _evaluate_match_with_context method: {'✅ Exists' if has_rag_method else '❌ Missing'}")

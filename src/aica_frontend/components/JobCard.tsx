@@ -75,23 +75,29 @@ export function JobCard({
                     ? 'bg-green-50 text-green-700 border border-green-200'
                     : job.confidence === 'medium'
                     ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                    : job.confidence === 'recommendation'
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
                     : 'bg-gray-50 text-gray-700 border border-gray-200'
                 }`}
               >
-                {(job.confidence && job.confidence.trim()
-                  ? job.confidence
-                  : 'Unknown'
-                )
-                  .charAt(0)
-                  .toUpperCase() +
-                  (job.confidence && job.confidence.trim()
-                    ? job.confidence
-                    : 'Unknown'
-                  ).slice(1)}
+                {job.confidence === 'recommendation'
+                  ? 'Suggested'
+                  : (job.confidence && job.confidence.trim()
+                      ? job.confidence
+                      : 'Unknown'
+                    )
+                      .charAt(0)
+                      .toUpperCase() +
+                    (job.confidence && job.confidence.trim()
+                      ? job.confidence
+                      : 'Unknown'
+                    ).slice(1)}
               </Badge>
-              <span className="text-sm font-medium text-gray-900">
-                {matchScore.toFixed(0)}% Match
-              </span>
+              {job.confidence !== 'recommendation' && (
+                <span className="text-sm font-medium text-gray-900">
+                  {matchScore.toFixed(0)}% Match
+                </span>
+              )}
             </div>
           </div>
 
@@ -115,42 +121,45 @@ export function JobCard({
 
           {/* Skills and Coverage */}
           <div className="space-y-2.5 mt-3">
-            <div className="flex flex-wrap gap-1.5">
-              {job.matched_skills &&
-                job.matched_skills.slice(0, 2).map((tag, tagIndex) => (
+            {job.confidence !== 'recommendation' && (
+              <div className="flex flex-wrap gap-1.5">
+                {job.matched_skills &&
+                  job.matched_skills.slice(0, 2).map((tag, tagIndex) => (
+                    <Badge
+                      key={tagIndex}
+                      variant="secondary"
+                      className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+                {job.matched_skills && job.matched_skills.length > 2 && (
                   <Badge
-                    key={tagIndex}
                     variant="secondary"
-                    className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
+                    className="px-2 py-0.5 text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200"
                   >
-                    {tag}
+                    +{job.matched_skills.length - 2} more
                   </Badge>
-                ))}
-              {job.matched_skills && job.matched_skills.length > 2 && (
-                <Badge
-                  variant="secondary"
-                  className="px-2 py-0.5 text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200"
-                >
-                  +{job.matched_skills.length - 2} more
-                </Badge>
-              )}
-            </div>
-
-            {job.skill_coverage !== undefined && (
-              <div className="flex items-center gap-2">
-                <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="bg-blue-600 h-full transition-all duration-150 rounded-full"
-                    style={{
-                      width: `${Math.round(job.skill_coverage * 100)}%`,
-                    }}
-                  ></div>
-                </div>
-                <span className="text-xs font-medium text-gray-600 min-w-[2.5rem]">
-                  {Math.round(job.skill_coverage * 100)}%
-                </span>
+                )}
               </div>
             )}
+
+            {job.confidence !== 'recommendation' &&
+              job.skill_coverage !== undefined && (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-blue-600 h-full transition-all duration-150 rounded-full"
+                      style={{
+                        width: `${Math.round(job.skill_coverage * 100)}%`,
+                      }}
+                    ></div>
+                  </div>
+                  <span className="text-xs font-medium text-gray-600 min-w-[2.5rem]">
+                    {Math.round(job.skill_coverage * 100)}%
+                  </span>
+                </div>
+              )}
           </div>
         </CardContent>
       </Card>

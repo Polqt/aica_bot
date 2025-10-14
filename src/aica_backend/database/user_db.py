@@ -299,6 +299,9 @@ class UserDatabase:
                        missing_critical_skills: List[str] = None, skill_coverage: float = 0.0,
                        confidence: str = "medium", ai_reasoning: str = "") -> UserJobMatch:
         try:
+            # First check if match already exists
+            existing = self.client.table("user_job_matches").select("id").eq("user_id", user_id).eq("job_id", job_id).execute()
+            
             data = {
                 "user_id": user_id,
                 "job_id": job_id,
@@ -309,7 +312,16 @@ class UserDatabase:
                 "confidence": confidence,
                 "ai_reasoning": ai_reasoning
             }
-            response = self.client.table("user_job_matches").insert(data).execute()
+            
+            # If exists, update it; otherwise insert new
+            if existing.data and len(existing.data) > 0:
+                match_id = existing.data[0]["id"]
+                response = self.client.table("user_job_matches").update(data).eq("id", match_id).execute()
+                logger.info(f"Updated existing job match {match_id} for user {user_id}, job {job_id}")
+            else:
+                response = self.client.table("user_job_matches").insert(data).execute()
+                logger.info(f"Inserted new job match for user {user_id}, job {job_id}")
+            
             self._handle_db_response(response, "save job match")
 
             if not response.data:

@@ -50,12 +50,10 @@ export interface JobDetailsData {
 interface JobDetailsProps {
   job: JobDetailsData;
   variant: 'match' | 'saved';
-  // For match variant
   isSaved?: boolean;
   isSaving?: boolean;
   onSave?: () => void;
   onUnsave?: () => void;
-  // For saved variant
   isRemoving?: boolean;
   onRemove?: () => void;
 }
@@ -106,11 +104,15 @@ export function JobDetails({
                       ? 'bg-green-50 text-green-700 border border-green-200'
                       : job.confidence === 'medium'
                       ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                      : job.confidence === 'recommendation'
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
                       : 'bg-gray-50 text-gray-700 border border-gray-200'
                   }`}
                 >
-                  {job.confidence.charAt(0).toUpperCase() +
-                    job.confidence.slice(1)}
+                  {job.confidence === 'recommendation'
+                    ? 'Suggested'
+                    : job.confidence.charAt(0).toUpperCase() +
+                      job.confidence.slice(1)}
                 </Badge>
               )}
               {variant === 'saved' && (job.saved_at || job.savedDate) && (
@@ -121,14 +123,15 @@ export function JobDetails({
               )}
             </CardDescription>
           </div>
-          {(job.match_score !== undefined || job.matchScore !== undefined) && (
-            <div className="text-center ml-4">
-              <div className="text-2xl font-semibold text-gray-900">
-                {matchScore.toFixed(0)}%
+          {job.confidence !== 'recommendation' &&
+            (job.match_score !== undefined || job.matchScore !== undefined) && (
+              <div className="text-center ml-4">
+                <div className="text-2xl font-semibold text-gray-900">
+                  {matchScore.toFixed(0)}%
+                </div>
+                <div className="text-xs text-gray-500">Match</div>
               </div>
-              <div className="text-xs text-gray-500">Match</div>
-            </div>
-          )}
+            )}
         </div>
       </CardHeader>
 
@@ -165,17 +168,64 @@ export function JobDetails({
                 className="text-gray-700 leading-relaxed text-[15px]"
                 dangerouslySetInnerHTML={{
                   __html: job.ai_reasoning
+                    // Match Analysis pattern (from job_matching.py)
+                    .replace(
+                      /\*\*Match Analysis:\*\*/g,
+                      '<strong class="text-gray-900 font-bold">Match Analysis:</strong>',
+                    )
+                    // AI Analyzer patterns
+                    .replace(
+                      /\*\*Match Score: ([^*]+)\*\*/g,
+                      '<strong class="text-gray-900 font-bold">Match Score: $1</strong>',
+                    )
+                    .replace(
+                      /\*\*Position: ([^*]+)\*\*/g,
+                      '<strong class="text-gray-900 font-bold">Position: $1</strong>',
+                    )
+                    .replace(
+                      /\*\*Skills Analysis:\*\*/g,
+                      '<strong class="text-gray-900 font-bold">Skills Analysis:</strong>',
+                    )
+                    .replace(
+                      /\*\*Direct Matches \(([^)]+)\):\*\*/g,
+                      '<strong class="text-gray-900 font-bold">Direct Matches ($1):</strong>',
+                    )
+                    .replace(
+                      /\*\*Related Skills \(([^)]+)\):\*\*/g,
+                      '<strong class="text-gray-900 font-bold">Related Skills ($1):</strong>',
+                    )
+                    .replace(
+                      /\*\*Skills to Develop \(([^)]+)\):\*\*/g,
+                      '<strong class="text-gray-900 font-bold">Skills to Develop ($1):</strong>',
+                    )
+                    .replace(
+                      /\*\*Recommendation:\*\*/g,
+                      '<strong class="text-gray-900 font-bold">Recommendation:</strong>',
+                    )
+                    // RAG-based analysis patterns
                     .replace(
                       /\*\*SKILL ALIGNMENT \(100-120 words\)\*\*/g,
-                      '<strong class="text-gray-900">SKILL ALIGNMENT (100-120 words)</strong>',
+                      '<strong class="text-gray-900 font-bold">SKILL ALIGNMENT</strong>',
+                    )
+                    .replace(
+                      /\*\*SKILL ALIGNMENT\*\*/g,
+                      '<strong class="text-gray-900 font-bold">SKILL ALIGNMENT</strong>',
                     )
                     .replace(
                       /\*\*APPLICATION RECOMMENDATION \(60-80 words\)\*\*/g,
-                      '<strong class="text-gray-900">APPLICATION RECOMMENDATION (60-80 words)</strong>',
+                      '<strong class="text-gray-900 font-bold">APPLICATION RECOMMENDATION</strong>',
+                    )
+                    .replace(
+                      /\*\*APPLICATION RECOMMENDATION\*\*/g,
+                      '<strong class="text-gray-900 font-bold">APPLICATION RECOMMENDATION</strong>',
                     )
                     .replace(
                       /\*\*IMPROVEMENT STEPS \(60-80 words\)\*\*/g,
-                      '<strong class="text-gray-900">IMPROVEMENT STEPS (60-80 words)</strong>',
+                      '<strong class="text-gray-900 font-bold">IMPROVEMENT STEPS</strong>',
+                    )
+                    .replace(
+                      /\*\*IMPROVEMENT STEPS\*\*/g,
+                      '<strong class="text-gray-900 font-bold">IMPROVEMENT STEPS</strong>',
                     )
                     .replace(/\n/g, '<br />'),
                 }}
@@ -184,92 +234,92 @@ export function JobDetails({
           </motion.div>
         )}
 
-        {/* Skill Analysis Section */}
-        <div className="grid gap-4">
-          {/* Skill Coverage */}
-          {job.skill_coverage !== undefined && job.skill_coverage >= 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg p-5">
-              <h3 className="text-base font-medium text-gray-900 mb-4 flex items-center gap-2">
-                <div className="w-5 h-5 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-semibold">
-                  ✓
-                </div>
-                Skill Coverage
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Match rate</span>
-                  <span className="text-base font-medium text-gray-900">
-                    {Math.round(job.skill_coverage * 100)}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="bg-blue-600 h-full transition-all duration-500 ease-out rounded-full"
-                    style={{
-                      width: `${Math.round(job.skill_coverage * 100)}%`,
-                    }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500">
-                  {job.matched_skills?.length || 0} of{' '}
-                  {(job.matched_skills?.length || 0) +
-                    (job.missing_critical_skills?.length || 0)}{' '}
-                  skills matched
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Matched Skills */}
-          {job.matched_skills && job.matched_skills.length > 0 && (
-            <div>
-              <h3 className="text-base font-medium text-gray-900 mb-3 flex items-center gap-2">
-                <div className="w-5 h-5 bg-green-600 text-white rounded flex items-center justify-center text-xs font-semibold">
-                  ★
-                </div>
-                Your Matching Skills
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {job.matched_skills.map((skill, index) => (
-                  <Badge
-                    key={index}
-                    variant="secondary"
-                    className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
-                  >
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Missing Critical Skills */}
-          {job.missing_critical_skills &&
-            job.missing_critical_skills.length > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
-                <h3 className="text-base font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  <div className="w-5 h-5 bg-amber-600 text-white rounded flex items-center justify-center text-xs font-semibold">
-                    !
+        {job.confidence !== 'recommendation' && (
+          <div className="grid gap-4">
+            {job.skill_coverage !== undefined && job.skill_coverage >= 0 && (
+              <div className="bg-white border border-gray-200 rounded-lg p-5">
+                <h3 className="text-base font-medium text-gray-900 mb-4 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-semibold">
+                    ✓
                   </div>
-                  Skills to Develop
+                  Skill Coverage
                 </h3>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {job.missing_critical_skills.map((skill, index) => (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Match rate</span>
+                    <span className="text-base font-medium text-gray-900">
+                      {Math.round(job.skill_coverage * 100)}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-blue-600 h-full transition-all duration-500 ease-out rounded-full"
+                      style={{
+                        width: `${Math.round(job.skill_coverage * 100)}%`,
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {job.matched_skills?.length || 0} of{' '}
+                    {(job.matched_skills?.length || 0) +
+                      (job.missing_critical_skills?.length || 0)}{' '}
+                    skills matched
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Matched Skills */}
+            {job.matched_skills && job.matched_skills.length > 0 && (
+              <div>
+                <h3 className="text-base font-medium text-gray-900 mb-3 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-green-600 text-white rounded flex items-center justify-center text-xs font-semibold">
+                    ★
+                  </div>
+                  Your Matching Skills
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {job.matched_skills.map((skill, index) => (
                     <Badge
                       key={index}
                       variant="secondary"
-                      className="px-2 py-0.5 text-xs font-medium bg-white text-amber-700 border border-amber-300"
+                      className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
                     >
                       {skill}
                     </Badge>
                   ))}
                 </div>
-                <p className="text-xs text-amber-700">
-                  Consider learning these skills to improve your match rate
-                </p>
               </div>
             )}
-        </div>
+
+            {/* Missing Critical Skills */}
+            {job.missing_critical_skills &&
+              job.missing_critical_skills.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
+                  <h3 className="text-base font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    <div className="w-5 h-5 bg-amber-600 text-white rounded flex items-center justify-center text-xs font-semibold">
+                      !
+                    </div>
+                    Skills to Develop
+                  </h3>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {job.missing_critical_skills.map((skill, index) => (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="px-2 py-0.5 text-xs font-medium bg-white text-amber-700 border border-amber-300"
+                      >
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                  <p className="text-xs text-amber-700">
+                    Consider learning these skills to improve your match rate
+                  </p>
+                </div>
+              )}
+          </div>
+        )}
 
         {/* Job Description */}
         {job.description && job.description.trim() && (
@@ -283,7 +333,6 @@ export function JobDetails({
           </div>
         )}
 
-        {/* Requirements */}
         {job.requirements && job.requirements.length > 0 && (
           <div>
             <h3 className="text-base font-medium text-gray-900 mb-3">
@@ -324,7 +373,6 @@ export function JobDetails({
           </div>
         )}
 
-        {/* Action Buttons */}
         <div className="flex gap-3 pt-4 border-t border-gray-100">
           <Button
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-150"

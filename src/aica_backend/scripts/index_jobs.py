@@ -3,21 +3,21 @@ import logging
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
-from dotenv import load_dotenv
 env_path = Path(__file__).resolve().parent.parent.parent.parent / '.env'
 load_dotenv(env_path)
 
-# Setup logging after dotenv
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.info(f"Loading .env from: {env_path}")
 logger.info(f".env exists: {env_path.exists()}")
 
-# Now import project modules
-from core.rag import TextEmbedder, VectorJobStore  # ✅ Using new RAG module
+from core.rag import TextEmbedder, VectorJobStore 
 from database.job_db import JobDatabase
 
 

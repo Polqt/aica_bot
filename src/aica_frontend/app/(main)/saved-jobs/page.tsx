@@ -11,6 +11,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
 import { JobCard } from '@/components/JobCard';
 import { JobDetails } from '@/components/JobDetails';
+import { LoadingState } from '@/components/LoadingState';
+import { EmptyState } from '@/components/EmptyState';
 
 export default function SavedJobsPage() {
   const { savedJobs, loading, error, removeJob, refreshSavedJobs } =
@@ -71,28 +73,15 @@ export default function SavedJobsPage() {
 
     return matchesSearch && matchesFilter;
   });
+
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center"
-          >
-            <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <RefreshCw className="w-6 h-6 text-gray-600 animate-spin" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Loading saved jobs
-            </h3>
-            <p className="text-sm text-gray-500">
-              Fetching your saved opportunities...
-            </p>
-          </motion.div>
-        </div>
-      </div>
+      <LoadingState
+        icon={RefreshCw}
+        title="Loading saved jobs"
+        description="Fetching your saved opportunities..."
+        variant="full"
+      />
     );
   }
 
@@ -188,24 +177,14 @@ export default function SavedJobsPage() {
       >
         <div className="lg:col-span-2 space-y-4 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400 scrollbar-track-transparent">
           {filteredJobs.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Star className="w-6 h-6 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No saved jobs yet
-                </h3>
-                <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
-                  Start exploring job matches and save the ones that interest
-                  you to build your collection
-                </p>
-                <Button className="bg-white text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300 font-medium px-4 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-150">
-                  <Search className="w-4 h-4 mr-2" />
-                  Find Jobs
-                </Button>
-              </div>
-            </div>
+            <EmptyState
+              icon={Star}
+              title="No saved jobs yet"
+              description="Start exploring job matches and save the ones that interest you to build your collection"
+              actionLabel="Find Jobs"
+              onAction={() => (window.location.href = '/job-matches')}
+              variant="center"
+            />
           ) : (
             <AnimatePresence mode="popLayout">
               {filteredJobs.map((job, index) => (

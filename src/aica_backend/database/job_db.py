@@ -1,15 +1,16 @@
 import os
 import json
 import uuid
+import logging
 from typing import List, Dict, Any, Optional
 from supabase import create_client, Client
-from datetime import datetime, timedelta
-import functools
+from datetime import datetime
 import time
 
 from .models.job_models import JobSource, Job, JobListings, JobSearchFilters
 
-# Simple LRU cache implementation
+logger = logging.getLogger(__name__)
+
 class SimpleCache:
     def __init__(self, max_size: int = 100, ttl: int = 300):  # 5 minutes TTL
         self.cache = {}
@@ -368,19 +369,34 @@ class JobDatabase:
             return None
 
     def save_user_job_match(self, user_id: str, job_id: str, match_score: float, **kwargs) -> bool:
+        """
+        Save or update a job match for a user.
+        Uses upsert pattern to prevent duplicates.
+        """
         try:
+            # Check if match already exists
+            existing = self.client.table("user_job_matches").select("id").eq("user_id", user_id).eq("job_id", job_id).execute()
+            
             match_data = {
                 "user_id": user_id,
                 "job_id": job_id,
                 "match_score": match_score,
                 "matched_skills": kwargs.get('matching_skills', []),  # Map matching_skills to matched_skills
-                "created_at": datetime.utcnow().isoformat()
             }
             
-            response = self.client.table("user_job_matches").insert(match_data).execute()
+            # Update if exists, insert if not
+            if existing.data and len(existing.data) > 0:
+                match_id = existing.data[0]["id"]
+                match_data["updated_at"] = datetime.utcnow().isoformat()
+                response = self.client.table("user_job_matches").update(match_data).eq("id", match_id).execute()
+            else:
+                match_data["created_at"] = datetime.utcnow().isoformat()
+                response = self.client.table("user_job_matches").insert(match_data).execute()
+            
             return len(response.data) > 0
             
         except Exception as e:
+            logger.error(f"Failed to save user job match: {e}")
             return False
 
     def get_user_matches(self, user_id: str) -> List[Dict[str, Any]]:

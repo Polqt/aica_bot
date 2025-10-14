@@ -254,6 +254,54 @@ class SavedJobResponse(BaseModel):
     matched_skills: List[str] = []
     missing_critical_skills: List[str] = []
     skill_coverage: float = 0.0
+@router.get("/recommendations", response_model=List[JobMatchResponse])
+async def get_job_recommendations(
+    limit: int = 20,
+    current_user: User = Depends(get_current_user)
+) -> List[JobMatchResponse]:
+    """Get job recommendations when no matches are found - shows recent/popular jobs"""
+    logger.info(f"Getting job recommendations for user {current_user.id} with limit {limit}")
+    try:
+        matching_service = JobMatchingService()
+        
+        # Get recent jobs from the database
+        jobs = matching_service.job_db.get_jobs_for_matching(limit=limit)
+        
+        if not jobs:
+            logger.info(f"No jobs available for recommendations for user {current_user.id}")
+            return []
+        
+        # Convert to response format with neutral/informational data
+        responses = []
+        for job in jobs:
+            try:
+                response = JobMatchResponse(
+                    job_id=job.id,
+                    job_title=job.title,
+                    company=job.company,
+                    location=job.location or "Not specified",
+                    match_score=0.0,  # No match score for recommendations
+                    matched_skills=[],  # No matched skills for recommendations
+                    missing_critical_skills=[],
+                    skill_coverage=0.0,
+                    confidence="recommendation",  # Special indicator
+                    job_url=job.url,
+                    ai_reasoning="<strong class='text-gray-900 font-bold'>RECOMMENDED JOB</strong><br/><br/>This is a recommended job posting based on recent job listings. To get personalized matches tailored to your skills, please update your profile with your skills or upload your resume. Our AI will then analyze your qualifications and find the best matching opportunities for you!",
+                    skill_gap_analysis={}
+                )
+                responses.append(response)
+            except Exception as e:
+                logger.error(f"Error processing recommendation {job.id}: {str(e)}", exc_info=True)
+                continue
+        
+        logger.info(f"Successfully processed {len(responses)} job recommendations for user {current_user.id}")
+        return responses
+        
+    except Exception as e:
+        logger.error(f"Error getting job recommendations for user {current_user.id}: {str(e)}", exc_info=True)
+        return []
+
+
 @router.delete("/matches")
 async def clear_job_matches(
     current_user: User = Depends(get_current_user)

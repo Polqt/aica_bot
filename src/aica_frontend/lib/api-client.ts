@@ -299,6 +299,10 @@ export class ApiClient {
   }> {
     return this.post('/auth/generate-matches');
   }
+
+  async getJobRecommendations(limit: number = 20): Promise<unknown[]> {
+    return this.get(`/jobs/recommendations?limit=${limit}`);
+  }
 }
 
 export const apiClient = new ApiClient();

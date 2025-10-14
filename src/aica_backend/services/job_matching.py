@@ -7,7 +7,7 @@ from database.user_db import UserDatabase
 from database.job_db import JobDatabase
 from database.models.user_models import UserSkill, UserJobMatch
 from database.models.job_models import Job
-from core.rag import TextEmbedder  # Updated to use new RAG module
+from core.rag import TextEmbedder 
 from core.matching import JobMatcher
 
 logger = logging.getLogger(__name__)
@@ -683,13 +683,13 @@ class JobMatchingService:
     async def update_matches_for_user(self, user_id: str) -> Dict[str, any]:
         try:
             # Get existing matches to avoid duplicates (keep previous matches!)
-            existing_matches = self.user_db.get_user_job_matches(user_id)
+            existing_matches = self.user_db.get_user_job_matches(user_id, limit=1000)  # Get all existing
             existing_job_ids = {m.job_id for m in existing_matches} if existing_matches else set()
             
             logger.info(f"User {user_id} has {len(existing_job_ids)} existing matches")
             
             # Find AI-powered matches
-            matches = await self.find_job_matches(user_id)
+            matches = await self.find_job_matches(user_id, limit=50)  # Find up to 50 potential matches
             
             if not matches:
                 return {
@@ -698,17 +698,31 @@ class JobMatchingService:
                     "matches_found": 0,
                     "matches_saved": 0,
                     "existing_matches": len(existing_job_ids),
+                    "new_matches": 0,
+                    "duplicates_skipped": 0,
+                    "total_matches_now": len(existing_job_ids),
                     "ai_analysis": "No new suitable jobs found using AI matching criteria"
                 }
             
-            # Filter out duplicates - only save NEW matches
-            new_matches = [m for m in matches if m.job.id not in existing_job_ids]
-            duplicate_count = len(matches) - len(new_matches)
+            # Separate new matches from existing ones
+            new_matches = []
+            duplicate_matches = []
             
-            logger.info(f"Found {len(matches)} total matches, {len(new_matches)} are new, {duplicate_count} already exist")
+            for match in matches:
+                if match.job.id in existing_job_ids:
+                    duplicate_matches.append(match)
+                else:
+                    new_matches.append(match)
             
-            # Save only new matches (preserves old ones)
-            saved_matches = await self.save_job_matches(user_id, new_matches)
+            duplicate_count = len(duplicate_matches)
+            
+            logger.info(f"Found {len(matches)} total matches: {len(new_matches)} new, {duplicate_count} duplicates")
+            
+            # Save only new matches (this will preserve old ones)
+            saved_matches = []
+            if new_matches:
+                saved_matches = await self.save_job_matches(user_id, new_matches)
+                logger.info(f"Successfully saved {len(saved_matches)} new matches")
             
             # Create detailed summary with AI insights
             high_confidence = [m for m in new_matches if m.confidence == "high"]
@@ -740,6 +754,9 @@ class JobMatchingService:
                 "message": f"Error in AI matching: {str(e)}",
                 "matches_found": 0,
                 "matches_saved": 0,
+                "new_matches": 0,
+                "duplicates_skipped": 0,
+                "total_matches_now": 0,
                 "ai_analysis": "AI matching workflow failed"
             }
 

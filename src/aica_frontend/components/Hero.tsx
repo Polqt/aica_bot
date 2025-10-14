@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight, Play, Brain, Target, Zap, Shield } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import Video from './Video';
 
 const features = [
@@ -30,6 +31,12 @@ const features = [
 ];
 
 export default function Hero() {
+  const router = useRouter();
+
+  const handleGetStarted = () => {
+    router.push('/login');
+  };
+
   return (
     <div className="min-h-screen">
       <section className="pt-32 pb-20 px-6">
@@ -53,7 +60,7 @@ export default function Hero() {
               </p>
 
               <div className="flex flex-wrap gap-4">
-                <button className="group inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow">
+                <button onClick={handleGetStarted} className="group inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow">
                   Get Started
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </button>

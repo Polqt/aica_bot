@@ -8,10 +8,11 @@ import { Search, RefreshCw, Zap, Trash2 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { JobMatch, MatchingStats } from '@/types/jobMatch';
 import { useSavedJobs } from '@/hooks/useSavedJobs';
-import { ProcessingStatusBanner } from '@/components/ProcessingStatusBanner';
 import { JobCard } from '@/components/JobCard';
 import { JobDetails } from '@/components/JobDetails';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { LoadingState } from '@/components/LoadingState';
+import { EmptyState } from '@/components/EmptyState';
 import { toast } from 'sonner';
 
 export default function JobMatchesPage() {
@@ -20,6 +21,7 @@ export default function JobMatchesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [jobMatches, setJobMatches] = useState<JobMatch[]>([]);
+  const [recommendations, setRecommendations] = useState<JobMatch[]>([]);
   const [, setStats] = useState<MatchingStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -29,6 +31,7 @@ export default function JobMatchesPage() {
   const [selectedJob, setSelectedJob] = useState<JobMatch | null>(null);
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [showingRecommendations, setShowingRecommendations] = useState(false);
 
   const checkProcessingStatus = useCallback(async () => {
     try {
@@ -64,6 +67,16 @@ export default function JobMatchesPage() {
       setError(null);
       const matches = await apiClient.get<JobMatch[]>('/jobs/matches');
       setJobMatches(matches);
+
+      // If no matches, load recommendations
+      if (!matches || matches.length === 0) {
+        setShowingRecommendations(true);
+        const recommendedJobs = await apiClient.getJobRecommendations(20);
+        setRecommendations(recommendedJobs as JobMatch[]);
+      } else {
+        setShowingRecommendations(false);
+        setRecommendations([]);
+      }
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to load job matches';
@@ -166,13 +179,15 @@ export default function JobMatchesPage() {
   };
 
   useEffect(() => {
-    if (jobMatches.length > 0 && !selectedJob) {
-      setSelectedJob(jobMatches[0]);
+    const displayedJobs = showingRecommendations ? recommendations : jobMatches;
+    if (displayedJobs.length > 0 && !selectedJob) {
+      setSelectedJob(displayedJobs[0]);
     }
-  }, [jobMatches, selectedJob]);
+  }, [jobMatches, recommendations, showingRecommendations, selectedJob]);
 
-  // Filter matches
-  const filteredMatches = jobMatches.filter(match => {
+  // Filter matches or recommendations
+  const displayJobs = showingRecommendations ? recommendations : jobMatches;
+  const filteredMatches = displayJobs.filter(match => {
     const matchesSearch =
       searchTerm === '' ||
       match.job_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -183,28 +198,31 @@ export default function JobMatchesPage() {
     return matchesSearch && matchesFilter;
   });
 
-  if (loading && jobMatches.length === 0) {
+  // Check if we should show loading skeleton
+  const showLoadingSkeleton =
+    (loading || isCheckingStatus) && jobMatches.length === 0;
+
+  // Determine processing status to show
+  const activeProcessingStatus = isCheckingStatus
+    ? ('checking' as const)
+    : processingStatus === 'processing' ||
+      processingStatus === 'parsing' ||
+      processingStatus === 'matching' ||
+      processingStatus === 'finalizing'
+    ? (processingStatus as 'processing' | 'parsing' | 'matching' | 'finalizing')
+    : undefined;
+
+  if (showLoadingSkeleton) {
     return (
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center bg-white rounded-lg p-8 shadow-sm"
-          >
-            <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <RefreshCw className="w-6 h-6 text-gray-600 animate-spin" />
-            </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-2">
-              Finding Your Perfect Matches
-            </h3>
-            <p className="text-gray-500">
-              Our AI is analyzing thousands of opportunities...
-            </p>
-          </motion.div>
-        </div>
-      </div>
+      <LoadingState
+        icon={RefreshCw}
+        title="Finding Your Perfect Matches"
+        description="Our AI is analyzing thousands of opportunities..."
+        showSkeleton={true}
+        showProcessingStatus={!!activeProcessingStatus}
+        processingStatus={activeProcessingStatus}
+        variant="full"
+      />
     );
   }
 
@@ -219,11 +237,15 @@ export default function JobMatchesPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-3xl font-semibold text-gray-900">
-              AI Job Matches
+              {showingRecommendations
+                ? 'Job Recommendations'
+                : 'AI Job Matches'}
             </h1>
           </div>
           <p className="text-base text-gray-500">
-            Discover opportunities tailored to your skills
+            {showingRecommendations
+              ? 'Browse job postings while we find your perfect matches'
+              : 'Discover opportunities tailored to your skills'}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -251,21 +273,30 @@ export default function JobMatchesPage() {
         </div>
       </motion.div>
 
-      {isCheckingStatus && <ProcessingStatusBanner status="checking" />}
-
-      {(processingStatus === 'processing' ||
-        processingStatus === 'parsing' ||
-        processingStatus === 'matching' ||
-        processingStatus === 'finalizing') && (
-        <ProcessingStatusBanner
-          status={
-            processingStatus as
-              | 'processing'
-              | 'parsing'
-              | 'matching'
-              | 'finalizing'
-          }
-        />
+      {showingRecommendations && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg"
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center mt-0.5">
+              <span className="text-white text-xs font-bold">i</span>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-blue-900 mb-1">
+                No Perfect Matches Yet
+              </h3>
+              <p className="text-sm text-blue-800">
+                We couldn&apos;t find jobs that match your current skills. Here
+                are some recent job postings you might be interested in. Try
+                updating your skills in your profile or uploading your resume to
+                get personalized matches!
+              </p>
+            </div>
+          </div>
+        </motion.div>
       )}
 
       <motion.div
@@ -304,38 +335,35 @@ export default function JobMatchesPage() {
       >
         <div className="lg:col-span-2 space-y-4 overflow-y-auto pr-2">
           {filteredMatches.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-center h-full min-h-[300px]"
-            >
-              <div className="text-center bg-white rounded-lg p-6 max-w-sm">
-                <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-6 h-6 text-gray-400" />
-                </div>
-                <h3 className="text-base font-medium text-gray-900 mb-2">
-                  {searchTerm || filter !== 'all'
-                    ? 'No matches found'
-                    : 'No job matches yet'}
-                </h3>
-                <p className="text-sm text-gray-500 mb-4 max-w-xs mx-auto">
-                  {searchTerm || filter !== 'all'
-                    ? 'Try adjusting your search or filters'
-                    : 'Click "Refresh matches" to find jobs tailored to your skills'}
-                </p>
-                {(searchTerm || filter !== 'all') && (
-                  <Button
-                    onClick={() => {
+            <EmptyState
+              icon={Search}
+              title={
+                searchTerm || filter !== 'all'
+                  ? 'No matches found'
+                  : showingRecommendations
+                  ? 'No recommendations available'
+                  : 'No job matches yet'
+              }
+              description={
+                searchTerm || filter !== 'all'
+                  ? 'Try adjusting your search or filters'
+                  : showingRecommendations
+                  ? 'Check back later for new job postings'
+                  : 'Click "Refresh matches" to find jobs tailored to your skills'
+              }
+              actionLabel={
+                searchTerm || filter !== 'all' ? 'Clear filters' : undefined
+              }
+              onAction={
+                searchTerm || filter !== 'all'
+                  ? () => {
                       setSearchTerm('');
                       setFilter('all');
-                    }}
-                    className="bg-white text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300 font-medium px-4 py-2 rounded-md text-sm shadow-sm hover:shadow-md transition-all duration-150"
-                  >
-                    Clear filters
-                  </Button>
-                )}
-              </div>
-            </motion.div>
+                    }
+                  : undefined
+              }
+              variant="center"
+            />
           ) : (
             filteredMatches.map((match, index) => (
               <JobCard

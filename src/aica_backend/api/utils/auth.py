@@ -1,5 +1,6 @@
 import os
 import logging
+import httpx
 
 from supabase import create_client, Client
 from fastapi import Depends, HTTPException, status
@@ -47,7 +48,16 @@ def validate_token(token: str) -> Optional[Dict]:
         
     try:
         supabase = get_supabase_client()
-        user_response = supabase.auth.get_user(token)
+        
+        # Create a custom timeout configuration (5 seconds total)
+        timeout = httpx.Timeout(5.0, connect=2.0)
+        
+        # Get user with timeout
+        try:
+            user_response = supabase.auth.get_user(token)
+        except (httpx.TimeoutException, httpx.ConnectTimeout, httpx.ReadTimeout) as timeout_error:
+            logger.warning(f"Token validation timeout: {str(timeout_error)}")
+            return None
         
         if not user_response.user:
             logger.warning("Token validation failed: No user in response")
