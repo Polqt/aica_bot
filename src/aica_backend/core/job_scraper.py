@@ -28,18 +28,38 @@ class ExtractedJobData(BaseModel):
 class JobScraper:
     ETHICAL_JOB_SOURCES = {
         "we_work_remotely": [
-            "https://weworkremotely.com/remote-jobs/search?utf8=%E2%9C%93&term=software+engineer",
-            "https://weworkremotely.com/remote-jobs/search?utf8=%E2%9C%93&term=product+manager",
-            "https://weworkremotely.com/remote-jobs/search?utf8=%E2%9C%93&term=data+scientist",
-            "https://weworkremotely.com/remote-jobs/search?utf8=%E2%9C%93&term=marketing",
-            "https://weworkremotely.com/remote-jobs/search?utf8=%E2%9C%93&term=designer",
+            # Programming category pages - each has 20+ recent tech jobs
+            "https://weworkremotely.com/categories/remote-full-stack-programming-jobs",
+            "https://weworkremotely.com/categories/remote-front-end-programming-jobs",
+            "https://weworkremotely.com/categories/remote-back-end-programming-jobs",
+            "https://weworkremotely.com/categories/remote-programming-jobs",
+            # Design & Product categories
+            "https://weworkremotely.com/categories/remote-design-jobs",
+            "https://weworkremotely.com/categories/remote-product-jobs",
+            # Other tech categories
+            "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs",
+            "https://weworkremotely.com/categories/remote-customer-support-jobs",
+            "https://weworkremotely.com/categories/remote-sales-marketing-jobs",
+            "https://weworkremotely.com/categories/remote-management-finance-jobs",
         ],
-        "angel_list": [
-            "https://angel.co/jobs?keywords=software%20engineer",
-            "https://angel.co/jobs?keywords=product%20manager", 
-            "https://angel.co/jobs?keywords=data%20scientist",
-            "https://angel.co/jobs?keywords=marketing%20manager",
-            "https://angel.co/jobs?keywords=full%20stack%20developer",
+        "wellfound": [
+            # Each page typically has 20-50+ job listings
+            "https://wellfound.com/role/r/software-engineer",
+            "https://wellfound.com/role/r/frontend-engineer",
+            "https://wellfound.com/role/r/backend-engineer",
+            "https://wellfound.com/role/r/full-stack-engineer",
+            "https://wellfound.com/role/r/mobile-engineer",
+            "https://wellfound.com/role/r/devops-engineer",
+            "https://wellfound.com/role/r/data-scientist",
+            "https://wellfound.com/role/r/data-engineer",
+            "https://wellfound.com/role/r/machine-learning-engineer",
+            "https://wellfound.com/role/r/product-manager",
+            "https://wellfound.com/role/r/designer",
+            "https://wellfound.com/role/r/product-designer",
+            "https://wellfound.com/role/r/engineering-manager",
+            "https://wellfound.com/role/r/software-architect",
+            "https://wellfound.com/role/r/qa-engineer",
+            "https://wellfound.com/role/r/security-engineer",
         ],
     }
     
@@ -199,7 +219,13 @@ class JobScraper:
             return None
 
     async def scrape_job_board_search(self, search_url: str, max_jobs: int = 50) -> List[Job]:
+        """
+        Scrape job listings from a category/search page.
+        Now optimized to extract MORE jobs per page.
+        """
         try:
+            logger.info(f"🔎 Extracting job URLs from page (target: {max_jobs} jobs)...")
+            
             search_response = self.app.extract(
                 urls=[search_url],
                 schema={
@@ -208,38 +234,62 @@ class JobScraper:
                         "job_urls": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "List of individual job posting URLs"
+                            "description": "List of individual job posting URLs from this page"
                         }
                     }
                 },
-                prompt=f"Extract up to {max_jobs} individual job posting URLs from this job search results page. Only include direct links to job postings, not search result pages.",
+                prompt=f"""Extract ALL individual job posting URLs from this page (up to {max_jobs} URLs). 
+                
+                For We Work Remotely: Look for URLs like '/remote-jobs/...' or full URLs to job postings
+                For Wellfound: Look for URLs like '/jobs/...' or '/company/.../jobs/...'
+                
+                Only include direct links to actual job postings, not category pages or search pages.
+                Extract as many job URLs as you can find on the page.""",
             )
             
             job_urls = search_response.data.get("job_urls", [])
             if not job_urls:
-                logger.warning(f"No job URLs found for {search_url}")
+                logger.warning(f"⚠️  No job URLs found for {search_url}")
                 return []
             
-            job_urls = job_urls[:max_jobs]
-            logger.info(f"Found {len(job_urls)} job URLs from {search_url}")
+            # Convert relative URLs to absolute URLs
+            base_url = search_url.split('/categories/')[0] if 'weworkremotely' in search_url else search_url.split('/role/')[0]
+            normalized_urls = []
+            for url in job_urls:
+                if url.startswith('http'):
+                    normalized_urls.append(url)
+                elif url.startswith('/'):
+                    normalized_urls.append(base_url + url)
+                else:
+                    normalized_urls.append(url)
+            
+            job_urls = normalized_urls[:max_jobs]
+            logger.info(f"✅ Found {len(job_urls)} job URLs to process")
             
             jobs = []
+            successful = 0
+            failed = 0
+            
             for i, job_url in enumerate(job_urls):
                 try:
-                    logger.info(f"Processing job {i+1}/{len(job_urls)}: {job_url}")
+                    logger.info(f"📄 [{i+1}/{len(job_urls)}] Processing: {job_url}")
                     job = await self.scrape_and_extract_job(job_url)
                     if job:
                         jobs.append(job)
-                        logger.info(f"Successfully scraped: {job.title} at {job.company}")
+                        successful += 1
+                        logger.info(f"✅ Scraped: {job.title} at {job.company}")
                     else:
-                        logger.warning(f"Failed to extract job data from {job_url}")
+                        failed += 1
+                        logger.warning(f"⚠️  Failed to extract job data")
                         
                 except Exception as e:
-                    logger.error(f"Error processing job URL {job_url}: {e}")
+                    failed += 1
+                    logger.error(f"❌ Error processing job: {e}")
                     
                 # Add delay to be respectful to the server
-                await asyncio.sleep(random.uniform(1, 3))
-                
+                await asyncio.sleep(random.uniform(1, 2))
+            
+            logger.info(f"📊 Page results: {successful} successful, {failed} failed")
             return jobs
             
         except Exception as e:
@@ -263,27 +313,31 @@ class JobScraper:
             # Get all available URLs for this source
             source_urls = self.ETHICAL_JOB_SOURCES[source_name]
             
-            # Randomly shuffle URLs to get different results each time
-            shuffled_urls = source_urls.copy()
-            random.shuffle(shuffled_urls)
+            # Use ALL URLs instead of shuffling - we want max coverage
+            logger.info(f"📊 {source_name}: Processing {len(source_urls)} category pages")
             
             source_jobs = []
             jobs_needed = jobs_per_source
             
-            for source_url in shuffled_urls:
+            # Calculate jobs per URL for even distribution
+            jobs_per_url = max(15, jobs_per_source // len(source_urls))
+            
+            for idx, source_url in enumerate(source_urls, 1):
                 if jobs_needed <= 0:
                     break
                     
-                logger.info(f"Scraping {source_name} from {source_url}")
+                logger.info(f"🔍 [{idx}/{len(source_urls)}] Scraping {source_name} from {source_url}")
                 
                 try:
-                    jobs = await self.scrape_job_board_search(source_url, min(jobs_needed, 20))
+                    # Request more jobs per page (30-50 jobs per category)
+                    jobs_to_fetch = min(jobs_needed, jobs_per_url)
+                    jobs = await self.scrape_job_board_search(source_url, jobs_to_fetch)
                     source_jobs.extend(jobs)
                     jobs_needed -= len(jobs)
-                    logger.info(f"Scraped {len(jobs)} jobs from {source_url}")
+                    logger.info(f"✅ Got {len(jobs)} jobs from this page (Total: {len(source_jobs)}/{jobs_per_source})")
                     
                 except Exception as e:
-                    logger.error(f"Error scraping {source_url}: {e}")
+                    logger.error(f"❌ Error scraping {source_url}: {e}")
 
                 # Add delay between different URLs
                 await asyncio.sleep(random.uniform(2, 4))
