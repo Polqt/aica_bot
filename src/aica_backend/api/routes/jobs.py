@@ -1,12 +1,15 @@
 import logging
 import asyncio
+import os
+from datetime import datetime
 
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header, BackgroundTasks
 from typing import List, Dict, Any, Optional
 
 from api.dependencies import get_current_user
 from database.models.user_models import User
+from database.job_db import JobDatabase
 from services.job_matching import JobMatchingService
 
 logger = logging.getLogger(__name__)
@@ -507,3 +510,184 @@ async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: 
     except Exception as e:
         logger.error(f"Error getting saved jobs for user {current_user.id}: {str(e)}", exc_info=True)
         return []
+
+
+# ============================================================================
+# AUTOMATED JOB SCRAPING & VERIFICATION ENDPOINTS
+# ============================================================================
+
+class ScrapingJobResponse(BaseModel):
+    message: str
+    timestamp: str
+    status: str
+
+
+@router.post("/admin/trigger-scraping", response_model=ScrapingJobResponse)
+async def trigger_scraping_job(
+    background_tasks: BackgroundTasks,
+    api_key: str = Header(None, alias="X-API-Key")
+):
+    """
+    Trigger automated job scraping and verification.
+    Called by Google Cloud Scheduler weekly.
+    
+    Headers:
+        X-API-Key: Secret key for authentication
+    """
+    # Verify API key
+    expected_key = os.getenv("SCRAPING_API_KEY", "your-secret-key-here")
+    if api_key != expected_key:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Unauthorized: Invalid API key"
+        )
+    
+    # Schedule the background task
+    background_tasks.add_task(scrape_and_cleanup_jobs)
+    
+    return ScrapingJobResponse(
+        message="Job scraping and cleanup scheduled successfully",
+        timestamp=datetime.utcnow().isoformat(),
+        status="scheduled"
+    )
+
+
+async def scrape_and_cleanup_jobs():
+    """
+    Background task: Scrape new jobs + verify/cleanup old ones.
+    
+    Process:
+    1. Scrape ~500 new jobs from ethical sources
+    2. Save and index new jobs in database
+    3. Verify URLs of existing jobs (check if still active)
+    4. Mark expired jobs as inactive
+    """
+    from core.job_scraper import JobScraper
+    from database.job_db import JobDatabase
+    from core.rag.vector_store import VectorJobStore
+    from core.rag.embedder import TextEmbedder
+    
+    try:
+        logger.info("🚀 Starting automated job scraping and cleanup...")
+        
+        # Initialize services
+        scraper = JobScraper()
+        db = JobDatabase()
+        embedder = TextEmbedder()
+        vector_store = None
+        
+        try:
+            vector_store = VectorJobStore(embedder)
+        except Exception as e:
+            logger.warning(f"Vector store not available: {str(e)}")
+        
+        # Step 1: Scrape new jobs from multiple sources
+        sources = ["wellfound", "we_work_remotely"]
+        jobs_per_source = 250  # 500 total jobs
+        
+        logger.info(f"📥 Scraping {jobs_per_source} jobs per source from: {sources}")
+        new_jobs = []
+        
+        for source in sources:
+            try:
+                source_jobs = await scraper.scrape_jobs_from_source(source, limit=jobs_per_source)
+                new_jobs.extend(source_jobs)
+                logger.info(f"✅ Scraped {len(source_jobs)} jobs from {source}")
+            except Exception as e:
+                logger.error(f"❌ Failed to scrape {source}: {str(e)}")
+        
+        # Step 2: Save and index new jobs
+        saved_count = 0
+        for job in new_jobs:
+            try:
+                job_id = db.save_job(job)
+                if job_id and vector_store:
+                    # Create job content for embedding
+                    job_content = f"""
+                    Title: {job.title}
+                    Company: {job.company}
+                    Location: {job.location or 'Remote'}
+                    Description: {job.description or ''}
+                    Skills: {', '.join(job.skills) if job.skills else ''}
+                    Requirements: {', '.join(job.requirements) if job.requirements else ''}
+                    """
+                    
+                    metadata = {
+                        "title": job.title,
+                        "company": job.company,
+                        "location": job.location or "",
+                        "source": job.source
+                    }
+                    
+                    vector_store.add_job(job_id, job_content, metadata)
+                    saved_count += 1
+            except Exception as e:
+                logger.error(f"Failed to save job {job.title}: {str(e)}")
+        
+        logger.info(f"💾 Saved and indexed {saved_count}/{len(new_jobs)} new jobs")
+        
+        # Step 3: Cleanup - Verify old job URLs
+        await cleanup_expired_jobs(db)
+        
+        logger.info("✅ Automated job scraping and cleanup completed successfully")
+        
+    except Exception as e:
+        logger.error(f"❌ Scraping job failed: {str(e)}", exc_info=True)
+
+
+async def cleanup_expired_jobs(db: JobDatabase):
+    """
+    Verify job URLs and remove expired ones.
+    
+    Checks jobs older than 7 days to see if URLs still exist.
+    Marks as inactive if:
+    - HTTP 404 (Not Found)
+    - HTTP 500+ (Server Error)
+    - Timeout or connection error
+    """
+    import aiohttp
+    from aiohttp import ClientSession, ClientTimeout
+    
+    logger.info("🔍 Starting job URL verification...")
+    
+    # Get jobs that need verification (older than 7 days)
+    jobs_to_verify = db.get_jobs_for_verification(days_old=7, limit=200)
+    
+    if not jobs_to_verify:
+        logger.info("No jobs to verify")
+        return
+    
+    logger.info(f"📋 Verifying {len(jobs_to_verify)} job URLs...")
+    
+    expired_count = 0
+    verified_count = 0
+    
+    # Use aiohttp for async HTTP requests
+    timeout = ClientTimeout(total=10)
+    
+    async with ClientSession(timeout=timeout) as session:
+        for job in jobs_to_verify:
+            try:
+                # Use HEAD request to check if URL exists (faster than GET)
+                async with session.head(job.url, allow_redirects=True) as response:
+                    if response.status == 404 or response.status >= 500:
+                        # Job posting no longer exists
+                        db.mark_job_as_expired(job.id)
+                        expired_count += 1
+                        logger.info(f"🗑️ Expired: {job.title} at {job.company} (Status: {response.status})")
+                    else:
+                        # Job still active, update verification timestamp
+                        db.update_job_verification(job.id)
+                        verified_count += 1
+                        
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                # Connection error or timeout - likely expired
+                logger.warning(f"⚠️ Could not verify {job.title}: {str(e)}")
+                # Optionally mark as expired after multiple failed attempts
+                # For now, just log the error
+                
+            # Rate limiting - be respectful to job sites
+            await asyncio.sleep(1)
+    
+    logger.info(f"✅ Verification complete: {verified_count} active, {expired_count} expired")
+

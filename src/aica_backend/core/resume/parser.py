@@ -112,12 +112,17 @@ class ResumeParser:
             return InfoExtractor.extract_with_fallback(text)
         
         try:
-            # Truncate text for faster processing
+            # For name extraction, use only the top portion of the resume to avoid confusion
+            # Most resumes have the name in the first 500-1000 characters
+            max_chars_for_name = 1500
+            truncated_for_name = text[:max_chars_for_name] if len(text) > max_chars_for_name else text
+            
+            # For contact info, we can use a bit more
             max_chars = 3000
             truncated_text = text[:max_chars] if len(text) > max_chars else text
             
             prompt = create_personal_info_prompt().format_prompt(
-                resume_text=truncated_text,
+                resume_text=truncated_for_name,
                 format_instructions=self.info_parser.get_format_instructions()
             )
             response = await self.llm.ainvoke(prompt)
@@ -126,21 +131,30 @@ class ResumeParser:
             clean_json = self._extract_json_from_text(response.content)
             llm_result = self.info_parser.parse(clean_json)
             
-            # If LLM didn't extract a name, try fallback
+            # If LLM didn't extract a name, try fallback on the truncated text (top of resume only)
             if not llm_result.full_name or len(llm_result.full_name.strip()) < 2:
-                fallback_result = InfoExtractor.extract_with_fallback(text)
+                fallback_result = InfoExtractor.extract_with_fallback(truncated_for_name)
                 if fallback_result.full_name:
                     llm_result.full_name = fallback_result.full_name
             
             # Clean up the name if extracted
             if llm_result.full_name:
                 llm_result.full_name = InfoExtractor.clean_extracted_name(llm_result.full_name)
+                # Additional validation: filter out reference names
+                if InfoExtractor.is_likely_reference_name(text, llm_result.full_name):
+                    logger.warning(f"Detected reference name, retrying: {llm_result.full_name}")
+                    # Try fallback with just top of resume
+                    fallback_result = InfoExtractor.extract_with_fallback(truncated_for_name)
+                    llm_result.full_name = fallback_result.full_name
             
             return llm_result
         
         except Exception as e:
             logger.warning(f"LLM info extraction failed: {str(e)}, using fallback")
-            return InfoExtractor.extract_with_fallback(text)
+            # Use only top of resume for fallback too
+            max_chars_for_name = 1500
+            truncated_for_name = text[:max_chars_for_name] if len(text) > max_chars_for_name else text
+            return InfoExtractor.extract_with_fallback(truncated_for_name)
     
     async def _extract_skills(self, text: str) -> ResumeSkills:
         if self.llm is None:

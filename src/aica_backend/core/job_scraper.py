@@ -219,10 +219,6 @@ class JobScraper:
             return None
 
     async def scrape_job_board_search(self, search_url: str, max_jobs: int = 50) -> List[Job]:
-        """
-        Scrape job listings from a category/search page.
-        Now optimized to extract MORE jobs per page.
-        """
         try:
             logger.info(f"🔎 Extracting job URLs from page (target: {max_jobs} jobs)...")
             
@@ -298,6 +294,43 @@ class JobScraper:
 
     def get_ethical_job_sources(self) -> Dict[str, List[str]]:
         return self.ETHICAL_JOB_SOURCES.copy()
+
+    async def scrape_jobs_from_source(self, source_name: str, limit: int = 250) -> List[Job]:
+        if source_name not in self.ETHICAL_JOB_SOURCES:
+            logger.warning(f"Unknown source: {source_name}")
+            return []
+        
+        source_urls = self.ETHICAL_JOB_SOURCES[source_name]
+        logger.info(f"📊 {source_name}: Processing {len(source_urls)} category pages")
+        
+        all_jobs = []
+        jobs_needed = limit
+        
+        # Calculate jobs per URL for even distribution
+        jobs_per_url = max(15, limit // len(source_urls))
+        
+        for idx, source_url in enumerate(source_urls, 1):
+            if jobs_needed <= 0:
+                break
+                
+            logger.info(f"🔍 [{idx}/{len(source_urls)}] Scraping {source_name} from {source_url}")
+            
+            try:
+                # Request jobs from this category page
+                jobs_to_fetch = min(jobs_needed, jobs_per_url)
+                jobs = await self.scrape_job_board_search(source_url, jobs_to_fetch)
+                all_jobs.extend(jobs)
+                jobs_needed -= len(jobs)
+                logger.info(f"✅ Got {len(jobs)} jobs from this page (Total: {len(all_jobs)}/{limit})")
+                
+            except Exception as e:
+                logger.error(f"❌ Error scraping {source_url}: {e}")
+
+            # Add delay between different URLs
+            await asyncio.sleep(random.uniform(2, 4))
+        
+        logger.info(f"✅ Total scraped from {source_name}: {len(all_jobs)} jobs")
+        return all_jobs
 
     async def batch_scrape_ethical_sources(self, 
                                          sources: List[str], 

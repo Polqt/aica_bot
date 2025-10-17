@@ -331,8 +331,10 @@ class JobDatabase:
     def get_jobs_for_matching(self, limit: int = 100, min_skills: int = 1) -> List[Job]:
         try:
             # Query jobs that have skills and are suitable for matching
+            # Only fetch active jobs
             response = (self.client.table("jobs")
                        .select("*")
+                       .eq("is_active", True)  # Only active jobs
                        .not_.is_("skills", "null")
                        .order("created_at", desc=True)
                        .limit(limit)
@@ -369,10 +371,6 @@ class JobDatabase:
             return None
 
     def save_user_job_match(self, user_id: str, job_id: str, match_score: float, **kwargs) -> bool:
-        """
-        Save or update a job match for a user.
-        Uses upsert pattern to prevent duplicates.
-        """
         try:
             # Check if match already exists
             existing = self.client.table("user_job_matches").select("id").eq("user_id", user_id).eq("job_id", job_id).execute()
@@ -406,6 +404,63 @@ class JobDatabase:
             ).eq("user_id", user_id).order("match_score", desc=True).execute()
             
             return response.data or []
+            
+        except Exception as e:
+            logger.error(f"Failed to fetch user matches: {e}")
+            return []
+
+    def mark_job_as_expired(self, job_id: str) -> bool:
+        try:
+            response = (self.client.table("jobs")
+                       .update({
+                           "is_active": False,
+                           "expired_at": datetime.utcnow().isoformat()
+                       })
+                       .eq("id", job_id)
+                       .execute())
+            
+            logger.info(f"🗑️ Marked job {job_id} as expired")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to mark job {job_id} as expired: {str(e)}")
+            return False
+
+    def update_job_verification(self, job_id: str) -> bool:
+        try:
+            response = (self.client.table("jobs")
+                       .update({"last_verified_at": datetime.utcnow().isoformat()})
+                       .eq("id", job_id)
+                       .execute())
+            return True
+        except Exception as e:
+            logger.error(f"Failed to update verification for job {job_id}: {str(e)}")
+            return False
+
+    def get_jobs_for_verification(self, days_old: int = 7, limit: int = 100) -> List[Job]:
+        try:
+            from datetime import timedelta
+            cutoff_date = (datetime.utcnow() - timedelta(days=days_old)).isoformat()
+            
+            response = (self.client.table("jobs")
+                       .select("*")
+                       .eq("is_active", True)
+                       .lt("last_verified_at", cutoff_date)
+                       .order("last_verified_at", desc=False)
+                       .limit(limit)
+                       .execute())
+            
+            if not response.data:
+                return []
+            
+            jobs = []
+            for job_data in response.data:
+                try:
+                    job = self._deserialize_job(job_data)
+                    jobs.append(job)
+                except Exception as e:
+                    continue
+            
+            return jobs
             
         except Exception as e:
             return []
