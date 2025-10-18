@@ -19,13 +19,13 @@ import {
   Upload,
   Edit2,
   FileText,
-  Loader2,
   Calendar,
   CheckCircle2,
   ArrowRight,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useResumeBuilder } from '@/hooks/useResumeBuilder';
+import { PageLoader } from '@/components/PageLoader';
 
 export default function UserProfilePage() {
   const router = useRouter();
@@ -51,14 +51,7 @@ export default function UserProfilePage() {
   }, [loadResumeData, searchParams]);
 
   if (!mounted || loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-          <p className="text-sm text-gray-500">Loading profile...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader text="Loading profile..." size="md" />;
   }
 
   // Group skills by proficiency level (since skill_category doesn't exist in type)

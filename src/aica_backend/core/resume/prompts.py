@@ -2,74 +2,82 @@ from langchain.prompts import ChatPromptTemplate
 
 def create_comprehensive_skills_prompt() -> ChatPromptTemplate:
     return ChatPromptTemplate.from_messages([
-        ("system", """You are an expert resume parser with ONE MISSION: Extract EVERY SINGLE skill from resumes.
+        ("system", """You are an expert resume parser focused on extracting ONLY the skills that the candidate has explicitly demonstrated or claimed to possess.
 
-⚠️ CRITICAL: Do NOT miss skills. Be AGGRESSIVE in extraction. When in doubt, INCLUDE IT.
+⚠️ CRITICAL EXTRACTION RULES:
 
-EXTRACTION STRATEGY:
-1. **Skills Sections**: Extract EVERYTHING explicitly listed under skills/technologies/tools sections
-2. **Work Experience**: Extract ALL technologies mentioned ("using X", "with Y", "in Z")
-3. **Projects**: Extract ALL tech from project descriptions
-4. **Achievements**: Extract skills from accomplishment statements
+✅ EXTRACT SKILLS FROM THESE SECTIONS ONLY:
+1. **Skills Section**: Any section explicitly labeled as "Skills", "Technical Skills", "Core Competencies", "Technologies", "Tools & Technologies"
+2. **Work Experience**: Skills mentioned in job descriptions where the candidate actively used them ("developed with X", "implemented using Y", "managed Z systems")
+3. **Projects**: Technologies and tools used in personal or professional projects
+4. **Qualifications Summary**: Skills mentioned in profile/summary sections
 
-⚠️ DO NOT EXTRACT FROM:
-- Certification names or certificate course content (only extract if the skill is ALSO mentioned elsewhere)
-- Reference sections or character references
-- Skills that are only implied through certifications but not explicitly stated by the candidate
+❌ DO NOT EXTRACT SKILLS FROM:
+- **Certifications**: Do NOT extract skills from certification names alone (e.g., "AWS Certified Developer" - only extract AWS if it's mentioned elsewhere in actual work experience or skills section)
+- **Course Names**: Do NOT extract from training course titles or syllabi
+- **Certificate Content**: Do NOT extract from descriptions of what a certificate covers
+- **References**: Do NOT extract from reference sections
+- **Education Course Lists**: Do NOT extract from lists of courses taken unless the skill is also mentioned in experience/projects
+- **Implied Skills**: Do NOT infer skills that aren't explicitly stated
 
-TECHNICAL SKILLS - Extract ALL mentions of:
+EXTRACTION GUIDELINES:
+• Only extract skills the candidate has ACTUALLY USED or EXPLICITLY LISTED in their skills section
+• Verify that technical skills appear in context of actual work, not just certifications
+• For each skill extracted, it must be mentioned in at least one of: Skills section, Work experience description, or Projects
+• When in doubt, DO NOT INCLUDE - we want accuracy over completeness
+
+TECHNICAL SKILLS - Extract ONLY if explicitly mentioned in work/skills/projects:
 • Programming languages: Python, JavaScript, Java, C++, Go, Rust, TypeScript, etc.
 • Frameworks: React, Angular, Vue, Django, Flask, FastAPI, Spring Boot, Node.js, etc.
 • Databases: MySQL, PostgreSQL, MongoDB, Redis, DynamoDB, Elasticsearch, etc.
-• Cloud: AWS, Azure, GCP, services like EC2, S3, Lambda, Cloud Functions, etc.
+• Cloud: AWS, Azure, GCP, and specific services (EC2, S3, Lambda, etc.) - ONLY if used in actual work
 • DevOps: Docker, Kubernetes, Jenkins, GitHub Actions, CI/CD, Terraform, etc.
 • Tools: Git, VS Code, Jira, Postman, npm, pip, Maven, etc.
 • APIs: REST, GraphQL, gRPC, WebSocket, etc.
-• Testing: Jest, Pytest, Selenium, Cypress, JUnit, etc.
-• Data: Pandas, NumPy, TensorFlow, PyTorch, Spark, Airflow, etc.
 
-SOFT SKILLS - Extract ALL mentions of:
+SOFT SKILLS - Extract ONLY if explicitly stated or clearly demonstrated:
 • Leadership, Management, Team Leadership, Project Management
-• Communication, Presentation, Technical Writing, Documentation
-• Collaboration, Teamwork, Cross-functional, Stakeholder Management
-• Problem Solving, Analytical Thinking, Critical Thinking, Troubleshooting
-• Time Management, Organization, Prioritization, Multitasking
-• Adaptability, Flexibility, Learning Agility, Growth Mindset
-• Customer Service, Client Relations, Empathy, Active Listening
+• Communication, Presentation, Technical Writing
+• Collaboration, Teamwork, Cross-functional coordination
+• Problem Solving, Analytical Thinking, Critical Thinking
+• Time Management, Organization, Prioritization
+• Adaptability, Flexibility, Learning Agility
 
-EXTRACTION RULES:
-✅ Extract from phrases: "developed with React" → Extract "React"
-✅ Extract from sentences: "skilled in Python and Java" → Extract "Python", "Java"
-✅ Extract compound skills: "React.js" → Extract "React"
-✅ Extract variations: "nodejs" → Extract "Node.js"
-✅ Use standard naming: "JavaScript" not "js", "PostgreSQL" not "postgres"
-✅ Extract EVERYTHING - better to over-extract than miss something
+QUALITY STANDARDS:
+- Prefer ACCURACY over quantity
+- Extract 8-20 technical skills for tech resumes (not 40+)
+- Extract 5-10 soft skills
+- Every skill must be verifiable in the resume text
+- DO NOT hallucinate or assume skills"""),
+        ("human", """Extract ONLY the skills that this candidate has explicitly demonstrated or listed in their Skills, Experience, Projects, or Qualifications sections.
 
-❌ DO NOT extract: Job titles, company names, generic verbs, dates
-
-QUALITY CHECK:
-- Minimum 10-15 technical skills (for tech resumes)
-- Minimum 5-8 soft skills
-- If you extract fewer, RE-READ the resume and extract more"""),
-        ("human", """Extract EVERY skill from this resume. Be thorough but focused on what the candidate explicitly states:
+DO NOT extract skills that only appear in:
+- Certification names
+- Course titles
+- Training programs
+- Certificate descriptions
 
 {resume_text}
 
-INSTRUCTIONS:
-1. Read the ENTIRE resume carefully
-2. Extract ALL technical skills (languages, frameworks, databases, tools, cloud, etc.)
-3. Extract ALL soft skills (leadership, communication, problem-solving, etc.)
-4. Look in: Skills sections, work experience, projects, achievements
-5. Extract skills from context: "built API with FastAPI" → extract "API" and "FastAPI"
-6. Use proper naming conventions
-7. Remove duplicates
+STRICT EXTRACTION PROCESS:
+1. Identify the Skills/Technical Skills section → Extract all skills listed there
+2. Read Work Experience → Extract skills ONLY where actively used (e.g., "built API with FastAPI", "managed AWS infrastructure")
+3. Read Projects → Extract technologies ONLY if explicitly mentioned as used
+4. Read Qualifications/Summary → Extract skills if explicitly stated
+5. Cross-verify: Each skill must appear in at least one of the above contexts
+6. Exclude: Any skill that only appears in certification names or course titles
 
-⚠️ IMPORTANT EXCLUSIONS:
-- DO NOT extract skills only mentioned in certification names (e.g., if "AWS Certification" is listed but AWS is never used in actual work, exclude it)
-- DO NOT extract skills from course syllabi or certificate content descriptions
-- ONLY extract skills the candidate has explicitly demonstrated or listed in their experience/skills sections
+EXAMPLE OF WHAT NOT TO EXTRACT:
+- "AWS Certified Solutions Architect" → DO NOT extract AWS unless it's also in experience/skills
+- "Java Programming Certificate" → DO NOT extract Java unless it's also in experience/skills
+- "Completed course in Machine Learning" → DO NOT extract ML unless it's in actual work
 
-GOAL: Extract a COMPREHENSIVE list of skills the candidate has actually used or claims to possess - aim for 15+ technical skills and 8+ soft skills minimum.
+EXAMPLE OF WHAT TO EXTRACT:
+- Skills section lists "Python, React, PostgreSQL" → Extract these
+- "Developed REST API using FastAPI and PostgreSQL" → Extract FastAPI, PostgreSQL, REST API
+- "Led team of 5 engineers" → Extract Leadership, Team Management
+
+Return a focused, accurate list of skills the candidate has actually demonstrated.
 
 ⚠️ CRITICAL OUTPUT FORMAT:
 - Return ONLY valid JSON

@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useResumeBuilder } from '@/hooks/useResumeBuilder';
 import { UserExperience, UserExperienceCreate } from '@/types/user';
+import { PageLoader } from '@/components/PageLoader';
 
 const EMPLOYMENT_TYPES = [
   'Full-time',
@@ -157,11 +158,7 @@ export default function ExperiencePage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
-      </div>
-    );
+    return <PageLoader variant="minimal" fullScreen={false} />;
   }
 
   return (
@@ -253,22 +250,31 @@ export default function ExperiencePage() {
             <Button onClick={handleBack} variant="neutral" className="h-10">
               <ArrowLeft className="w-4 h-4 mr-2" /> Back
             </Button>
-            <Button
-              onClick={handleContinue}
-              disabled={!experience?.length || saving}
-              className="h-10"
-            >
-              {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  Continue <ArrowRight className="w-4 h-4 ml-2" />
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleContinue}
+                variant="neutral"
+                className="h-10 text-gray-600 hover:text-gray-900"
+              >
+                Skip for now
+              </Button>
+              <Button
+                onClick={handleContinue}
+                disabled={!experience?.length || saving}
+                className="h-10"
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    Continue <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

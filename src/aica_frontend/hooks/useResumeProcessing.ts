@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { MAX_POLLS, POLL_INTERVAL_MS } from '@/lib/constants/upload';
@@ -30,8 +29,8 @@ export const useResumeProcessing = () => {
   const [pollCount, setPollCount] = useState(0);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isComponentMountedRef = useRef(true);
+  const hasShownCompletionToastRef = useRef(false); // Prevent duplicate toasts
 
-  const router = useRouter();
   const { getAuthToken } = useAuth();
 
   useEffect(() => {
@@ -92,11 +91,15 @@ export const useResumeProcessing = () => {
       if (data.status === 'completed') {
         const matchCount = data.matches_found || 0;
         stopPolling();
-        toast.success(
-          `Resume processed successfully! Found ${matchCount} job matches.`,
-        );
-        // Don't auto-navigate to job-matches
-        // Let the upload page handle navigation to dashboard instead
+
+        // Only show toast once
+        if (!hasShownCompletionToastRef.current) {
+          hasShownCompletionToastRef.current = true;
+          toast.success(
+            `Resume processed successfully! Found ${matchCount} job matches.`,
+          );
+        }
+        // Navigation is handled by the upload page component
       } else if (data.status === 'error') {
         stopPolling();
         toast.error(
@@ -109,7 +112,7 @@ export const useResumeProcessing = () => {
         toast.error('Failed to check processing status.');
       }
     }
-  }, [getAuthToken, router, stopPolling]);
+  }, [getAuthToken, stopPolling]);
 
   const startPolling = useCallback(() => {
     let currentPollCount = 0;
@@ -131,6 +134,7 @@ export const useResumeProcessing = () => {
   const resetProcessing = useCallback(() => {
     setProcessingStatus('not_uploaded');
     setPollCount(0);
+    hasShownCompletionToastRef.current = false; // Reset toast flag
     stopPolling();
   }, [stopPolling]);
 

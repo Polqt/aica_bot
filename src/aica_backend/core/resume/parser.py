@@ -57,7 +57,6 @@ class ResumeParser:
                 anthropic_api_key=api_key
             )
         except Exception as e:
-            logger.warning(f"LLM client initialization failed: {str(e)}")
             return None
     
     async def parse_resume_from_file(self, file_content: bytes, file_type: str) -> ParsedResume:
@@ -80,8 +79,7 @@ class ResumeParser:
                 skills=skills,
                 cleaned_text=cleaned_text
             )
-        except Exception as e:
-            logger.error(f"Resume parsing failed: {str(e)}")
+        except Exception:
             raise
     
     async def _extract_info_and_skills(self, text: str) -> Tuple[PersonalInfo, ResumeSkills]:
@@ -99,9 +97,7 @@ class ResumeParser:
             skills = results[1] if not isinstance(results[1], Exception) else SkillExtractor.extract_with_fallback(text)
             
             return personal_info, skills
-        except Exception as e:
-            logger.error(f"Concurrent extraction failed: {str(e)}")
-            # Fallback to sequential processing
+        except Exception:
             personal_info = InfoExtractor.extract_with_fallback(text)
             skills = SkillExtractor.extract_with_fallback(text)
             return personal_info, skills
@@ -142,16 +138,12 @@ class ResumeParser:
                 llm_result.full_name = InfoExtractor.clean_extracted_name(llm_result.full_name)
                 # Additional validation: filter out reference names
                 if InfoExtractor.is_likely_reference_name(text, llm_result.full_name):
-                    logger.warning(f"Detected reference name, retrying: {llm_result.full_name}")
-                    # Try fallback with just top of resume
                     fallback_result = InfoExtractor.extract_with_fallback(truncated_for_name)
                     llm_result.full_name = fallback_result.full_name
             
             return llm_result
         
         except Exception as e:
-            logger.warning(f"LLM info extraction failed: {str(e)}, using fallback")
-            # Use only top of resume for fallback too
             max_chars_for_name = 1500
             truncated_for_name = text[:max_chars_for_name] if len(text) > max_chars_for_name else text
             return InfoExtractor.extract_with_fallback(truncated_for_name)
@@ -179,7 +171,6 @@ class ResumeParser:
             return normalized_skills
         
         except Exception as e:
-            logger.warning(f"LLM skills extraction failed: {str(e)}, using fallback")
             return SkillExtractor.extract_with_fallback(text)
     
     async def process_and_store_resume(
@@ -198,7 +189,6 @@ class ResumeParser:
             return parsed_resume
         
         except Exception as e:
-            logger.error(f"Failed to process resume for user {user_id}: {str(e)}")
             raise Exception(f"Failed to process resume: {str(e)}")
     
     async def _store_parsed_resume(self, user_id: str, parsed_resume: ParsedResume) -> None:
@@ -222,7 +212,6 @@ class ResumeParser:
             logger.info(f"Successfully stored resume data for user {user_id}")
         
         except Exception as e:
-            logger.error(f"Failed to store resume data for user {user_id}: {str(e)}")
             raise Exception(f"Failed to store resume data: {str(e)}")
     
     def _prepare_skills_for_storage(self, skills: ResumeSkills) -> List[UserSkillCreate]:

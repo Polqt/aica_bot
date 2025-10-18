@@ -9,6 +9,7 @@ import { UserProfile } from '@/types/user';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageLoader } from '@/components/PageLoader';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -47,11 +48,7 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
-      </div>
-    );
+    return <PageLoader variant="minimal" fullScreen={false} />;
   }
 
   return (

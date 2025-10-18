@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class SkillExtractor:
-    """Extracts technical and soft skills from resume text."""
     
     # Comprehensive technical skills database
     TECHNICAL_KEYWORDS = [
@@ -221,9 +220,12 @@ class SkillExtractor:
     def extract_with_fallback(cls, text: str) -> ResumeSkills:
         text_lower = text.lower()
         
-        # Extract skills
-        found_technical = cls._extract_technical_skills(text_lower)
-        found_soft = cls._extract_soft_skills(text_lower)
+        # Identify and exclude certification/course sections
+        certification_free_text = cls._remove_certification_sections(text_lower)
+        
+        # Extract skills from the cleaned text
+        found_technical = cls._extract_technical_skills(certification_free_text)
+        found_soft = cls._extract_soft_skills(certification_free_text)
         
         # Extract additional professional information
         experience_years = cls._estimate_experience_years(text)
@@ -240,10 +242,58 @@ class SkillExtractor:
             industries=industries
         )
     
+    @staticmethod
+    def _remove_certification_sections(text: str) -> str:
+        # Split text into lines
+        lines = text.split('\n')
+        filtered_lines = []
+        skip_section = False
+        
+        # Keywords that indicate certification/course sections
+        cert_section_headers = [
+            'certification', 'certifications', 'certificates', 'certificate',
+            'licenses', 'license', 'training', 'courses', 'coursework',
+            'professional development', 'continuing education'
+        ]
+        
+        # Keywords that indicate other sections (end of cert section)
+        other_section_headers = [
+            'experience', 'work experience', 'employment', 'professional experience',
+            'projects', 'project', 'skills', 'technical skills', 'core competencies',
+            'education', 'summary', 'profile', 'objective', 'achievements'
+        ]
+        
+        for i, line in enumerate(lines):
+            line_stripped = line.strip().lower()
+            
+            # Check if this is a certification section header
+            if any(header in line_stripped for header in cert_section_headers):
+                # Check if it looks like a section header (short line, possibly with formatting)
+                if len(line_stripped) < 50 and not any(char.isdigit() for char in line_stripped[:20]):
+                    skip_section = True
+                    continue
+            
+            # Check if we're entering a different section
+            if skip_section and any(header in line_stripped for header in other_section_headers):
+                if len(line_stripped) < 50:
+                    skip_section = False
+            
+            # Include line if not in certification section
+            if not skip_section:
+                filtered_lines.append(line)
+        
+        return '\n'.join(filtered_lines)
+    
     @classmethod
     def _extract_technical_skills(cls, text_lower: str) -> List[str]:
-        """Extract technical skills using aggressive pattern matching."""
         found_skills = []
+        
+        # Context patterns that indicate actual skill usage (not just mentions)
+        usage_patterns = [
+            r'(?:experience|skilled|proficient|expert|familiar)\s+(?:in|with)\s+',
+            r'(?:using|used|utilizing|implemented|developed|built|created|managed|deployed)\s+',
+            r'(?:knowledge\s+of|understanding\s+of)\s+',
+        ]
         
         for skill in cls.TECHNICAL_KEYWORDS:
             # Create flexible pattern that handles variations and context
@@ -274,7 +324,6 @@ class SkillExtractor:
     
     @classmethod
     def _extract_soft_skills(cls, text_lower: str) -> List[str]:
-        """Extract soft skills using aggressive keyword matching."""
         found_skills = []
         
         for skill in cls.SOFT_KEYWORDS:
@@ -300,7 +349,6 @@ class SkillExtractor:
     
     @staticmethod
     def _estimate_experience_years(text: str) -> Optional[int]:
-        """Calculate years of experience from resume text."""
         patterns = [
             r'(\d+)\+?\s*years?\s*(?:of\s*)?experience',
             r'(\d+)\+?\s*years?\s*in(?:\s+the\s+)?(?:software|tech|it)?\s*industry',
@@ -322,7 +370,6 @@ class SkillExtractor:
     
     @staticmethod
     def _extract_job_titles(text: str) -> List[str]:
-        """Extract job titles from resume text."""
         # Look for common job title patterns
         title_patterns = [
             r'(?:^|\n)([A-Z][^.\n]{10,50}?)(?:\n|$)',  # Lines that look like job titles
@@ -344,7 +391,6 @@ class SkillExtractor:
     
     @staticmethod
     def _extract_education_level(text: str) -> Optional[str]:
-        """Extract highest education level from resume."""
         text_lower = text.lower()
         education_levels = [
             ('phd', 'PhD'), ('doctorate', 'PhD'), ('doctoral', 'PhD'),
@@ -363,7 +409,6 @@ class SkillExtractor:
     
     @staticmethod
     def _extract_industries(text: str) -> List[str]:
-        """Extract industries/sectors from resume text."""
         industries = [
             'technology', 'software', 'it', 'finance', 'banking', 'healthcare', 'medical',
             'retail', 'e-commerce', 'education', 'consulting', 'manufacturing', 'automotive',

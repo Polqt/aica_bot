@@ -9,6 +9,7 @@ import {
   TopSkillsChart,
   RecentJobMatches,
 } from '@/components/dashboard';
+import { PageLoader } from '@/components/PageLoader';
 
 interface UserStats {
   profile_completed: boolean;
@@ -250,16 +251,7 @@ export default function DashboardPage() {
   }, [getAuthToken]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-3 border-blue-600 border-t-transparent mx-auto" />
-          <p className="text-sm text-gray-500 font-medium">
-            Loading your dashboard...
-          </p>
-        </div>
-      </div>
-    );
+    return <PageLoader text="Loading your dashboard..." size="lg" />;
   }
 
   if (error) {
@@ -287,7 +279,6 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -308,15 +299,15 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-4 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+          <div className="lg:col-span-1 space-y-6">
             <RecentJobMatches
               matches={recentMatches.slice(0, 3)}
               hasNoData={hasNoData}
             />
           </div>
 
-          <div className="lg:col-span-8 space-y-6">
+          <div className="lg:col-span-2 space-y-6">
             <TopJobTitlesCard jobTitles={topJobTitles} />
             <TopSkillsChart topSkills={topSkills} />
           </div>

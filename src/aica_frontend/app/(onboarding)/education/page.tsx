@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useResumeBuilder } from '@/hooks/useResumeBuilder';
 import { UserEducation, UserEducationCreate } from '@/types/user';
+import { PageLoader } from '@/components/PageLoader';
 
 export default function EducationPage() {
   const router = useRouter();
@@ -133,11 +134,7 @@ export default function EducationPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
-      </div>
-    );
+    return <PageLoader variant="minimal" fullScreen={false} />;
   }
 
   return (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -105,35 +105,45 @@ export default function JobMatchesPage() {
   }, []);
 
   useEffect(() => {
+    // Only check processing status on initial mount
     checkProcessingStatus();
     refreshSavedJobs();
-  }, [checkProcessingStatus, refreshSavedJobs]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    // Load matches after status check completes
     if (!isCheckingStatus) {
       loadJobMatches();
       loadStats();
     }
-  }, [isCheckingStatus, loadJobMatches, loadStats]);
+  }, [isCheckingStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reload matches when page becomes visible (e.g., after navigating back)
+  // Debounced to prevent multiple rapid calls
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
     const handleVisibilityChange = () => {
       if (
         document.visibilityState === 'visible' &&
         !isCheckingStatus &&
         !loading
       ) {
-        loadJobMatches();
-        loadStats();
+        // Debounce to prevent multiple calls
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          loadJobMatches();
+          loadStats();
+        }, 300);
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
+      clearTimeout(timeoutId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isCheckingStatus, loading, loadJobMatches, loadStats]);
+  }, [isCheckingStatus, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refreshMatches = async () => {
     try {
@@ -257,18 +267,21 @@ export default function JobMatchesPage() {
     }
   }, [jobMatches, recommendations, showingRecommendations, selectedJob]);
 
-  // Filter matches or recommendations
-  const displayJobs = showingRecommendations ? recommendations : jobMatches;
-  const filteredMatches = displayJobs.filter(match => {
-    const matchesSearch =
-      searchTerm === '' ||
-      match.job_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      match.company.toLowerCase().includes(searchTerm.toLowerCase());
+  // Memoize filtered matches to prevent unnecessary recalculations
+  const filteredMatches = useMemo(() => {
+    const displayJobs = showingRecommendations ? recommendations : jobMatches;
 
-    const matchesFilter = filter === 'all' || match.confidence === filter;
+    return displayJobs.filter(match => {
+      const matchesSearch =
+        searchTerm === '' ||
+        match.job_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        match.company.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesSearch && matchesFilter;
-  });
+      const matchesFilter = filter === 'all' || match.confidence === filter;
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [jobMatches, recommendations, showingRecommendations, searchTerm, filter]);
 
   // Check if we should show loading skeleton
   const showLoadingSkeleton =

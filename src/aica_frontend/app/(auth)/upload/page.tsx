@@ -40,13 +40,9 @@ export default function ResumeUpload() {
   React.useEffect(() => {
     if (processingStatus === 'completed') {
       const timer = setTimeout(() => {
-        // After resume replacement, go to user profile instead
-        // This prevents showing stale job matches
-        if (mode === 'replace') {
-          router.push('/user-profile?from=upload');
-        } else {
-          router.push('/dashboard');
-        }
+        // Always redirect to job-matches after successful upload
+        // This allows users to immediately see their matched jobs
+        router.push('/job-matches?from=upload');
       }, 2000);
 
       return () => clearTimeout(timer);

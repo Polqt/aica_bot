@@ -564,8 +564,7 @@ async def scrape_and_cleanup_jobs():
     """
     from core.job_scraper import JobScraper
     from database.job_db import JobDatabase
-    from core.rag.vector_store import VectorJobStore
-    from core.rag.embedder import TextEmbedder
+    from core.rag import VectorJobStore, TextEmbedder
     
     try:
         logger.info("🚀 Starting automated job scraping and cleanup...")

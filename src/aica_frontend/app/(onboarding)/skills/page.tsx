@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/command';
 import { toast } from 'sonner';
 import skillsData from '@/data/skills.json';
+import { PageLoader } from '@/components/PageLoader';
 
 export default function SkillsPage() {
   const router = useRouter();
@@ -82,11 +83,7 @@ export default function SkillsPage() {
   const handleBack = () => router.push('/experience');
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full" />
-      </div>
-    );
+    return <PageLoader text="Loading skills..." size="md" />;
   }
 
   return (
@@ -112,6 +109,11 @@ export default function SkillsPage() {
               variant={selectedCategory === null ? 'default' : 'neutral'}
               onClick={() => setSelectedCategory(null)}
               size="sm"
+              className={
+                selectedCategory === null
+                  ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm ring-2 ring-blue-600 ring-offset-1'
+                  : ''
+              }
             >
               All Categories
             </Button>
@@ -123,6 +125,11 @@ export default function SkillsPage() {
                 }
                 onClick={() => setSelectedCategory(category.id)}
                 size="sm"
+                className={
+                  selectedCategory === category.id
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm ring-2 ring-blue-600 ring-offset-1'
+                    : ''
+                }
               >
                 {category.name}
               </Button>
