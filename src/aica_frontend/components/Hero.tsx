@@ -1,29 +1,30 @@
 import React from 'react';
-import { ArrowRight, Play, Brain, Target, Zap, Shield } from 'lucide-react';
+import { ArrowRight, Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Video from './Video';
 
 const features = [
   {
-    icon: Brain,
+    iconSrc: '/Ai powered.svg',
     title: 'AI-Powered Matching',
     description:
       'Advanced algorithms analyze your skills and preferences to find perfect job matches',
   },
   {
-    icon: Target,
+    iconSrc: '/search wink.svg',
     title: 'Precision Targeting',
     description:
       'Get matched with opportunities that align with your career goals and expertise',
   },
   {
-    icon: Zap,
+    iconSrc: '/results job.svg',
     title: 'Instant Results',
     description:
       'Real-time job matching with immediate feedback and recommendations',
   },
   {
-    icon: Shield,
+    iconSrc: '/Protect.svg',
     title: 'Secure & Private',
     description:
       'Your data is protected with enterprise-grade security and privacy controls',
@@ -184,8 +185,14 @@ export default function Hero() {
                 key={i}
                 className="group bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md hover:border-violet-200 transition-all duration-300"
               >
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:bg-violet-200 transition-colors">
-                  <feature.icon className="w-6 h-6 text-violet-600" />
+                <div className="w-40 h-40 rounded-lg flex items-center justify-center mb-4 group-hover:bg-violet-200 transition-colors mx-auto">
+                  <Image
+                    src={feature.iconSrc}
+                    alt={feature.title}
+                    width={250}
+                    height={250}
+                    className="object-contain"
+                  />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   {feature.title}
