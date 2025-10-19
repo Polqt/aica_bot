@@ -52,15 +52,21 @@ function AppSidebar() {
               size="lg"
               className="text-white font-semibold uppercase tracking-wide shadow-lg hover:shadow-xl transition-all duration-200 p-6 rounded-lg"
             >
-              <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-white/20">
+              <div className="flex items-center gap-3">
                 <Image
                   src="/AICA Logo.svg"
                   alt="Logo"
-                  width={75}
-                  height={75}
+                  width={48}
+                  height={48}
                   className="object-contain"
                 />
-                <span>AICA</span>
+                <Image
+                  src="/AICA.svg"
+                  alt="AICA"
+                  width={80}
+                  height={32}
+                  className="object-contain"
+                />
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
