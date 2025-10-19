@@ -213,6 +213,60 @@ async def delete_skill(
         )
 
 
+class SkillBulkUpdateRequest(BaseModel):
+    skills_to_add: List[UserSkillCreate] = []
+    skill_ids_to_delete: List[str] = []
+
+
+@router.post("/skills/bulk-update")
+async def bulk_update_skills(
+    request: SkillBulkUpdateRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Bulk update skills - add and delete multiple skills in a single request.
+    This is more efficient than processing skills one by one.
+    """
+    try:
+        builder = ResumeBuilder()
+        
+        deleted_count = 0
+        added_skills = []
+        
+        # Delete skills in batch if any
+        if request.skill_ids_to_delete:
+            logger.info(f"Deleting {len(request.skill_ids_to_delete)} skills for user {current_user.id}")
+            deleted_count = builder.delete_skills_batch(request.skill_ids_to_delete, current_user.id)
+            logger.info(f"Successfully deleted {deleted_count} skills")
+        
+        # Add skills in batch if any
+        if request.skills_to_add:
+            logger.info(f"Adding {len(request.skills_to_add)} skills for user {current_user.id}")
+            added_skills = builder.add_skills_batch(current_user.id, request.skills_to_add)
+            logger.info(f"Successfully added {len(added_skills)} skills")
+        
+        # Trigger job match regeneration once after all changes
+        if deleted_count > 0 or len(added_skills) > 0:
+            logger.info(f"Scheduling job match regeneration for user {current_user.id} after bulk skill update")
+            background_tasks.add_task(regenerate_job_matches_background, current_user.id)
+        
+        return {
+            "message": "Skills updated successfully",
+            "deleted_count": deleted_count,
+            "added_count": len(added_skills),
+            "added_skills": added_skills
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error in bulk skills update for user {current_user.id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Failed to update skills: {str(e)}"
+        )
+
+
 class ProfileUpdateRequest(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None

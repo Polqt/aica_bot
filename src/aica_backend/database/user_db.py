@@ -283,6 +283,20 @@ class UserDatabase:
             return len(response.data) > 0
         except Exception as e:
             return False
+    
+    def delete_user_skills_batch(self, skill_ids: List[str]) -> int:
+        """Delete multiple skills in one operation. Returns count of deleted skills."""
+        if not skill_ids:
+            return 0
+            
+        try:
+            response = self.client.table("user_skills").delete().in_("id", skill_ids).execute()
+            self._handle_db_response(response, "delete user skills batch")
+            
+            return len(response.data) if response.data else 0
+        except Exception as e:
+            logger.error(f"Failed to delete skills batch: {str(e)}")
+            return 0
 
     def update_user_skill(self, skill_id: str, update_data: dict) -> Optional[UserSkill]:
         try:

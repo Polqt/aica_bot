@@ -244,43 +244,88 @@ class SkillExtractor:
     
     @staticmethod
     def _remove_certification_sections(text: str) -> str:
-        # Split text into lines
+        """
+        Aggressively remove certification, course, and training sections from text
+        to prevent skill extraction from these areas.
+        """
         lines = text.split('\n')
         filtered_lines = []
         skip_section = False
+        lines_skipped_count = 0
         
-        # Keywords that indicate certification/course sections
+        # Keywords that indicate certification/course sections - EXPANDED LIST
         cert_section_headers = [
             'certification', 'certifications', 'certificates', 'certificate',
-            'licenses', 'license', 'training', 'courses', 'coursework',
-            'professional development', 'continuing education'
+            'licenses', 'license', 'licensing', 'licensed', 
+            'training', 'trainings', 'courses', 'coursework', 'course work',
+            'professional development', 'continuing education',
+            'academic courses', 'relevant coursework', 'coursework:',
+            'credentials', 'accreditation', 'qualified in',
+            'completed training', 'training completed', 'training programs',
+            'seminars', 'seminar', 'workshops', 'workshop', 'attended',
+            'training attended', 'seminars attended', 'workshops attended'
         ]
         
         # Keywords that indicate other sections (end of cert section)
         other_section_headers = [
             'experience', 'work experience', 'employment', 'professional experience',
-            'projects', 'project', 'skills', 'technical skills', 'core competencies',
-            'education', 'summary', 'profile', 'objective', 'achievements'
+            'employment history', 'work history', 'career history',
+            'projects', 'project', 'personal projects', 'professional projects',
+            'skills', 'technical skills', 'core competencies', 'core skills',
+            'proficiencies', 'expertise', 'technologies',
+            'education', 'academic background', 'educational background',
+            'summary', 'profile', 'objective', 'career objective',
+            'achievements', 'accomplishments', 'awards',
+            'references', 'professional references'
         ]
         
         for i, line in enumerate(lines):
             line_stripped = line.strip().lower()
             
-            # Check if this is a certification section header
-            if any(header in line_stripped for header in cert_section_headers):
-                # Check if it looks like a section header (short line, possibly with formatting)
-                if len(line_stripped) < 50 and not any(char.isdigit() for char in line_stripped[:20]):
-                    skip_section = True
-                    continue
+            # Skip empty lines
+            if not line_stripped:
+                if not skip_section:
+                    filtered_lines.append(line)
+                continue
             
-            # Check if we're entering a different section
-            if skip_section and any(header in line_stripped for header in other_section_headers):
-                if len(line_stripped) < 50:
+            # Check if this is a certification section header
+            is_cert_header = False
+            for header in cert_section_headers:
+                # Match if the line is short (likely a header) and contains the keyword
+                if header in line_stripped and len(line_stripped) < 60:
+                    # Additional check: line should not have too many numbers or dates
+                    # (actual certifications have dates, headers don't)
+                    digit_count = sum(c.isdigit() for c in line_stripped)
+                    if digit_count < 6:  # Less than 6 digits (not a certification entry)
+                        is_cert_header = True
+                        break
+            
+            if is_cert_header:
+                skip_section = True
+                lines_skipped_count = 0
+                continue
+            
+            # Check if we're entering a different section (exit cert section)
+            if skip_section:
+                for header in other_section_headers:
+                    if header in line_stripped and len(line_stripped) < 60:
+                        # Check it's actually a section header (short, not much punctuation)
+                        if line_stripped.count(':') <= 1 and line_stripped.count(',') <= 1:
+                            skip_section = False
+                            break
+                
+                # Also exit cert section after 30 lines even without finding a new section
+                # (handles resumes where certifications are at the end)
+                lines_skipped_count += 1
+                if lines_skipped_count > 30:
                     skip_section = False
             
             # Include line if not in certification section
             if not skip_section:
                 filtered_lines.append(line)
+            else:
+                # Skip this line (it's in cert section)
+                pass
         
         return '\n'.join(filtered_lines)
     
@@ -312,8 +357,10 @@ class SkillExtractor:
             
             if matched:
                 # Capitalize properly based on known patterns
-                if skill in ['aws', 'gcp', 'api', 'sql', 'html', 'css', 'php', 'ios', 'iot', 'jwt', 'rest', 'soap', 'xml', 'json', 'yaml', 'ci/cd', 'tdd', 'bdd', 'mvc', 'mvvm', 'nlp', 'ddd', 'sso', 'iam', 'ssl', 'tls', 'cnn', 'rnn', 'lstm', 'ux', 'ui', 'ai', 'ml', 'bi', 'http', 'https', 'ftp', 'ssh', 'tcp', 'udp', 'dns']:
+                if skill in ['aws', 'gcp', 'api', 'sql', 'html', 'css', 'php', 'ios', 'iot', 'jwt', 'rest', 'soap', 'xml', 'json', 'yaml', 'ci/cd', 'tdd', 'bdd', 'mvc', 'mvvm', 'nlp', 'ddd', 'sso', 'iam', 'ssl', 'tls', 'cnn', 'rnn', 'lstm', 'ux', 'ui', 'ml', 'bi', 'http', 'https', 'ftp', 'ssh', 'tcp', 'udp', 'dns']:
                     found_skills.append(skill.upper())
+                elif skill == 'ai':
+                    found_skills.append('AI')
                 elif '.' in skill or skill.endswith('js'):
                     found_skills.append(skill)  # Keep as-is for tech with dots or js suffix
                 else:

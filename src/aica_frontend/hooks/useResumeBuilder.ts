@@ -259,6 +259,44 @@ export function useResumeBuilder() {
     }
   }, []);
 
+  // Bulk update skills (add and delete multiple skills at once)
+  const bulkUpdateSkills = useCallback(
+    async (data: {
+      skills_to_add: UserSkillCreate[];
+      skill_ids_to_delete: string[];
+    }) => {
+      setSaving(true);
+      try {
+        const result = await apiClient.bulkUpdateSkills(data);
+
+        // Update local state: remove deleted skills and add new ones
+        setSkills(prev => {
+          // Remove deleted skills
+          const filtered = prev.filter(
+            skill => !data.skill_ids_to_delete.includes(skill.id),
+          );
+          // Add new skills
+          return [...filtered, ...result.added_skills];
+        });
+
+        toast.success('Skills updated successfully', {
+          description: `Added ${result.added_count}, removed ${result.deleted_count}`,
+        });
+
+        return result;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to update skills';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        throw err;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [],
+  );
+
   // Profile operations
   const updateProfile = useCallback(
     async (profileData: Partial<UserProfile>) => {
@@ -325,6 +363,7 @@ export function useResumeBuilder() {
     addSkill,
     updateSkill,
     deleteSkill,
+    bulkUpdateSkills,
     updateProfile,
     resetResume,
   };

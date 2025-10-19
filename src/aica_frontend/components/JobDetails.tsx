@@ -22,6 +22,7 @@ import {
   BookmarkMinus,
   RefreshCw,
 } from 'lucide-react';
+import { capitalizeSkill } from '@/lib/utils/skillCapitalization';
 
 export interface JobDetailsData {
   job_id: string;
@@ -285,7 +286,7 @@ export function JobDetails({
                       variant="secondary"
                       className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
                     >
-                      {skill}
+                      {capitalizeSkill(skill)}
                     </Badge>
                   ))}
                 </div>
@@ -309,7 +310,7 @@ export function JobDetails({
                         variant="secondary"
                         className="px-2 py-0.5 text-xs font-medium bg-white text-amber-700 border border-amber-300"
                       >
-                        {skill}
+                        {capitalizeSkill(skill)}
                       </Badge>
                     ))}
                   </div>
@@ -366,7 +367,7 @@ export function JobDetails({
                   variant="secondary"
                   className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
                 >
-                  {skill}
+                  {capitalizeSkill(skill)}
                 </Badge>
               ))}
             </div>

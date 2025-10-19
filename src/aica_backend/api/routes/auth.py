@@ -1,5 +1,6 @@
 import traceback
 import logging
+import time
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, BackgroundTasks, Request
 from slowapi import Limiter
@@ -275,6 +276,12 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
                         try:
                             saved_matches = await job_matching_service.save_job_matches(user_id, matches)
                             logger.info(f"💾 Saved {len(saved_matches)} matches with AI reasoning")
+                            
+                            time.sleep(0.5)
+                            
+                            # Verify matches were actually saved
+                            verification_matches = job_db.get_user_matches(user_id)
+                            logger.info(f"✅ Verified {len(verification_matches) if verification_matches else 0} matches in database")
                         except Exception as save_error:
                             logger.error(f"❌ Error saving matches: {save_error}")
                             traceback.print_exc()
@@ -491,6 +498,8 @@ async def get_processing_status(current_user: dict = Depends(get_current_user)):
 
         # Check if processing is complete
         if profile.resume_processed:
+            time.sleep(0.5)
+            
             try:
                 job_db = JobDatabase()
                 matches = job_db.get_user_matches(current_user["id"])

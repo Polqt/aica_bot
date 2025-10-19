@@ -39,8 +39,7 @@ class JobScraper:
             # Other tech categories
             "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs",
             "https://weworkremotely.com/categories/remote-customer-support-jobs",
-            "https://weworkremotely.com/categories/remote-sales-marketing-jobs",
-            "https://weworkremotely.com/categories/remote-management-finance-jobs",
+            "https://weworkremotely.com/categories/remote-sales-and-marketing-jobs",
         ],
         "wellfound": [
             # Each page typically has 20-50+ job listings

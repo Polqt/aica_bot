@@ -26,6 +26,44 @@ class JobChunker(BaseChunker):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
     
+    def chunk_document(self, document: Dict, metadata: Dict = None) -> List[Dict]:
+        """
+        Chunk a job document into multiple text chunks with metadata.
+        
+        This method implements the abstract method from BaseChunker.
+        It processes a structured job document and returns chunks with metadata.
+        
+        Args:
+            document: Job document dictionary (e.g., title, description, requirements)
+            metadata: Optional additional metadata to include with each chunk
+            
+        Returns:
+            List of chunk dictionaries with 'text' and 'metadata' keys
+        """
+        if metadata is None:
+            metadata = {}
+        
+        # Combine all document fields into full text
+        text_parts = []
+        for key, value in document.items():
+            if isinstance(value, str) and value.strip():
+                text_parts.append(value)
+        
+        full_text = " ".join(text_parts)
+        
+        # Use chunk_text to get text chunks
+        text_chunks = self.chunk_text(full_text, metadata)
+        
+        # Convert text chunks to document chunks with metadata
+        chunk_documents = []
+        for chunk_text in text_chunks:
+            chunk_documents.append({
+                'text': chunk_text,
+                'metadata': metadata.copy()
+            })
+        
+        return chunk_documents
+    
     def chunk_text(self, text: str, metadata: Dict = None) -> List[str]:
         """
         Create optimized chunks for a job posting.

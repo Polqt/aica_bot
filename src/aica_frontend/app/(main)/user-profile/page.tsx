@@ -7,6 +7,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ResumeReuploadModal from '@/components/ResumeReuploadModal';
 import SkillsEditorModal from '@/components/SkillsEditorModal';
+import ProfileEditorModal from '@/components/ProfileEditorModal';
+import EducationEditorModal from '@/components/EducationEditorModal';
+import ExperienceEditorModal from '@/components/ExperienceEditorModal';
 import {
   User,
   Mail,
@@ -35,6 +38,9 @@ export default function UserProfilePage() {
   const [mounted, setMounted] = useState(false);
   const [showReuploadModal, setShowReuploadModal] = useState(false);
   const [showSkillsModal, setShowSkillsModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showEducationModal, setShowEducationModal] = useState(false);
+  const [showExperienceModal, setShowExperienceModal] = useState(false);
   const [showUploadSuccess, setShowUploadSuccess] = useState(false);
 
   useEffect(() => {
@@ -137,6 +143,36 @@ export default function UserProfilePage() {
         }}
       />
 
+      {/* Profile Editor Modal */}
+      <ProfileEditorModal
+        isOpen={showProfileModal}
+        onClose={() => {
+          setShowProfileModal(false);
+          // Reload data to show updated profile
+          loadResumeData();
+        }}
+      />
+
+      {/* Education Editor Modal */}
+      <EducationEditorModal
+        isOpen={showEducationModal}
+        onClose={() => {
+          setShowEducationModal(false);
+          // Reload data to show updated education
+          loadResumeData();
+        }}
+      />
+
+      {/* Experience Editor Modal */}
+      <ExperienceEditorModal
+        isOpen={showExperienceModal}
+        onClose={() => {
+          setShowExperienceModal(false);
+          // Reload data to show updated experience
+          loadResumeData();
+        }}
+      />
+
       {/* Header with Actions */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -159,7 +195,7 @@ export default function UserProfilePage() {
             Upload Resume
           </Button>
           <Button
-            onClick={() => router.push('/profile')}
+            onClick={() => setShowProfileModal(true)}
             className="bg-gray-900 hover:bg-gray-800 text-white border-0"
           >
             <Edit2 className="w-4 h-4 mr-2" />
@@ -330,7 +366,7 @@ export default function UserProfilePage() {
                   </h3>
                 </div>
                 <Button
-                  onClick={() => router.push('/experience')}
+                  onClick={() => setShowExperienceModal(true)}
                   size="sm"
                   className="text-gray-600 hover:text-gray-900 bg-transparent hover:bg-gray-50 border-0"
                 >
@@ -399,7 +435,7 @@ export default function UserProfilePage() {
                   </h3>
                 </div>
                 <Button
-                  onClick={() => router.push('/education')}
+                  onClick={() => setShowEducationModal(true)}
                   size="sm"
                   className="text-gray-600 hover:text-gray-900 bg-transparent hover:bg-gray-50 border-0"
                 >

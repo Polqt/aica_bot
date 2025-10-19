@@ -116,7 +116,7 @@ class SkillNormalizer:
         "railway": "Railway",
         
         # Python Frameworks (Skill Family 8)
-        "python": "w",
+        "python": "Python",
         "django": "Django",
         "flask": "Flask",
         "fastapi": "FastAPI",
@@ -409,10 +409,124 @@ class SkillNormalizer:
         return result
     
     @staticmethod
+    def _is_likely_person_name(skill: str) -> bool:
+        """
+        Check if a skill is likely a person's name rather than a technical skill.
+        Returns True if it looks like a name (should be filtered out).
+        """
+        if not skill or len(skill.strip()) < 3:
+            return False
+            
+        # Clean the skill
+        skill_clean = skill.strip()
+        words = skill_clean.split()
+        
+        # Names are typically 2-4 words
+        if len(words) < 2 or len(words) > 4:
+            return False
+        
+        # Check if all words are capitalized (typical of names)
+        # But also check if it's not an acronym or known skill
+        all_capitalized = all(word[0].isupper() for word in words if word)
+        
+        if not all_capitalized:
+            return False
+        
+        # Common name titles/prefixes that indicate it's a person
+        name_prefixes = ['dr.', 'dr', 'prof.', 'prof', 'mr.', 'mr', 'mrs.', 'mrs', 
+                        'ms.', 'ms', 'atty.', 'atty', 'engr.', 'engr', 'sir', 'madam']
+        
+        first_word_lower = words[0].lower().rstrip('.')
+        if first_word_lower in name_prefixes:
+            return True
+        
+        # If it's 2-3 capitalized words with no special characters and all words are >2 chars
+        # and they're all alphabetic, it's likely a name
+        if 2 <= len(words) <= 3:
+            all_alphabetic = all(word.replace('.', '').replace(',', '').isalpha() for word in words)
+            all_reasonable_length = all(len(word.replace('.', '').replace(',', '')) >= 2 for word in words)
+            
+            # Additional check: avoid common skill patterns
+            skill_lower = skill_clean.lower()
+            common_skill_words = ['development', 'design', 'management', 'engineering', 
+                                 'programming', 'analysis', 'testing', 'data', 'web',
+                                 'mobile', 'cloud', 'software', 'quality', 'project',
+                                 'api', 'database', 'security', 'network']
+            
+            has_skill_indicator = any(word in skill_lower for word in common_skill_words)
+            
+            if all_alphabetic and all_reasonable_length and not has_skill_indicator:
+                # Very likely a person's name
+                return True
+        
+        return False
+    
+    @staticmethod
     def validate_skills(skills: ResumeSkills) -> ResumeSkills:
-        # Remove duplicates and empty strings
-        skills.technical_skills = list(set(filter(bool, [skill.strip() for skill in skills.technical_skills])))
-        skills.soft_skills = list(set(filter(bool, [skill.strip() for skill in skills.soft_skills])))
+        """Validate and clean skills, removing duplicates, empty strings, person names, and invalid short skills."""
+        # Import logger if not already imported
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # List of valid single-letter or two-letter skills (very rare but valid)
+        valid_short_skills = {'r', 'c', 'go', 'c#', 'c++', 'ui', 'ux', 'ml'}
+        
+        # AI is handled separately for proper capitalization
+        ai_variations = {'ai', 'AI', 'Ai', 'a.i.', 'A.I.'}
+        
+        # Filter function that removes empty strings, person names, and invalid short skills
+        def filter_valid_skill(skill: str) -> bool:
+            if not skill or not skill.strip():
+                return False
+            
+            skill_clean = skill.strip()
+            skill_lower = skill_clean.lower()
+            
+            # Special handling for AI variations
+            if skill_lower in ai_variations or skill_clean in ai_variations:
+                return True
+            
+            # Filter out very short skills (1-2 characters) unless they're valid
+            if len(skill_clean) <= 2:
+                if skill_lower not in valid_short_skills:
+                    logger.warning(f"Filtered out invalid short skill: '{skill_clean}'")
+                    return False
+            
+            # Filter out person names
+            if SkillNormalizer._is_likely_person_name(skill_clean):
+                logger.warning(f"Filtered out likely person name from skills: {skill_clean}")
+                return False
+            
+            # Filter out common non-skill words
+            non_skill_words = {'and', 'or', 'the', 'with', 'for', 'from', 'to', 'in', 'at', 'by', 'on'}
+            if skill_lower in non_skill_words:
+                logger.warning(f"Filtered out common word mistaken as skill: '{skill_clean}'")
+                return False
+            
+            return True
+        
+        # Function to normalize skill capitalization (especially for AI)
+        def normalize_skill_capitalization(skill: str) -> str:
+            skill_clean = skill.strip()
+            skill_lower = skill_clean.lower()
+            
+            # Special handling for AI variations - always capitalize to "AI"
+            if skill_lower in ai_variations or skill_clean in ai_variations:
+                return 'AI'
+            
+            return skill_clean
+        
+        # Remove duplicates, empty strings, person names, and invalid skills
+        skills.technical_skills = list(set(
+            normalize_skill_capitalization(skill) 
+            for skill in [s.strip() for s in skills.technical_skills] 
+            if filter_valid_skill(skill)
+        ))
+        skills.soft_skills = list(set(
+            normalize_skill_capitalization(skill)
+            for skill in [s.strip() for s in skills.soft_skills] 
+            if filter_valid_skill(skill)
+        ))
         skills.job_titles = list(set(filter(bool, [title.strip() for title in skills.job_titles])))
         skills.industries = list(set(filter(bool, [industry.strip() for industry in skills.industries])))
         

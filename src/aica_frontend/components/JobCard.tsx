@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Building, MapPin, Clock, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { capitalizeSkill } from '@/lib/utils/skillCapitalization';
 
 export interface JobCardData {
   job_id: string;
@@ -130,7 +131,7 @@ export function JobCard({
                       variant="secondary"
                       className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
                     >
-                      {tag}
+                      {capitalizeSkill(tag)}
                     </Badge>
                   ))}
                 {job.matched_skills && job.matched_skills.length > 2 && (

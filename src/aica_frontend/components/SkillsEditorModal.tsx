@@ -19,21 +19,20 @@ export default function SkillsEditorModal({
   isOpen,
   onClose,
 }: SkillsEditorModalProps) {
-  const { skills, addSkill, deleteSkill, saving, loadSkills } =
-    useResumeBuilder();
+  const { skills, bulkUpdateSkills, loadSkills } = useResumeBuilder();
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
+  const [originalSkills, setOriginalSkills] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showCustomSkillForm, setShowCustomSkillForm] = useState(false);
   const [customSkillInput, setCustomSkillInput] = useState('');
   const [isLoadingSkills, setIsLoadingSkills] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Load skills when modal opens (always refresh to get latest data)
   useEffect(() => {
     if (isOpen) {
       setIsLoadingSkills(true);
-      setHasChanges(false); // Reset changes flag
       loadSkills().finally(() => setIsLoadingSkills(false));
     }
   }, [isOpen, loadSkills]);
@@ -42,43 +41,26 @@ export default function SkillsEditorModal({
   useEffect(() => {
     const existingSkillNames = new Set(skills.map(skill => skill.skill_name));
     setSelectedSkills(existingSkillNames);
+    setOriginalSkills(new Set(existingSkillNames)); // Store original state
   }, [skills]);
 
-  const handleSkillToggle = async (skillName: string) => {
+  const handleSkillToggle = (skillName: string) => {
     const isSelected = selectedSkills.has(skillName);
 
     if (isSelected) {
-      const skillToDelete = skills.find(s => s.skill_name === skillName);
-      if (skillToDelete) {
-        try {
-          await deleteSkill(skillToDelete.id);
-          setSelectedSkills(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(skillName);
-            return newSet;
-          });
-          setHasChanges(true);
-          toast.success(`Removed "${skillName}"`);
-        } catch (error) {
-          console.error('Failed to remove skill:', error);
-          toast.error(`Failed to remove "${skillName}". Please try again.`);
-        }
-      }
+      // Remove from local state only (don't save yet)
+      setSelectedSkills(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(skillName);
+        return newSet;
+      });
     } else {
-      // Add skill
-      try {
-        await addSkill({ skill_name: skillName });
-        setSelectedSkills(prev => new Set([...prev, skillName]));
-        setHasChanges(true);
-        toast.success(`Added "${skillName}"`);
-      } catch (error) {
-        console.error('Failed to add skill:', error);
-        toast.error(`Failed to add "${skillName}". Please try again.`);
-      }
+      // Add to local state only (don't save yet)
+      setSelectedSkills(prev => new Set([...prev, skillName]));
     }
   };
 
-  const handleAddCustomSkill = async (e: React.FormEvent) => {
+  const handleAddCustomSkill = (e: React.FormEvent) => {
     e.preventDefault();
     const skillName = customSkillInput.trim();
 
@@ -92,32 +74,82 @@ export default function SkillsEditorModal({
       return;
     }
 
+    // Add to local state only (don't save yet)
+    setSelectedSkills(prev => new Set([...prev, skillName]));
+    setCustomSkillInput('');
+    setShowCustomSkillForm(false);
+  };
+
+  const hasChanges = () => {
+    if (selectedSkills.size !== originalSkills.size) return true;
+    for (const skill of selectedSkills) {
+      if (!originalSkills.has(skill)) return true;
+    }
+    return false;
+  };
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
     try {
-      await addSkill({ skill_name: skillName });
-      setSelectedSkills(prev => new Set([...prev, skillName]));
-      setHasChanges(true);
-      toast.success(`Added "${skillName}"`);
-      setCustomSkillInput('');
-      setShowCustomSkillForm(false);
+      // Find skills to delete
+      const skillsToDelete = Array.from(originalSkills).filter(
+        skill => !selectedSkills.has(skill),
+      );
+
+      // Find skills to add
+      const skillsToAdd = Array.from(selectedSkills).filter(
+        skill => !originalSkills.has(skill),
+      );
+
+      // Get skill IDs for deletion
+      const skillIdsToDelete = skillsToDelete
+        .map(skillName => skills.find(s => s.skill_name === skillName)?.id)
+        .filter((id): id is string => id !== undefined);
+
+      // Prepare skills to add
+      const skillsToAddData = skillsToAdd.map(skillName => ({
+        skill_name: skillName,
+        skill_category: 'technical',
+        confidence_score: 1.0,
+        source: 'manual',
+      }));
+
+      // Use bulk update if there are changes
+      if (skillIdsToDelete.length > 0 || skillsToAddData.length > 0) {
+        await bulkUpdateSkills({
+          skills_to_add: skillsToAddData,
+          skill_ids_to_delete: skillIdsToDelete,
+        });
+
+        toast.success('Your skills have been updated!', {
+          description:
+            'Job matches are being regenerated based on your new skills',
+        });
+      } else {
+        toast.info('No changes to save');
+      }
+
+      onClose();
     } catch (error) {
-      console.error('Failed to add custom skill:', error);
-      toast.error(`Failed to add "${skillName}". Please try again.`);
+      console.error('Failed to save skills:', error);
+      toast.error('Failed to save changes. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleClose = () => {
+  const handleCancel = () => {
+    if (hasChanges()) {
+      // Revert to original skills
+      setSelectedSkills(new Set(originalSkills));
+      toast.info('Changes discarded');
+    }
+
+    // Reset form state
     setSearchQuery('');
     setSelectedCategory(null);
     setShowCustomSkillForm(false);
     setCustomSkillInput('');
-
-    // Show confirmation toast if changes were made
-    if (hasChanges) {
-      toast.success('Your skills have been updated!', {
-        description:
-          'Job matches are being regenerated based on your new skills',
-      });
-    }
 
     onClose();
   };
@@ -132,7 +164,7 @@ export default function SkillsEditorModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={handleClose}
+          onClick={handleCancel}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -144,7 +176,7 @@ export default function SkillsEditorModal({
           >
             <div className="relative bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-blue-100 px-6 py-5 flex-shrink-0">
               <button
-                onClick={handleClose}
+                onClick={handleCancel}
                 className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -177,12 +209,6 @@ export default function SkillsEditorModal({
                         from the list
                       </p>
                     </div>
-                    {saving && (
-                      <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-100 px-3 py-1.5 rounded-full">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span className="font-medium">Saving...</span>
-                      </div>
-                    )}
                   </div>
 
                   {isLoadingSkills ? (
@@ -342,7 +368,7 @@ export default function SkillsEditorModal({
                     <Button
                       type="submit"
                       size="sm"
-                      disabled={saving || !customSkillInput.trim()}
+                      disabled={!customSkillInput.trim()}
                     >
                       Add
                     </Button>
@@ -373,14 +399,31 @@ export default function SkillsEditorModal({
             </div>
             <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50/50 flex-shrink-0">
               <p className="text-xs text-gray-500">
-                Changes are saved automatically
+                {hasChanges() ? 'You have unsaved changes' : 'No changes made'}
               </p>
-              <Button
-                onClick={handleClose}
-                className="bg-gray-900 hover:bg-gray-800 text-white"
-              >
-                Done
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="neutral"
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveChanges}
+                  disabled={!hasChanges() || isSaving}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </Button>
+              </div>
             </div>
           </motion.div>
         </motion.div>

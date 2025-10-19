@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import traceback
 from typing import List, Dict
 from dataclasses import dataclass
 
@@ -9,6 +10,9 @@ from database.models.user_models import UserSkill, UserJobMatch
 from database.models.job_models import Job
 from core.rag import TextEmbedder 
 from core.matching import JobMatcher
+import logging
+import traceback
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +24,8 @@ class JobMatchResult:
     missing_critical_skills: List[str]
     skill_coverage: float
     confidence: str
-    ai_reasoning: str  # AI explanation for the match
-    skill_gap_analysis: Dict[str, str]  # Detailed analysis of skill gaps
+    ai_reasoning: str  
+    skill_gap_analysis: Dict[str, str]  
 
 
 class JobMatchingService:
@@ -50,9 +54,6 @@ class JobMatchingService:
             self.matcher = JobMatcher()  # Our existing AI matcher
             logger.info("✅ JobMatcher initialized successfully with AI")
         except Exception as e:
-            logger.error(f"❌ CRITICAL: Failed to initialize JobMatcher: {str(e)}")
-            logger.error(f"❌ Error type: {type(e).__name__}")
-            import traceback
             logger.error(f"❌ Traceback: {traceback.format_exc()}")
             raise  # Re-raise to prevent service from working without AI
 
@@ -73,7 +74,11 @@ class JobMatchingService:
         skill_map = {}
         for skill in all_skills:
             key = skill.skill_name.lower().strip()
-            if key not in skill_map or skill.confidence_score > skill_map[key].confidence_score:
+            # Handle None confidence_score values properly
+            current_confidence = skill.confidence_score if skill.confidence_score is not None else 0.0
+            existing_confidence = skill_map[key].confidence_score if key in skill_map and skill_map[key].confidence_score is not None else 0.0
+            
+            if key not in skill_map or current_confidence > existing_confidence:
                 skill_map[key] = skill
 
         return list(skill_map.values())
@@ -166,14 +171,17 @@ class JobMatchingService:
                 print(f"   🤖 AI analyzing job {i+1}/{max_ai_calls}: {job.title} at {job.company}")
                 match_result = await self._ai_calculate_job_match_fast(user_context, user_skills, job)
                 
-                if match_result.match_score >= self.MINIMUM_MATCH_SCORE:
+                # Safe comparison with None check
+                match_score = match_result.match_score if match_result.match_score is not None else 0.0
+                if match_score >= self.MINIMUM_MATCH_SCORE:
                     matches.append(match_result)
                     
             except Exception as e:
                 logger.error(f"Error in AI analysis for job {job.id}: {e}")
                 # Fallback to simple matching
                 simple_match = await self._simple_calculate_job_match(user_skills, job)
-                if simple_match.match_score >= self.MINIMUM_MATCH_SCORE:
+                simple_score = simple_match.match_score if simple_match.match_score is not None else 0.0
+                if simple_score >= self.MINIMUM_MATCH_SCORE:
                     matches.append(simple_match)
                 continue
         
@@ -183,20 +191,34 @@ class JobMatchingService:
             for job in jobs[max_ai_calls:]:
                 try:
                     simple_match = await self._simple_calculate_job_match(user_skills, job)
-                    if simple_match.match_score >= self.MINIMUM_MATCH_SCORE:
+                    simple_score = simple_match.match_score if simple_match.match_score is not None else 0.0
+                    if simple_score >= self.MINIMUM_MATCH_SCORE:
                         matches.append(simple_match)
                 except Exception as e:
                     logger.error(f"Error in simple matching for job {job.id}: {e}")
                     continue
         
         return matches
+        return matches
 
     def _rank_final_matches(self, matches: List[JobMatchResult]) -> List[JobMatchResult]:
+
         def ranking_key(match):
+            # Get confidence score with fallback
             confidence_score = {"high": 3, "medium": 2, "low": 1}.get(match.confidence, 1)
-            return (match.match_score, confidence_score, match.skill_coverage)
+            
+            # Handle None values by defaulting to 0.0 for all numeric fields
+            match_score = float(match.match_score) if match.match_score is not None else 0.0
+            skill_coverage = float(match.skill_coverage) if match.skill_coverage is not None else 0.0
+            
+            # Return tuple for sorting (all values guaranteed to be comparable)
+            return (match_score, confidence_score, skill_coverage)
         
-        matches.sort(key=ranking_key, reverse=True)
+        try:
+            matches.sort(key=ranking_key, reverse=True)
+        except Exception as e:
+            logger.error(f"Error sorting matches: {e}. Returning unsorted matches.")
+        
         return matches
 
     def _find_exact_matches(self, user_skills: List[str], job_skills: List[str]) -> List[str]:
@@ -240,9 +262,17 @@ class JobMatchingService:
         return matches
 
     def _determine_confidence(self, match_score: float, skill_coverage: float) -> str:
-        if match_score >= 0.8 and skill_coverage >= 0.7:
+        """
+        Determine confidence level based on match score and skill coverage.
+        Handles None values gracefully.
+        """
+        # Handle None values
+        score = match_score if match_score is not None else 0.0
+        coverage = skill_coverage if skill_coverage is not None else 0.0
+        
+        if score >= 0.8 and coverage >= 0.7:
             return "high"
-        elif match_score >= 0.6 and skill_coverage >= 0.5:
+        elif score >= 0.6 and coverage >= 0.5:
             return "medium"
         else:
             return "low"
@@ -413,11 +443,6 @@ class JobMatchingService:
             logger.error(f"⏰ AI ANALYSIS TIMEOUT for job {job.id} ({job.title}), using fallback")
             return await self._simple_calculate_job_match(user_skills, job)
         except Exception as e:
-            logger.error(f"❌ AI ANALYSIS FAILED for job {job.id} ({job.title})")
-            logger.error(f"❌ Error type: {type(e).__name__}")
-            logger.error(f"❌ Error message: {str(e)}")
-            logger.error(f"❌ Full error: {repr(e)}")
-            import traceback
             logger.error(f"❌ Traceback: {traceback.format_exc()}")
             return await self._simple_calculate_job_match(user_skills, job)
 
@@ -629,9 +654,17 @@ class JobMatchingService:
         return len(matched_skills) / len(required_skills)
 
     def _determine_ai_confidence(self, match_score: float, skill_coverage: float, matched_count: int) -> str:
-        if match_score >= self.HIGH_CONFIDENCE_THRESHOLD and skill_coverage >= 0.7 and matched_count >= 3:
+        """
+        Determine AI confidence level with None value handling.
+        """
+        # Handle None values
+        score = match_score if match_score is not None else 0.0
+        coverage = skill_coverage if skill_coverage is not None else 0.0
+        count = matched_count if matched_count is not None else 0
+        
+        if score >= self.HIGH_CONFIDENCE_THRESHOLD and coverage >= 0.7 and count >= 3:
             return "high"
-        elif match_score >= self.MEDIUM_CONFIDENCE_THRESHOLD and skill_coverage >= 0.4:
+        elif score >= self.MEDIUM_CONFIDENCE_THRESHOLD and coverage >= 0.4:
             return "medium"
         else:
             return "low"

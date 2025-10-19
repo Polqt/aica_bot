@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class InfoExtractor:
-    # Regex patterns for contact information
     EMAIL_PATTERN = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
     PHONE_PATTERN = r'\b(?:\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}\b'
     LINKEDIN_PATTERN = r'(?:linkedin\.com/in/|linkedin\.com/pub/)[\w-]+'
@@ -47,19 +46,20 @@ class InfoExtractor:
         if not lines:
             return None
         
-        # Keywords that indicate we're in a section that contains OTHER people's names
         reference_keywords = [
             'reference:', 'references:', 'character reference:', 'character references:',
             'professional reference:', 'personal reference:', 'contact person:',
             'recommended by:', 'referral:', 'referee:', 'provided by:',
-            'reference contact:', 'reference name:', 'for reference:'
+            'reference contact:', 'reference name:', 'for reference:',
+            'character referee:', 'personal referee:', 'professional referee:'
         ]
         
-        # Check first few lines for name
-        for i, line in enumerate(lines[:10]):  # Increased to 10 lines to cover more resume styles
+        # Only check first 5 lines for the applicant's name
+        # Names appearing after line 5 are likely references, not the applicant
+        for i, line in enumerate(lines[:5]):  # STRICT: Only first 5 lines
             line_lower = line.lower()
             
-            # Skip lines that indicate reference sections
+            # Skip lines that indicate reference sections (should not be in top 5, but check anyway)
             if any(keyword in line_lower for keyword in reference_keywords):
                 continue
             
@@ -68,7 +68,8 @@ class InfoExtractor:
                 'resume', 'cv', 'curriculum', 'vitae', 'phone', 'email', 'address',
                 'objective', 'summary', 'profile', 'experience', 'education',
                 'skills', 'contact', 'www', 'http', '.com', '@', 'linkedin',
-                'portfolio', 'github', 'website', 'mobile:', 'tel:', 'location:'
+                'portfolio', 'github', 'website', 'mobile:', 'tel:', 'location:',
+                'city:', 'state:', 'country:', 'zip:', 'postal:'
             ]
             
             if any(keyword in line_lower for keyword in skip_keywords):
@@ -82,9 +83,9 @@ class InfoExtractor:
                 valid_words = []
                 for word in words:
                     # Remove common punctuation and check if it's alphabetic
-                    clean_word = word.replace('-', '').replace("'", '').replace('.', '')
+                    clean_word = word.replace('-', '').replace("'", '').replace('.', '').replace(',', '')
                     if clean_word and clean_word.isalpha() and word[0].isupper():
-                        valid_words.append(word)
+                        valid_words.append(word.rstrip(','))  # Remove trailing commas
                 
                 # If we have 2-4 valid name words, this is likely the candidate's name
                 if 2 <= len(valid_words) <= 4:
@@ -95,7 +96,12 @@ class InfoExtractor:
                         if any(keyword in prev_line_lower for keyword in reference_keywords):
                             continue
                     
-                    return InfoExtractor.clean_extracted_name(' '.join(valid_words))
+                    extracted_name = InfoExtractor.clean_extracted_name(' '.join(valid_words))
+                    
+                    # Final validation: Name should not contain obviously non-name words
+                    invalid_name_words = ['resume', 'curriculum', 'vitae', 'objective', 'profile']
+                    if not any(word in extracted_name.lower() for word in invalid_name_words):
+                        return extracted_name
         
         return None
     
@@ -124,9 +130,6 @@ class InfoExtractor:
     
     @staticmethod
     def is_likely_reference_name(full_text: str, extracted_name: str) -> bool:
-        """
-        Check if the extracted name is likely from a reference section rather than the applicant.
-        """
         if not extracted_name:
             return False
         
@@ -146,10 +149,41 @@ class InfoExtractor:
         if not name_positions:
             return False
         
-        # Check if the first occurrence is near reference keywords
+        # CRITICAL: Check if the FIRST occurrence is in the header (top 800 chars)
         first_pos = name_positions[0]
         
-        # Get context around the first occurrence (500 chars before and after)
+        # If name appears in first 800 characters, it's likely the applicant
+        if first_pos < 800:
+            # Double-check it's not in a reference section even in header
+            context_start = max(0, first_pos - 300)
+            context_end = min(len(full_text), first_pos + 300)
+            context = full_text[context_start:context_end].lower()
+            
+            reference_indicators = [
+                'reference:', 'references:', 'character reference:', 
+                'professional reference:', 'personal reference:',
+                'contact person:', 'recommended by:', 'referral:', 
+                'reference:', 'character reference:', 'provided by:',
+                'reference name:', 'reference contact:'
+            ]
+            
+            # If reference keywords are very close (within 100 chars), it's a reference
+            for indicator in reference_indicators:
+                if indicator in context:
+                    indicator_pos = context.find(indicator)
+                    name_pos_in_context = first_pos - context_start
+                    if abs(indicator_pos - name_pos_in_context) < 100:
+                        return True
+            
+            # Name is in header and not near reference keywords - valid applicant name
+            return False
+        
+        # If first occurrence is after 800 chars, it's likely a reference
+        # Most resumes have applicant name in first few lines
+        if first_pos > 800:
+            return True
+        
+        # Get context around the first occurrence
         context_start = max(0, first_pos - 500)
         context_end = min(len(full_text), first_pos + 500)
         context = full_text[context_start:context_end].lower()
@@ -170,13 +204,5 @@ class InfoExtractor:
                 name_pos_in_context = first_pos - context_start
                 if abs(indicator_pos - name_pos_in_context) < 200:
                     return True
-        
-        # If the first occurrence is in the top 500 chars, likely the applicant
-        if first_pos < 500:
-            return False
-        
-        # If the first occurrence is far down the document, possibly a reference
-        if first_pos > 2000:
-            return True
         
         return False

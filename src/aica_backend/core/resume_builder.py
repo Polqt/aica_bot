@@ -249,6 +249,47 @@ class ResumeBuilder:
         except Exception as e:
             logger.error(f"Error deleting skill {skill_id} for user {user_id}: {str(e)}", exc_info=True)
             return False
+    
+    def add_skills_batch(self, user_id: str, skills: List[UserSkillCreate]) -> List[UserSkill]:
+        try:
+            # Validate user exists
+            user = self.user_db.get_user_by_id(user_id)
+            if not user:
+                raise ValueError(f"User {user_id} not found")
+            
+            # Use the database batch method
+            return self.user_db.add_user_skills_batch(user_id, skills)
+        
+        except Exception as e:
+            logger.error(f"Failed to add skills batch: {str(e)}", exc_info=True)
+            raise ValueError(f"Failed to add skills batch: {str(e)}")
+    
+    def delete_skills_batch(self, skill_ids: List[str], user_id: str) -> int:
+        try:
+            if not skill_ids:
+                return 0
+            
+            # Verify all skills belong to the user before deleting
+            existing_skills = self.user_db.client.table("user_skills").select("id").eq("user_id", user_id).in_("id", skill_ids).execute()
+            
+            if not existing_skills.data:
+                logger.warning(f"No skills found to delete for user {user_id}")
+                return 0
+            
+            # Extract the IDs that actually exist and belong to the user
+            valid_skill_ids = [skill['id'] for skill in existing_skills.data]
+            
+            if len(valid_skill_ids) < len(skill_ids):
+                logger.warning(f"Some skill IDs don't belong to user {user_id}. Deleting only valid ones.")
+            
+            # Use the database batch delete method
+            deleted_count = self.user_db.delete_user_skills_batch(valid_skill_ids)
+            logger.info(f"Successfully deleted {deleted_count} skills for user {user_id}")
+            return deleted_count
+        
+        except Exception as e:
+            logger.error(f"Failed to delete skills batch: {str(e)}", exc_info=True)
+            return False
 
     def update_profile(self, user_id: str, profile_data: Dict[str, Any]) -> Optional[UserProfile]:
         try:
