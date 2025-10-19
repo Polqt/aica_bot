@@ -299,15 +299,18 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
-          <div className="lg:col-span-1 space-y-6">
+        {/* Main Dashboard Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Recent Job Matches - Left Column */}
+          <div className="xl:col-span-1">
             <RecentJobMatches
-              matches={recentMatches.slice(0, 3)}
+              matches={recentMatches.slice(0, 5)}
               hasNoData={hasNoData}
             />
           </div>
 
-          <div className="lg:col-span-2 space-y-6">
+          {/* Charts - Right Columns */}
+          <div className="xl:col-span-2 space-y-6">
             <TopJobTitlesCard jobTitles={topJobTitles} />
             <TopSkillsChart topSkills={topSkills} />
           </div>
