@@ -61,12 +61,12 @@ export default function Hero() {
               </p>
 
               <div className="flex flex-wrap gap-4">
-                <button onClick={handleGetStarted} className="group inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow">
+                <button onClick={handleGetStarted} className="group inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow cursor-pointer">
                   Get Started
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </button>
 
-                <button className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg font-medium transition-all duration-200">
+                <button className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg font-medium transition-all duration-200 cursor-pointer">
                   <Play className="w-4 h-4" />
                   Watch Demo
                 </button>
