@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/lib/constants/api';
@@ -117,7 +118,17 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-sm space-y-8 text-start">
+      <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-md p-8 space-y-6">
+        <Link href="/" className="cursor-pointer group inline-block">
+          <Image
+            src="/AICA logo full.svg"
+            alt="AICA Logo"
+            width={180}
+            height={60}
+            className="object-contain group-hover:scale-105 transition-transform"
+          />
+        </Link>
+
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-gray-900">
             Your AI Career Partner
@@ -168,7 +179,7 @@ export default function LoginPage() {
 
           <Button
             type="submit"
-            className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md"
+            className="w-full h-11 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-md"
             disabled={loading}
           >
             {loading ? (

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Home, Briefcase, Bookmark, User, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -20,6 +21,8 @@ import Image from 'next/image';
 
 function AppSidebar() {
   const { logout } = useAuth();
+  const pathname = usePathname();
+  
   const navItems = [
     {
       title: 'DASHBOARD',
@@ -75,19 +78,26 @@ function AppSidebar() {
       <SidebarContent className="p-4">
         <SidebarGroup>
           <SidebarMenu className="space-y-2">
-            {navItems.map(item => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton
-                  asChild
-                  className="bg-white border border-gray-200 hover:bg-violet-50 hover:border-violet-200 font-semibold uppercase tracking-wide shadow-sm hover:shadow-md transition-all duration-200 p-4 rounded-lg"
-                >
-                  <Link href={item.url}>
-                    <item.icon className="w-6 h-6" />
-                    <span className="ml-3">{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {navItems.map(item => {
+              const isActive = pathname === item.url;
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    className={`border font-semibold uppercase tracking-wide shadow-sm hover:shadow-md transition-all duration-200 p-4 rounded-lg ${
+                      isActive
+                        ? 'bg-violet-600 border-violet-600 text-white hover:bg-violet-700 hover:border-violet-700'
+                        : 'bg-white border-gray-200 hover:bg-violet-50 hover:border-violet-200'
+                    }`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="w-6 h-6" />
+                      <span className="ml-3">{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
