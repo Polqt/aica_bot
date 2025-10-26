@@ -108,7 +108,7 @@ export default function SignupPage() {
 
   return (
     <div className="flex items-center justify-center px-6 py-6">
-      <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-md p-8 space-y-6">
+      <div className="w-full max-w-md p-8 space-y-6">
         <Link href="/" className="cursor-pointer group inline-block">
           <Image
             src="/AICA logo full.svg"
@@ -253,7 +253,7 @@ export default function SignupPage() {
               Already have an account?{' '}
               <Link
                 href="/login"
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="text-violet-600 hover:text-violet-700 font-medium"
               >
                 Log in
               </Link>

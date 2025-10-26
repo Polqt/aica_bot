@@ -286,11 +286,28 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
                             saved_matches = await job_matching_service.save_job_matches(user_id, matches)
                             logger.info(f"💾 Saved {len(saved_matches)} matches with AI reasoning")
                             
-                            time.sleep(0.5)
+                            # Wait for database to commit all writes (reduced from 3s to 1.5s)
+                            logger.info("⏳ Waiting for database commits to complete...")
+                            await asyncio.sleep(1.5)
                             
-                            # Verify matches were actually saved
-                            verification_matches = db.get_user_job_matches(user_id)
-                            logger.info(f"✅ Verified {len(verification_matches) if verification_matches else 0} matches in database")
+                            # Verify matches were actually saved with retry logic
+                            max_retries = 3  # Reduced from 5 to 3
+                            verification_matches = None
+                            for attempt in range(1, max_retries + 1):
+                                verification_matches = db.get_user_job_matches(user_id)
+                                match_count = len(verification_matches) if verification_matches else 0
+                                logger.info(f"✅ Verified {match_count} matches in database (attempt {attempt})")
+                                
+                                if match_count >= len(matches):
+                                    logger.info(f"✅ All {match_count} matches confirmed in database!")
+                                    break
+                                
+                                if attempt < max_retries:
+                                    logger.warning(f"⚠️ Expected {len(matches)} matches but found {match_count}, retrying...")
+                                    await asyncio.sleep(1)  # Reduced from 2s to 1s
+                                else:
+                                    logger.error(f"❌ Failed to verify all matches after {max_retries} attempts")
+                                    
                         except Exception as save_error:
                             logger.error(f"❌ Error saving matches: {save_error}")
                             traceback.print_exc()
@@ -302,16 +319,24 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
             traceback.print_exc()
             matches = []
         
-        # Step 3: Finalize processing
+        # Step 3: Finalize processing - ONLY after all database writes are complete
         logger.info(f"🏁 Finalizing processing for user {user_id}")
         db.update_user_profile(user_id, {"processing_step": "finalizing"})
+        
+        # Final wait to ensure all database transactions are committed (reduced from 2s to 1s)
+        await asyncio.sleep(1)
 
+        # Mark as completed
         db.update_user_profile(user_id, {
             "resume_processed": True,
             "profile_completed": True,
             "processing_step": "completed",
             "matches_generated": len(matches) > 0
         })
+        
+        # Extra safety delay after marking completed (reduced from 1.5s to 0.5s)
+        logger.info("⏳ Final sync delay before completing...")
+        await asyncio.sleep(0.5)
 
         logger.info(f"✅ Resume processing completed for user {user_id}")
         logger.info(f"📊 Matches generated during processing: {len(matches)}")
@@ -508,14 +533,45 @@ async def get_processing_status(current_user: dict = Depends(get_current_user)):
                 "message": "No resume uploaded yet"
             }
 
+        # Get current processing step
+        current_step = getattr(profile, 'processing_step', 'processing')
+        
+        # Check if still actively processing (before completion)
+        if current_step in ["parsing", "matching", "finalizing", "clearing_old_data"]:
+            step_messages = {
+                "clearing_old_data": "Clearing previous data...",
+                "parsing": "Analyzing your resume and extracting skills...",
+                "matching": "Finding job matches based on your skills...",
+                "finalizing": "Completing the matching process..."
+            }
+            
+            message = step_messages.get(current_step, "Processing your resume and finding job matches...")
+
+            return {
+                "status": "processing",
+                "message": message,
+                "step": current_step
+            }
+
         # Check if processing is complete
-        if profile.resume_processed:
-            time.sleep(0.5)
+        if profile.resume_processed and current_step == "completed":
+            # Wait briefly for database commits
+            await asyncio.sleep(0.5)
 
             try:
                 user_db = UserDatabase()
                 matches = user_db.get_user_job_matches(current_user["id"])
                 match_count = len(matches) if matches else 0
+                
+                # If matches_generated flag is True but no matches in DB yet, keep status as finalizing
+                if getattr(profile, 'matches_generated', False) and match_count == 0:
+                    logger.warning(f"⚠️ Profile marked as matches_generated but 0 matches found for user {current_user['id']}")
+                    return {
+                        "status": "processing",
+                        "message": "Finalizing your job matches...",
+                        "step": "finalizing"
+                    }
+                
             except Exception as match_error:
                 logger.warning(f"Error getting matches for user {current_user['id']}: {match_error}")
                 match_count = 0
@@ -527,25 +583,15 @@ async def get_processing_status(current_user: dict = Depends(get_current_user)):
                 "matches_found": match_count
             }
 
-        # Get current processing step
-        current_step = getattr(profile, 'processing_step', 'processing')
-
-        step_messages = {
-            "parsing": "Analyzing your resume and extracting skills...",
-            "matching": "Finding job matches based on your skills...",
-            "finalizing": "Completing the matching process...",
-            "processing": "Processing your resume and finding job matches..."
-        }
-
-        message = step_messages.get(current_step, "Processing your resume and finding job matches...")
-
+        # Fallback for any other state
         return {
             "status": "processing",
-            "message": message,
-            "step": current_step
+            "message": "Processing your resume and finding job matches...",
+            "step": current_step if current_step else "processing"
         }
 
     except Exception as e:
+        logger.error(f"Error in processing status for user {current_user.get('id', 'unknown')}: {e}")
         return {
             "status": "error",
             "message": "Unable to retrieve processing status. Please try again.",

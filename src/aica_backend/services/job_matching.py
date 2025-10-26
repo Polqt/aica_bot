@@ -87,22 +87,16 @@ class JobMatchingService:
                 return []
 
             # Fast exact + keyword matching to rank ALL jobs efficiently
-            print(f"📊 Step 1: Screening all {len(jobs)} jobs for potential matches...")
             ranked_jobs = await self._rank_all_jobs_by_relevance(user_skills, jobs)
-            
-            print(f"📊 Found {len(ranked_jobs)} relevant jobs (score >= {self.MINIMUM_MATCH_SCORE})")
-            
-            # STEP 2: AI analysis for top candidates only (to save API costs)
-            # But now we're analyzing from a much larger pool of properly ranked jobs
+
+            # AI analysis for top candidates only
             top_candidates = ranked_jobs[:min(limit * 3, len(ranked_jobs))]
-            print(f"🤖 Step 2: AI analysis of top {len(top_candidates)} candidates...")
 
             # Prepare user context once for all AI calls
             user_context = self._prepare_user_skill_context(user_skills)
             ai_matches = []
 
-            # Limit AI calls to 15 for cost control
-            max_ai_calls = min(len(top_candidates), 15)
+            max_ai_calls = min(len(top_candidates), 10)
             logger.info(f"📈 Running AI analysis on {max_ai_calls} top candidates")
 
             for i, job in enumerate(top_candidates[:max_ai_calls]):
@@ -116,7 +110,8 @@ class JobMatchingService:
                         ai_matches.append(match_result)
 
                 except Exception as e:
-                    logger.error(f"Error in AI analysis for job {job.id}: {e}")
+                    logger.error(f"⚠️ Error in AI analysis for job {job.id}: {e}")
+                    logger.info(f"Continuing with remaining jobs...")
                     continue
 
             logger.info(f"✅ Found {len(ai_matches)} matches from AI analysis")

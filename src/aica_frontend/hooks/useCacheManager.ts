@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { JobMatch, MatchingStats, SavedJob } from '@/types/jobMatch';
 import { toast } from 'sonner';
@@ -122,8 +122,6 @@ export function useJobMatchesWithCache() {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Add a ref to prevent simultaneous calls
-  const isLoadingRef = useRef(false);
 
   // Check for cached data on mount
   useEffect(() => {
@@ -135,120 +133,93 @@ export function useJobMatchesWithCache() {
       CACHE_KEYS.RECOMMENDATIONS,
     );
 
-    if (cachedMatches) {
-      setJobMatches(cachedMatches);
-      // If we have real cached matches, don't load recommendations
-      if (cachedMatches.length > 0) {
-        setRecommendations([]);
-        // Clear stale recommendations from cache
-        cacheManager.remove(CACHE_KEYS.RECOMMENDATIONS);
-      }
-    }
+    if (cachedMatches) setJobMatches(cachedMatches);
     if (cachedStats) setMatchingStats(cachedStats);
-    // Only load cached recommendations if we don't have real matches
-    if (
-      cachedRecommendations &&
-      (!cachedMatches || cachedMatches.length === 0)
-    ) {
-      setRecommendations(cachedRecommendations);
-    }
+    if (cachedRecommendations) setRecommendations(cachedRecommendations);
   }, []);
 
-  const loadJobMatches = useCallback(
-    async (skipCache = false, skipRecommendations = false) => {
-      // Prevent simultaneous calls
-      if (isLoadingRef.current) {
-        console.log(
-          '[useCacheManager] Already loading, skipping duplicate call',
-        );
-        return;
-      }
-
-      // Check cache first if not skipping
-      if (!skipCache) {
-        const cached = cacheManager.get<JobMatch[]>(CACHE_KEYS.JOB_MATCHES);
-        if (cached) {
-          setJobMatches(cached);
-          // Clear recommendations when we have real matches from cache
-          if (cached.length > 0) {
-            setRecommendations([]);
-            cacheManager.remove(CACHE_KEYS.RECOMMENDATIONS);
-          }
-          setError(null);
-          return;
-        }
-      }
-
-      try {
-        isLoadingRef.current = true;
-        setLoading(true);
-        setError(null);
-
-        const matches = await apiClient.get<JobMatch[]>(
-          '/jobs/matches?limit=50',
-        );
-        console.log('[useCacheManager] API Response from /jobs/matches:', {
-          matchesLength: matches?.length,
-          matchesData: matches,
-          skipRecommendations,
+  const loadJobMatches = useCallback(async (skipCache = false) => {
+    // Check cache first if not skipping
+    if (!skipCache) {
+      const cached = cacheManager.get<JobMatch[]>(CACHE_KEYS.JOB_MATCHES);
+      if (cached) {
+        console.log('[useCacheManager] Using cached matches:', {
+          cachedLength: cached.length,
           timestamp: new Date().toISOString(),
         });
+        setJobMatches(cached);
+        // Clear recommendations when we have real matches from cache
+        if (cached.length > 0) {
+          setRecommendations([]);
+        }
+        setError(null);
+        return;
+      }
+    }
 
-        // Update state immediately with matches
-        setJobMatches(matches || []);
+    try {
+      setLoading(true);
+      setError(null);
 
-        // Cache the results
-        if (matches) {
+      console.log(
+        '[useCacheManager] Fetching matches from API (skipCache:',
+        skipCache,
+        ')',
+      );
+      const matches = await apiClient.get<JobMatch[]>('/jobs/matches?limit=50');
+      console.log('[useCacheManager] API Response from /jobs/matches:', {
+        matchesLength: matches?.length,
+        hasMatches: matches && matches.length > 0,
+        timestamp: new Date().toISOString(),
+      });
+
+      setJobMatches(matches || []);
+
+      // Cache the results
+      if (matches) {
+        cacheManager.set(
+          CACHE_KEYS.JOB_MATCHES,
+          matches,
+          CACHE_DURATION_MS.DEFAULT,
+        );
+      }
+
+      // If we got real matches, clear recommendations
+      if (matches && matches.length > 0) {
+        console.log(
+          '[useCacheManager] Real matches found, clearing recommendations',
+        );
+        setRecommendations([]);
+        // Clear recommendations cache so they don't come back
+        cacheManager.remove(CACHE_KEYS.RECOMMENDATIONS);
+      } else {
+        // Only load recommendations if no real matches exist
+        console.log(
+          '[useCacheManager] No real matches, loading recommendations',
+        );
+        const recommendedJobs = await apiClient.getJobRecommendations(20);
+        console.log('[useCacheManager] Recommendations loaded:', {
+          recommendedLength: (recommendedJobs as JobMatch[])?.length,
+          timestamp: new Date().toISOString(),
+        });
+        setRecommendations((recommendedJobs as JobMatch[]) || []);
+        if (recommendedJobs) {
           cacheManager.set(
-            CACHE_KEYS.JOB_MATCHES,
-            matches,
+            CACHE_KEYS.RECOMMENDATIONS,
+            recommendedJobs as JobMatch[],
             CACHE_DURATION_MS.DEFAULT,
           );
         }
-
-        // If we got real matches, clear recommendations immediately
-        if (matches && matches.length > 0) {
-          console.log(
-            '[useCacheManager] Real matches found, clearing recommendations',
-          );
-          setRecommendations([]);
-          // Clear recommendations cache so they don't come back
-          cacheManager.remove(CACHE_KEYS.RECOMMENDATIONS);
-        } else if (!skipRecommendations) {
-          // Only load recommendations if no real matches exist AND we're not skipping recommendations
-          // (e.g., during upload processing, we don't want to show recommendations)
-          console.log(
-            '[useCacheManager] No real matches, loading recommendations',
-          );
-          const recommendedJobs = await apiClient.getJobRecommendations(20);
-          console.log('[useCacheManager] Recommendations loaded:', {
-            recommendedLength: (recommendedJobs as JobMatch[])?.length,
-            timestamp: new Date().toISOString(),
-          });
-          setRecommendations((recommendedJobs as JobMatch[]) || []);
-          if (recommendedJobs) {
-            cacheManager.set(
-              CACHE_KEYS.RECOMMENDATIONS,
-              recommendedJobs as JobMatch[],
-              CACHE_DURATION_MS.DEFAULT,
-            );
-          }
-        } else {
-          console.log(
-            '[useCacheManager] Skipping recommendations load (skipRecommendations=true)',
-          );
-        }
-      } catch (err: unknown) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to load job matches';
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-        isLoadingRef.current = false;
       }
-    },
-    [],
-  );
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to load job matches';
+      console.error('[useCacheManager] Error loading job matches:', err);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const loadStats = useCallback(async (skipCache = false) => {
     if (!skipCache) {

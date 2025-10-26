@@ -42,7 +42,6 @@ export default function JobMatchesPage() {
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
-  // Start with false - will be set to true only if we have recommendations and no matches
   const [showingRecommendations, setShowingRecommendations] = useState(false);
   const [pollingForMatches, setPollingForMatches] = useState(false);
 
@@ -70,11 +69,18 @@ export default function JobMatchesPage() {
         status.status === 'matching' ||
         status.status === 'finalizing'
       ) {
+        // Keep polling while processing
         setTimeout(checkProcessingStatus, 3000);
       } else if (status.status === 'completed') {
+        // Only set as completed if we actually have matches or explicitly 0 matches
         setProcessingStatus('completed');
+        console.log(
+          '[page.tsx] Processing completed with matches:',
+          status.matches_found,
+        );
       }
-    } catch {
+    } catch (error) {
+      console.error('[page.tsx] Error checking processing status:', error);
       setProcessingStatus('not_processing');
     } finally {
       setIsCheckingStatus(false);
@@ -90,7 +96,7 @@ export default function JobMatchesPage() {
   useEffect(() => {
     // Load matches after status check completes
     if (!isCheckingStatus) {
-      // If coming from upload and still processing, wait for completion
+      // If coming from upload and still processing, wait for completion - DON'T LOAD YET
       if (
         isFromUpload &&
         (processingStatus === 'processing' ||
@@ -98,39 +104,41 @@ export default function JobMatchesPage() {
           processingStatus === 'matching' ||
           processingStatus === 'finalizing')
       ) {
-        console.log('[page.tsx] Still processing, waiting for completion');
+        console.log(
+          '[page.tsx] Still processing, waiting for completion - NOT loading matches yet',
+        );
         return;
       }
-      // If coming from upload, ALWAYS skip cache for fresh data
+
+      // If coming from upload and completed, ALWAYS skip cache for fresh data
       // OR if processing status shows completed, force fresh data
       const shouldSkipCache =
-        isFromUpload ||
-        processingStatus === 'completed' ||
-        processingStatus === 'not_processing';
+        (isFromUpload && processingStatus === 'completed') ||
+        processingStatus === 'completed';
 
-      // When coming from upload, also skip recommendations until we confirm matches exist
-      const shouldSkipRecommendations = isFromUpload;
-
-      console.log('[page.tsx] Loading job matches:', {
-        isFromUpload,
-        processingStatus,
-        shouldSkipCache,
-        shouldSkipRecommendations,
-        isCheckingStatus,
-        timestamp: new Date().toISOString(),
-      });
-      loadJobMatches(shouldSkipCache, shouldSkipRecommendations);
-      loadStats(shouldSkipCache);
+      // Only load if we're not actively processing
+      if (
+        processingStatus !== 'processing' &&
+        processingStatus !== 'parsing' &&
+        processingStatus !== 'matching' &&
+        processingStatus !== 'finalizing'
+      ) {
+        console.log('[page.tsx] Loading job matches:', {
+          isFromUpload,
+          processingStatus,
+          shouldSkipCache,
+          isCheckingStatus,
+          timestamp: new Date().toISOString(),
+        });
+        loadJobMatches(shouldSkipCache);
+        loadStats(shouldSkipCache);
+      }
     }
   }, [isCheckingStatus, processingStatus, isFromUpload]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // When processing completes, clear cache and reload fresh matches
   useEffect(() => {
     if (processingStatus === 'completed' && !isCheckingStatus) {
-      console.log(
-        '[page.tsx] Processing completed, clearing cache and reloading',
-      );
-
       // Clear cache so we fetch fresh data from backend
       cacheManager.clear(
         'aica_job_matches',
@@ -142,7 +150,7 @@ export default function JobMatchesPage() {
       loadJobMatches(true); // skipCache = true
       loadStats(true); // skipCache = true
 
-      // Reset processing status to prevent repeated clearing
+      // Stop checking status to prevent repeated clearing
       setProcessingStatus(null);
     }
   }, [processingStatus, isCheckingStatus, loadJobMatches, loadStats]);
@@ -174,9 +182,6 @@ export default function JobMatchesPage() {
           });
 
           if (status.status === 'completed') {
-            console.log(
-              '[page.tsx] Processing completed via polling, loading fresh matches',
-            );
             setProcessingStatus('completed');
             setPollingForMatches(false);
             clearInterval(pollInterval);
@@ -188,18 +193,25 @@ export default function JobMatchesPage() {
               'aica_recommendations',
             );
 
-            loadJobMatches(true);
-            loadStats(true);
+            console.log(
+              '[page.tsx] Processing completed, loading fresh matches...',
+            );
+
+            // Add a small delay to ensure database is fully synced (reduced from 1s to 0.5s)
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Force reload with cache bypass
+            await loadJobMatches(true);
+            await loadStats(true);
+
+            console.log('[page.tsx] Fresh data loaded after completion');
           }
         } catch (error) {
-          console.error('Error polling processing status:', error);
+          console.error('[page.tsx] Error polling processing status:', error);
         }
       }, 3000); // Poll every 3 seconds
 
-      return () => {
-        clearInterval(pollInterval);
-        setPollingForMatches(false);
-      };
+      return () => clearInterval(pollInterval);
     } else {
       setPollingForMatches(false);
     }
@@ -211,24 +223,19 @@ export default function JobMatchesPage() {
     loadStats,
   ]);
 
-  // Update showingRecommendations based on jobMatches and recommendations state
-  // This ensures we always prioritize real matches over recommendations
+  // Update showingRecommendations whenever jobMatches changes
+  // This ensures we show real matches as soon as they're loaded
   useEffect(() => {
     const hasRealMatches = jobMatches && jobMatches.length > 0;
-    const hasRecommendations = recommendations && recommendations.length > 0;
-
-    console.log('[page.tsx] Display state update:', {
-      jobMatchesLength: jobMatches?.length || 0,
-      recommendationsLength: recommendations?.length || 0,
+    console.log('[page.tsx] jobMatches effect triggered:', {
+      jobMatchesLength: jobMatches?.length,
       hasRealMatches,
-      hasRecommendations,
-      willShowRecommendations: !hasRealMatches && hasRecommendations,
+      willShowRecommendations: !hasRealMatches,
+      jobMatches: jobMatches?.slice(0, 2),
       timestamp: new Date().toISOString(),
     });
-
-    // Only show recommendations if we have NO real matches but DO have recommendations
-    setShowingRecommendations(!hasRealMatches && hasRecommendations);
-  }, [jobMatches, recommendations]);
+    setShowingRecommendations(!hasRealMatches);
+  }, [jobMatches]);
 
   const refreshMatches = useCallback(async () => {
     try {
@@ -331,8 +338,7 @@ export default function JobMatchesPage() {
   // Check if we should show loading skeleton
   const showLoadingSkeleton =
     (loading || isCheckingStatus || pollingForMatches) &&
-    jobMatches.length === 0 &&
-    recommendations.length === 0;
+    jobMatches.length === 0;
 
   // Determine processing status to show
   const activeProcessingStatus = isCheckingStatus
