@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, RefreshCw, Zap, Trash2 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
-import { JobMatch, MatchingStats } from '@/types/jobMatch';
+import { JobMatch } from '@/types/jobMatch';
 import { useSavedJobs } from '@/hooks/useSavedJobs';
+import { useJobMatchesWithCache, cacheManager } from '@/hooks/useCacheManager';
 import { JobCard } from '@/components/JobCard';
 import { JobDetails } from '@/components/JobDetails';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -16,23 +18,33 @@ import { EmptyState } from '@/components/EmptyState';
 import { toast } from 'sonner';
 
 export default function JobMatchesPage() {
+  const searchParams = useSearchParams();
+  const isFromUpload = searchParams.get('from') === 'upload';
+
   const { savedJobIds, savingJobId, saveJob, removeJob, refreshSavedJobs } =
     useSavedJobs();
+  const {
+    jobMatches,
+    recommendations,
+    loading,
+    loadJobMatches,
+    loadStats,
+    regenerateMatches,
+    clearMatches,
+  } = useJobMatchesWithCache();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
-  const [jobMatches, setJobMatches] = useState<JobMatch[]>([]);
-  const [recommendations, setRecommendations] = useState<JobMatch[]>([]);
-  const [, setStats] = useState<MatchingStats | null>(null);
-  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [, setError] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
   const [selectedJob, setSelectedJob] = useState<JobMatch | null>(null);
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  // Start with false - will be set to true only if we have recommendations and no matches
   const [showingRecommendations, setShowingRecommendations] = useState(false);
+  const [pollingForMatches, setPollingForMatches] = useState(false);
 
   const checkProcessingStatus = useCallback(async () => {
     try {
@@ -42,6 +54,13 @@ export default function JobMatchesPage() {
         message?: string;
         matches_found?: number;
       }>('/auth/processing-status');
+
+      console.log('[page.tsx] Processing status check:', {
+        status: status.status,
+        message: status.message,
+        matchesFound: status.matches_found,
+        timestamp: new Date().toISOString(),
+      });
 
       setProcessingStatus(status.status);
 
@@ -62,48 +81,6 @@ export default function JobMatchesPage() {
     }
   }, []);
 
-  const loadJobMatches = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Force cache bypass to ensure fresh data
-      const timestamp = new Date().getTime();
-      const matches = await apiClient.get<JobMatch[]>(
-        `/jobs/matches?_t=${timestamp}`,
-      );
-      setJobMatches(matches);
-
-      // If no matches, load recommendations
-      if (!matches || matches.length === 0) {
-        setShowingRecommendations(true);
-        const recommendedJobs = await apiClient.getJobRecommendations(20);
-        setRecommendations(recommendedJobs as JobMatch[]);
-      } else {
-        setShowingRecommendations(false);
-        setRecommendations([]);
-      }
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to load job matches';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Load stats
-  const loadStats = useCallback(async () => {
-    try {
-      const statsData = await apiClient.get<MatchingStats>('/jobs/stats');
-      setStats(statsData);
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to load stats';
-      setError(errorMessage);
-    }
-  }, []);
-
   useEffect(() => {
     // Only check processing status on initial mount
     checkProcessingStatus();
@@ -113,42 +90,149 @@ export default function JobMatchesPage() {
   useEffect(() => {
     // Load matches after status check completes
     if (!isCheckingStatus) {
-      loadJobMatches();
-      loadStats();
-    }
-  }, [isCheckingStatus]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Reload matches when page becomes visible (e.g., after navigating back)
-  // Debounced to prevent multiple rapid calls
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    const handleVisibilityChange = () => {
+      // If coming from upload and still processing, wait for completion
       if (
-        document.visibilityState === 'visible' &&
-        !isCheckingStatus &&
-        !loading
+        isFromUpload &&
+        (processingStatus === 'processing' ||
+          processingStatus === 'parsing' ||
+          processingStatus === 'matching' ||
+          processingStatus === 'finalizing')
       ) {
-        // Debounce to prevent multiple calls
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          loadJobMatches();
-          loadStats();
-        }, 300);
+        console.log('[page.tsx] Still processing, waiting for completion');
+        return;
       }
-    };
+      // If coming from upload, ALWAYS skip cache for fresh data
+      // OR if processing status shows completed, force fresh data
+      const shouldSkipCache =
+        isFromUpload ||
+        processingStatus === 'completed' ||
+        processingStatus === 'not_processing';
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isCheckingStatus, loading]); // eslint-disable-line react-hooks/exhaustive-deps
+      // When coming from upload, also skip recommendations until we confirm matches exist
+      const shouldSkipRecommendations = isFromUpload;
 
-  const refreshMatches = async () => {
+      console.log('[page.tsx] Loading job matches:', {
+        isFromUpload,
+        processingStatus,
+        shouldSkipCache,
+        shouldSkipRecommendations,
+        isCheckingStatus,
+        timestamp: new Date().toISOString(),
+      });
+      loadJobMatches(shouldSkipCache, shouldSkipRecommendations);
+      loadStats(shouldSkipCache);
+    }
+  }, [isCheckingStatus, processingStatus, isFromUpload]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When processing completes, clear cache and reload fresh matches
+  useEffect(() => {
+    if (processingStatus === 'completed' && !isCheckingStatus) {
+      console.log(
+        '[page.tsx] Processing completed, clearing cache and reloading',
+      );
+
+      // Clear cache so we fetch fresh data from backend
+      cacheManager.clear(
+        'aica_job_matches',
+        'aica_matching_stats',
+        'aica_recommendations',
+      );
+
+      // Force reload fresh data from database
+      loadJobMatches(true); // skipCache = true
+      loadStats(true); // skipCache = true
+
+      // Reset processing status to prevent repeated clearing
+      setProcessingStatus(null);
+    }
+  }, [processingStatus, isCheckingStatus, loadJobMatches, loadStats]);
+
+  // Polling effect for when coming from upload and still processing
+  useEffect(() => {
+    if (
+      isFromUpload &&
+      (processingStatus === 'processing' ||
+        processingStatus === 'parsing' ||
+        processingStatus === 'matching' ||
+        processingStatus === 'finalizing') &&
+      !isCheckingStatus
+    ) {
+      setPollingForMatches(true);
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await apiClient.get<{
+            status: string;
+            message?: string;
+            matches_found?: number;
+          }>('/auth/processing-status');
+
+          console.log('[page.tsx] Polling status:', {
+            status: status.status,
+            matchesFound: status.matches_found,
+            timestamp: new Date().toISOString(),
+          });
+
+          if (status.status === 'completed') {
+            console.log(
+              '[page.tsx] Processing completed via polling, loading fresh matches',
+            );
+            setProcessingStatus('completed');
+            setPollingForMatches(false);
+            clearInterval(pollInterval);
+
+            // Clear cache and load fresh data
+            cacheManager.clear(
+              'aica_job_matches',
+              'aica_matching_stats',
+              'aica_recommendations',
+            );
+
+            loadJobMatches(true);
+            loadStats(true);
+          }
+        } catch (error) {
+          console.error('Error polling processing status:', error);
+        }
+      }, 3000); // Poll every 3 seconds
+
+      return () => {
+        clearInterval(pollInterval);
+        setPollingForMatches(false);
+      };
+    } else {
+      setPollingForMatches(false);
+    }
+  }, [
+    isFromUpload,
+    processingStatus,
+    isCheckingStatus,
+    loadJobMatches,
+    loadStats,
+  ]);
+
+  // Update showingRecommendations based on jobMatches and recommendations state
+  // This ensures we always prioritize real matches over recommendations
+  useEffect(() => {
+    const hasRealMatches = jobMatches && jobMatches.length > 0;
+    const hasRecommendations = recommendations && recommendations.length > 0;
+
+    console.log('[page.tsx] Display state update:', {
+      jobMatchesLength: jobMatches?.length || 0,
+      recommendationsLength: recommendations?.length || 0,
+      hasRealMatches,
+      hasRecommendations,
+      willShowRecommendations: !hasRealMatches && hasRecommendations,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Only show recommendations if we have NO real matches but DO have recommendations
+    setShowingRecommendations(!hasRealMatches && hasRecommendations);
+  }, [jobMatches, recommendations]);
+
+  const refreshMatches = useCallback(async () => {
     try {
       setRefreshing(true);
-      setError(null);
 
       // Try to generate new matches using current resume builder data
       try {
@@ -173,99 +257,60 @@ export default function JobMatchesPage() {
           });
         }
       } catch {
-        await apiClient.post('/jobs/find-matches');
+        // Fallback to resume-based matching
+        const result = await apiClient.post<{
+          new_matches?: number;
+          duplicates_skipped?: number;
+          total_matches_now?: number;
+        }>('/jobs/find-matches');
+
+        if (result && (result.new_matches ?? 0) > 0) {
+          toast.success(`Added ${result.new_matches} new job matches!`);
+        }
       }
 
-      await Promise.all([loadJobMatches(), loadStats()]);
+      // Clear cache BEFORE reload to ensure fresh data
+      cacheManager.clear(
+        'aica_job_matches',
+        'aica_matching_stats',
+        'aica_recommendations',
+      );
+
+      // Force refresh with cache bypass
+      await loadJobMatches(true); // skipCache = true
+      await loadStats(true); // skipCache = true
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to refresh matches';
-      setError(errorMessage);
       toast.error('Failed to refresh matches', {
         description: errorMessage,
       });
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [loadJobMatches, loadStats]);
 
-  const clearAllMatches = async () => {
+  const handleClearMatches = useCallback(async () => {
     try {
       setIsClearing(true);
-      await apiClient.delete('/jobs/matches');
-
-      toast.success('All matches cleared', {
-        description: 'You can refresh to find new matches anytime',
-      });
-
-      // Clear local state and reload
-      setJobMatches([]);
+      await clearMatches();
       setSelectedJob(null);
-      await Promise.all([loadJobMatches(), loadStats()]);
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to clear matches';
-      toast.error('Failed to clear matches', {
-        description: errorMessage,
-      });
+      setShowClearDialog(false);
     } finally {
       setIsClearing(false);
     }
-  };
+  }, [clearMatches]);
 
-  const regenerateAllMatches = async () => {
+  const handleRegenerateMatches = useCallback(async () => {
     try {
-      setIsClearing(true);
       setRefreshing(true);
-
-      // Step 1: Clear all existing matches
-      await apiClient.delete('/jobs/matches');
-
-      toast.info('Cleared old matches, generating fresh ones...', {
-        description: 'This may take a moment',
-      });
-
-      // Step 2: Generate completely new matches
-      try {
-        const result = await apiClient.generateMatches();
-
-        if ((result.matches_saved ?? 0) > 0) {
-          toast.success(
-            `Generated ${result.matches_saved} fresh job matches!`,
-            {
-              description: `AI analyzed ${result.matches_found} jobs and found the best matches for you`,
-            },
-          );
-        } else {
-          toast.info('No matches found', {
-            description:
-              'Try updating your skills or check back later for new job postings',
-          });
-        }
-      } catch {
-        await apiClient.post('/jobs/find-matches');
-      }
-
-      // Step 3: Reload the matches
-      await Promise.all([loadJobMatches(), loadStats()]);
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to regenerate matches';
-      toast.error('Failed to regenerate matches', {
-        description: errorMessage,
-      });
+      await regenerateMatches();
+      setSelectedJob(null);
+      setShowRegenerateDialog(false);
     } finally {
-      setIsClearing(false);
       setRefreshing(false);
     }
-  };
-
-  useEffect(() => {
-    const displayedJobs = showingRecommendations ? recommendations : jobMatches;
-    if (displayedJobs.length > 0 && !selectedJob) {
-      setSelectedJob(displayedJobs[0]);
-    }
-  }, [jobMatches, recommendations, showingRecommendations, selectedJob]);
+  }, [regenerateMatches]);
 
   // Memoize filtered matches to prevent unnecessary recalculations
   const filteredMatches = useMemo(() => {
@@ -285,11 +330,15 @@ export default function JobMatchesPage() {
 
   // Check if we should show loading skeleton
   const showLoadingSkeleton =
-    (loading || isCheckingStatus) && jobMatches.length === 0;
+    (loading || isCheckingStatus || pollingForMatches) &&
+    jobMatches.length === 0 &&
+    recommendations.length === 0;
 
   // Determine processing status to show
   const activeProcessingStatus = isCheckingStatus
     ? ('checking' as const)
+    : pollingForMatches
+    ? ('processing' as const)
     : processingStatus === 'processing' ||
       processingStatus === 'parsing' ||
       processingStatus === 'matching' ||
@@ -372,7 +421,7 @@ export default function JobMatchesPage() {
         </div>
       </motion.div>
 
-      {showingRecommendations && (
+      {showingRecommendations && !pollingForMatches && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -385,7 +434,9 @@ export default function JobMatchesPage() {
             </div>
             <div className="flex-1">
               <h3 className="text-sm font-semibold text-blue-900 mb-1">
-                No Perfect Matches Yet
+                {isFromUpload
+                  ? 'Processing Your Resume'
+                  : 'No Perfect Matches Yet'}
               </h3>
               <p className="text-sm text-blue-800">
                 We couldn&apos;t find jobs that match your current skills. Here
@@ -506,7 +557,7 @@ export default function JobMatchesPage() {
         description="Are you sure you want to clear ALL job matches? This action cannot be undone. You can refresh to find new matches anytime."
         confirmText="Clear All"
         cancelText="Cancel"
-        onConfirm={clearAllMatches}
+        onConfirm={handleClearMatches}
         variant="destructive"
         loading={isClearing}
       />
@@ -518,7 +569,7 @@ export default function JobMatchesPage() {
         description="This will delete all existing matches and generate completely fresh matches based on your current skills. Your saved jobs will NOT be affected. This may take a moment. Continue?"
         confirmText="Regenerate All"
         cancelText="Cancel"
-        onConfirm={regenerateAllMatches}
+        onConfirm={handleRegenerateMatches}
         variant="default"
         loading={isClearing || refreshing}
       />

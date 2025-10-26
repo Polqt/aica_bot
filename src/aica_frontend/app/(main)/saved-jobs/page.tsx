@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Star, RefreshCw } from 'lucide-react';
 import { useSavedJobs } from '@/hooks/useSavedJobs';
+import { useJobMatchCache } from '@/hooks/useJobMatchCache';
 import { SavedJob } from '@/types/jobMatch';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
@@ -18,10 +19,24 @@ export default function SavedJobsPage() {
   const { savedJobs, loading, error, removeJob, refreshSavedJobs } =
     useSavedJobs();
   const { getAuthToken } = useAuth();
+  const { getSavedJobs, setSavedJobs, invalidateSavedJobs } =
+    useJobMatchCache();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedJob, setSelectedJob] = useState<SavedJob | null>(null);
   const [filterType, setFilterType] = useState('all');
   const [removingJobId, setRemovingJobId] = useState<string | null>(null);
+
+  // Load saved jobs with cache awareness
+  const loadSavedJobs = useCallback(async () => {
+    const cached = getSavedJobs();
+    if (cached && cached.length > 0) {
+      // Use cached data if available
+      return cached;
+    }
+
+    // Fetch fresh if not cached
+    await refreshSavedJobs();
+  }, [getSavedJobs, refreshSavedJobs]);
 
   // Check authentication on component mount
   useEffect(() => {
@@ -29,8 +44,15 @@ export default function SavedJobsPage() {
     if (!token) {
       return;
     }
-    refreshSavedJobs();
-  }, [getAuthToken, refreshSavedJobs]);
+    loadSavedJobs();
+  }, [getAuthToken, loadSavedJobs]);
+
+  // Update cache when jobs change
+  useEffect(() => {
+    if (savedJobs.length > 0) {
+      setSavedJobs(savedJobs);
+    }
+  }, [savedJobs, setSavedJobs]);
 
   // Set first job as selected when jobs load
   useEffect(() => {
@@ -43,6 +65,7 @@ export default function SavedJobsPage() {
     setRemovingJobId(jobId);
     try {
       await removeJob(jobId);
+      invalidateSavedJobs(); // Clear cache on removal
 
       if (selectedJob?.job_id === jobId) {
         const remainingJobs = savedJobs.filter(job => job.job_id !== jobId);

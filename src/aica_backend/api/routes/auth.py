@@ -1,6 +1,7 @@
 import traceback
 import logging
 import time
+import asyncio
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, BackgroundTasks, Request
 from slowapi import Limiter
@@ -19,7 +20,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter()
 
-async def _signup_logic(user: UserCreate):
+async def _signup(user: UserCreate):
     try:
         supabase = get_supabase_client()
         
@@ -72,14 +73,12 @@ async def _signup_logic(user: UserCreate):
 @router.post("/signup", response_model=dict)
 @limiter.limit("5/minute")
 async def signup(request: Request, user: UserCreate):
-    """Signup endpoint (legacy)"""
-    return await _signup_logic(user)
+    return await _signup(user)
 
 @router.post("/register", response_model=dict)
 @limiter.limit("5/minute")
 async def register(request: Request, user: UserCreate):
-    """Register endpoint (frontend uses this)"""
-    return await _signup_logic(user)
+    return await _signup(user)
 
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("10/minute")
@@ -198,6 +197,17 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
 async def logout():
     return {"message": "Logged out successfully"}
 
+async def delayed_job_matching_background(user_id: str):
+    await asyncio.sleep(10)  # Wait 10 seconds for resume processing
+    try:
+        logger.info(f"🔄 Delayed job matching starting for user {user_id}")
+        matching_service = JobMatchingService()
+        result = await matching_service.update_matches_for_user(user_id)
+        logger.info(f"✅ Delayed job matching completed for user {user_id}: {result.get('matches_saved', 0)} matches saved")
+    except Exception as e:
+        logger.error(f"❌ Delayed job matching failed for user {user_id}: {e}")
+        traceback.print_exc()
+
 async def process_resume_background(user_id: str, file_content: bytes, file_type: str, mode: str = None):
     db = UserDatabase()
     
@@ -205,8 +215,7 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
         user = db.get_user_by_id(user_id)
         if not user:
             return
-        
-        # Step 0: Clear existing data if replace mode (or default behavior)
+
         if mode == "replace" or mode is None:
             logger.info(f"🗑️ Replace mode: Clearing existing data for user {user_id}")
             db.update_user_profile(user_id, {"processing_step": "clearing_old_data"})
@@ -255,7 +264,7 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
                 
                 # Get available jobs
                 job_db = JobDatabase()
-                jobs = job_db.get_jobs_for_matching(limit=100)
+                jobs = job_db.get_jobs_for_matching(limit=500)
                 
                 if not jobs:
                     logger.warning("⚠️ No jobs available for matching")
@@ -280,7 +289,7 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
                             time.sleep(0.5)
                             
                             # Verify matches were actually saved
-                            verification_matches = job_db.get_user_matches(user_id)
+                            verification_matches = db.get_user_job_matches(user_id)
                             logger.info(f"✅ Verified {len(verification_matches) if verification_matches else 0} matches in database")
                         except Exception as save_error:
                             logger.error(f"❌ Error saving matches: {save_error}")
@@ -296,15 +305,16 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
         # Step 3: Finalize processing
         logger.info(f"🏁 Finalizing processing for user {user_id}")
         db.update_user_profile(user_id, {"processing_step": "finalizing"})
-        
+
         db.update_user_profile(user_id, {
             "resume_processed": True,
             "profile_completed": True,
             "processing_step": "completed",
             "matches_generated": len(matches) > 0
         })
-        
+
         logger.info(f"✅ Resume processing completed for user {user_id}")
+        logger.info(f"📊 Matches generated during processing: {len(matches)}")
         
     except Exception as e:
         logger.error(f"❌ Fatal error in resume processing for user {user_id}: {e}")
@@ -440,6 +450,9 @@ async def upload_resume(
             mode  # Pass the mode to background processing
         )
 
+        # Add delayed job matching task to ensure matches are generated after resume processing
+        background_tasks.add_task(delayed_job_matching_background, user_id)
+
         # Include mode in response message
         message = "Resume uploaded successfully and is being processed"
         if mode == "replace":
@@ -478,8 +491,7 @@ async def get_user_skills(current_user: dict = Depends(get_current_user)):
             "job_titles": skills_by_category.get("job_title", [])
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve skills: {str(e)}")
-    
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve skills: {str(e)}")   
     
 @router.get("/processing-status")
 async def get_processing_status(current_user: dict = Depends(get_current_user)):
@@ -499,10 +511,10 @@ async def get_processing_status(current_user: dict = Depends(get_current_user)):
         # Check if processing is complete
         if profile.resume_processed:
             time.sleep(0.5)
-            
+
             try:
-                job_db = JobDatabase()
-                matches = job_db.get_user_matches(current_user["id"])
+                user_db = UserDatabase()
+                matches = user_db.get_user_job_matches(current_user["id"])
                 match_count = len(matches) if matches else 0
             except Exception as match_error:
                 logger.warning(f"Error getting matches for user {current_user['id']}: {match_error}")
@@ -510,18 +522,9 @@ async def get_processing_status(current_user: dict = Depends(get_current_user)):
 
             return {
                 "status": "completed",
-                "message": f"Resume processed successfully! Found {match_count} job matches.",
+                "message": f"Resume processed successfully!",
                 "step": "completed",
                 "matches_found": match_count
-            }
-
-        # Check for error state
-        if hasattr(profile, 'processing_step') and profile.processing_step == "error":
-            error_message = getattr(profile, 'processing_error', 'An error occurred during processing')
-            return {
-                "status": "error",
-                "message": f"Processing failed: {error_message}",
-                "step": "error"
             }
 
         # Get current processing step
@@ -543,14 +546,11 @@ async def get_processing_status(current_user: dict = Depends(get_current_user)):
         }
 
     except Exception as e:
-        logger.error(f"Error in processing status for user {current_user.get('id', 'unknown')}: {str(e)}", exc_info=True)
-        # Return a safe fallback response instead of raising 500 error
         return {
             "status": "error",
             "message": "Unable to retrieve processing status. Please try again.",
             "step": "error"
         }
-
 
 @router.post("/generate-matches")
 async def generate_job_matches(current_user: dict = Depends(get_current_user)):
@@ -564,11 +564,7 @@ async def generate_job_matches(current_user: dict = Depends(get_current_user)):
         skills = db.get_user_skills(user_id)
 
         if not skills:
-            return {
-                "success": False,
-                "message": "No skills found. Please complete your profile and add skills first.",
-                "matches_found": 0
-            }
+            return []
 
         # Update profile to indicate matching is in progress
         db.update_user_profile(user_id, {
@@ -599,29 +595,3 @@ async def generate_job_matches(current_user: dict = Depends(get_current_user)):
             pass
 
         raise HTTPException(status_code=500, detail=f"Failed to generate matches: {str(e)}")
-
-
-@router.get("/storage/status")
-async def get_storage_status(current_user: dict = Depends(get_current_user)):
-    try:
-        supabase = get_supabase_admin_client()
-        bucket_name = "resumes"
-
-        buckets = supabase.storage.list_buckets()
-        bucket_names = [bucket.name for bucket in buckets]
-
-        bucket_exists = bucket_name in bucket_names
-
-        return {
-            "storage_available": True,
-            "bucket_exists": bucket_exists,
-            "bucket_name": bucket_name,
-            "all_buckets": bucket_names
-        }
-    except Exception as e:
-        return {
-            "storage_available": False,
-            "error": str(e),
-            "bucket_exists": False
-        }
-    

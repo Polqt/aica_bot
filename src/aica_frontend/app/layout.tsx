@@ -44,6 +44,8 @@ export const metadata: Metadata = {
       {
         url: '/AICA Logo.svg',
         alt: 'AICA - AI Career Assistant',
+        width: 100,
+        height: 100,
       },
     ],
     locale: 'en_US',
@@ -80,25 +82,25 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${lora.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}
+        className={`${inter.variable} ${lora.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground light`}
       >
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
-          enableSystem
+          themes={['light']}
           disableTransitionOnChange
+          forcedTheme="light"
         >
-          <div className="relative min-h-screen bg-white dark:bg-black">
+          <div className="relative min-h-screen bg-white">
             <div className="fixed inset-0">
               <div
                 className={cn(
                   'absolute inset-0',
                   '[background-size:40px_40px]',
                   '[background-image:linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)]',
-                  'dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]',
                 )}
               />
-              <div className="pointer-events-none absolute inset-0 bg-white/10 dark:bg-black/10" />
+              <div className="pointer-events-none absolute inset-0 bg-white/10" />
             </div>
 
             {/* Content */}
@@ -112,15 +114,14 @@ export default function RootLayout({
             toastOptions={{
               duration: 4000,
               classNames: {
-                toast: 'backdrop-blur-sm border border-border/50 shadow-lg',
+                toast:
+                  'backdrop-blur-sm border border-border/50 shadow-lg bg-white',
                 title: 'font-semibold',
                 description: 'text-sm opacity-90',
-                error: 'border-red-500/50 bg-red-50/50 dark:bg-red-950/50',
-                success:
-                  'border-green-500/50 bg-green-50/50 dark:bg-green-950/50',
-                warning:
-                  'border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/50',
-                info: 'border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/50',
+                error: 'border-red-500/50 bg-red-50',
+                success: 'border-green-500/50 bg-green-50',
+                warning: 'border-yellow-500/50 bg-yellow-50',
+                info: 'border-blue-500/50 bg-blue-50',
               },
             }}
           />

@@ -12,7 +12,7 @@ from .models.job_models import JobSource, Job, JobListings, JobSearchFilters
 logger = logging.getLogger(__name__)
 
 class SimpleCache:
-    def __init__(self, max_size: int = 100, ttl: int = 300):  # 5 minutes TTL
+    def __init__(self, max_size: int = 100, ttl: int = 300):  
         self.cache = {}
         self.max_size = max_size
         self.ttl = ttl
@@ -328,19 +328,20 @@ class JobDatabase:
                 skills=[]
             )
 
-    def get_jobs_for_matching(self, limit: int = 100, min_skills: int = 1) -> List[Job]:
+    def get_jobs_for_matching(self, limit: int = 1000, min_skills: int = 1) -> List[Job]:
         try:
             # Query jobs that have skills and are suitable for matching
-            # Only fetch active jobs
+            # Only fetch active jobs with high priority
             response = (self.client.table("jobs")
                        .select("*")
                        .eq("is_active", True)  # Only active jobs
                        .not_.is_("skills", "null")
                        .order("created_at", desc=True)
-                       .limit(limit)
+                       .limit(limit)  # Now defaults to 10,000 to scan all jobs
                        .execute())
             
             if not response.data:
+                logger.info("No jobs found for matching")
                 return []
             
             jobs = []
@@ -351,11 +352,14 @@ class JobDatabase:
                     if job.skills and len(job.skills) >= min_skills:
                         jobs.append(job)
                 except Exception as e:
+                    logger.warning(f"Failed to deserialize job: {e}")
                     continue
             
+            logger.info(f"✅ Retrieved {len(jobs)} jobs for matching (from {len(response.data)} total)")
             return jobs
             
         except Exception as e:
+            logger.error(f"❌ Error fetching jobs for matching: {e}")
             return []
 
     def get_job_by_id(self, job_id: str) -> Optional[Job]:
@@ -369,45 +373,6 @@ class JobDatabase:
             
         except Exception as e:
             return None
-
-    def save_user_job_match(self, user_id: str, job_id: str, match_score: float, **kwargs) -> bool:
-        try:
-            # Check if match already exists
-            existing = self.client.table("user_job_matches").select("id").eq("user_id", user_id).eq("job_id", job_id).execute()
-            
-            match_data = {
-                "user_id": user_id,
-                "job_id": job_id,
-                "match_score": match_score,
-                "matched_skills": kwargs.get('matching_skills', []),  # Map matching_skills to matched_skills
-            }
-            
-            # Update if exists, insert if not
-            if existing.data and len(existing.data) > 0:
-                match_id = existing.data[0]["id"]
-                match_data["updated_at"] = datetime.utcnow().isoformat()
-                response = self.client.table("user_job_matches").update(match_data).eq("id", match_id).execute()
-            else:
-                match_data["created_at"] = datetime.utcnow().isoformat()
-                response = self.client.table("user_job_matches").insert(match_data).execute()
-            
-            return len(response.data) > 0
-            
-        except Exception as e:
-            logger.error(f"Failed to save user job match: {e}")
-            return False
-
-    def get_user_matches(self, user_id: str) -> List[Dict[str, Any]]:
-        try:
-            response = self.client.table("user_job_matches").select(
-                "*, jobs(title, company, location, url)"
-            ).eq("user_id", user_id).order("match_score", desc=True).execute()
-            
-            return response.data or []
-            
-        except Exception as e:
-            logger.error(f"Failed to fetch user matches: {e}")
-            return []
 
     def mark_job_as_expired(self, job_id: str) -> bool:
         try:

@@ -19,6 +19,7 @@ import {
   Plus,
   Edit,
   Trash2,
+  SkipForward,
 } from 'lucide-react';
 import { useResumeBuilder } from '@/hooks/useResumeBuilder';
 import { UserEducation, UserEducationCreate } from '@/types/user';
@@ -129,6 +130,10 @@ export default function EducationPage() {
     router.push('/experience');
   };
 
+  const handleSkip = () => {
+    router.push('/experience');
+  };
+
   const handleBack = () => {
     router.push('/profile');
   };
@@ -217,26 +222,31 @@ export default function EducationPage() {
             </Button>
           </div>
 
-          <div className="flex items-center justify-between pt-6 border-t">
+          <div className="flex items-center justify-between pt-6 border-t gap-4">
             <Button onClick={handleBack} variant="neutral" className="h-10">
               <ArrowLeft className="w-4 h-4 mr-2" /> Back
             </Button>
-            <Button
-              onClick={handleContinue}
-              disabled={!education?.length || saving}
-              className="h-10"
-            >
-              {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  Continue <ArrowRight className="w-4 h-4 ml-2" />
-                </>
-              )}
-            </Button>
+            <div className="flex gap-3">
+              <Button onClick={handleSkip} variant="neutral" className="h-10">
+                <SkipForward className="w-4 h-4 mr-2" /> Skip
+              </Button>
+              <Button
+                onClick={handleContinue}
+                disabled={!education?.length || saving}
+                className="h-10"
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    Continue <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

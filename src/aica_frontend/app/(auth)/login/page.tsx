@@ -94,7 +94,7 @@ export default function LoginPage() {
             },
           });
         } catch {
-          console.log('Backend sync error (non-critical)');
+          // Backend sync error (non-critical)
         }
 
         toast.success('Welcome back! 👋', {

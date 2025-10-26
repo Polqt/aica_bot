@@ -33,7 +33,8 @@
     "react-dropzone": "^14.3.8",
     "recharts": "^3.2.1",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

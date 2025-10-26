@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
-import { ArrowLeft, ArrowRight, Check, Plus, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Plus, X, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useResumeBuilder } from '@/hooks/useResumeBuilder';
@@ -22,7 +22,7 @@ import { PageLoader } from '@/components/PageLoader';
 
 export default function SkillsPage() {
   const router = useRouter();
-  const { skills, addSkill, deleteSkill, loadResumeData, loading, saving } =
+  const { skills, bulkUpdateSkills, loadResumeData, loading, saving } =
     useResumeBuilder();
   const {
     status: completionStatus,
@@ -30,9 +30,11 @@ export default function SkillsPage() {
     completeProfileAndMatch,
   } = useProfileCompletion();
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
+  const [pendingSkills, setPendingSkills] = useState<Set<string>>(new Set());
   const [showCustomSkillForm, setShowCustomSkillForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     loadResumeData();
@@ -41,27 +43,23 @@ export default function SkillsPage() {
   useEffect(() => {
     const existingSkillNames = new Set(skills.map(skill => skill.skill_name));
     setSelectedSkills(existingSkillNames);
+    setPendingSkills(existingSkillNames);
   }, [skills]);
 
-  const handleSkillToggle = async (skillName: string) => {
-    const isSelected = selectedSkills.has(skillName);
-    if (isSelected) {
-      const skillToDelete = skills.find(s => s.skill_name === skillName);
-      if (skillToDelete) {
-        await deleteSkill(skillToDelete.id);
-        setSelectedSkills(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(skillName);
-          return newSet;
-        });
+  const handleSkillToggle = (skillName: string) => {
+    setPendingSkills(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(skillName)) {
+        newSet.delete(skillName);
+      } else {
+        newSet.add(skillName);
       }
-    } else {
-      await addSkill({ skill_name: skillName });
-      setSelectedSkills(prev => new Set([...prev, skillName]));
-    }
+      return newSet;
+    });
+    setHasChanges(true);
   };
 
-  const handleAddCustomSkill = async (e: React.FormEvent) => {
+  const handleAddCustomSkill = (e: React.FormEvent) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const skillName = form.skill_name.value.trim();
@@ -70,10 +68,38 @@ export default function SkillsPage() {
       toast.error('Please enter a skill name');
       return;
     }
-    setSelectedSkills(prev => new Set([...prev, skillName]));
-    addSkill({ skill_name: skillName });
+    setPendingSkills(prev => new Set([...prev, skillName]));
+    setHasChanges(true);
     form.reset();
     setShowCustomSkillForm(false);
+  };
+
+  const handleSaveSkills = async () => {
+    try {
+      // Calculate which skills to add and remove
+      const skillsToAdd = Array.from(pendingSkills).filter(
+        skill => !selectedSkills.has(skill),
+      );
+      const skillIdsToDelete = skills
+        .filter(skill => !pendingSkills.has(skill.skill_name))
+        .map(skill => skill.id);
+
+      // Only call API if there are changes
+      if (skillsToAdd.length > 0 || skillIdsToDelete.length > 0) {
+        await bulkUpdateSkills({
+          skills_to_add: skillsToAdd.map(skill => ({ skill_name: skill })),
+          skill_ids_to_delete: skillIdsToDelete,
+        });
+
+        // Update selectedSkills after successful save
+        setSelectedSkills(pendingSkills);
+        setHasChanges(false);
+      } else {
+        toast.info('No changes to save');
+      }
+    } catch (error) {
+      console.error('Failed to save skills:', error);
+    }
   };
 
   const handleContinue = async () => {
@@ -169,7 +195,7 @@ export default function SkillsPage() {
                           className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-gray-50 transition"
                         >
                           <span className="flex-1 text-sm">{skill}</span>
-                          {selectedSkills.has(skill) ? (
+                          {pendingSkills.has(skill) ? (
                             <Check className="w-4 h-4 text-blue-600" />
                           ) : (
                             <Plus className="w-4 h-4 text-gray-400" />
@@ -222,11 +248,11 @@ export default function SkillsPage() {
 
           <div className="mt-6 p-4 bg-gray-50 rounded-xl">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">
-              Selected Skills ({selectedSkills.size})
+              Selected Skills ({pendingSkills.size})
             </h3>
-            {selectedSkills.size > 0 ? (
+            {pendingSkills.size > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {Array.from(selectedSkills).map(skill => (
+                {Array.from(pendingSkills).map(skill => (
                   <Button
                     key={skill}
                     variant="neutral"
@@ -246,6 +272,36 @@ export default function SkillsPage() {
               </p>
             )}
           </div>
+
+          {hasChanges && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between"
+            >
+              <p className="text-sm text-blue-800">
+                You have unsaved changes to your skills.
+              </p>
+              <Button
+                onClick={handleSaveSkills}
+                disabled={saving}
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {saving ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </motion.div>
+          )}
         </div>
       </ScrollArea>
 
@@ -256,7 +312,8 @@ export default function SkillsPage() {
         <Button
           onClick={handleContinue}
           disabled={
-            !skills.length ||
+            !selectedSkills.size ||
+            hasChanges ||
             saving ||
             completionStatus === 'generating' ||
             completionStatus === 'matching'
@@ -268,6 +325,8 @@ export default function SkillsPage() {
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
               Saving...
             </>
+          ) : hasChanges ? (
+            <>Please Save Changes</>
           ) : completionStatus === 'generating' ||
             completionStatus === 'matching' ? (
             <>

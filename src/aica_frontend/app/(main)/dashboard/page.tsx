@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
+import { useJobMatchCache } from '@/hooks/useJobMatchCache';
 import { API_BASE_URL } from '@/lib/constants/api';
 import {
   TopJobTitlesCard,
@@ -70,6 +71,12 @@ interface SkillCategoryData {
 
 export default function DashboardPage() {
   const { getAuthToken } = useAuth();
+  const {
+    getDashboardStats,
+    setDashboardStats,
+    getDashboardMatches,
+    setDashboardMatches,
+  } = useJobMatchCache();
 
   // State Management
   const [, setUserStats] = useState<UserStats | null>(null);
@@ -84,171 +91,204 @@ export default function DashboardPage() {
   const [topJobTitles, setTopJobTitles] = useState<TopJobTitle[]>([]);
   const [, setSkillCategoryData] = useState<SkillCategoryData[]>([]);
 
-  // Fetch Dashboard Data
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      const token = getAuthToken();
-      if (!token) {
-        setError('Authentication required');
-        setLoading(false);
-        return;
+  // Fetch Dashboard Data with cache awareness
+  const fetchDashboardData = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) {
+      setError('Authentication required');
+      setLoading(false);
+      return;
+    }
+
+    // Check cache first
+    const cachedStats = getDashboardStats();
+    const cachedMatches = getDashboardMatches();
+
+    if (cachedStats && cachedMatches && cachedMatches.length > 0) {
+      // Use cached data if available
+      setUserStats(cachedStats);
+      setRecentMatches(
+        cachedMatches.map(m => ({
+          ...m,
+          created_at: new Date().toISOString(),
+        })) as JobMatch[],
+      );
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch all data in parallel
+      const [profileRes, summaryRes, matchesRes, statsRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/resume-builder/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_BASE_URL}/resume-builder/summary`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_BASE_URL}/jobs/matches?limit=50`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_BASE_URL}/jobs/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      // Process profile data
+      if (profileRes.ok) {
+        const profileData = await profileRes.json();
+        setUserProfile(profileData);
       }
 
-      try {
-        setLoading(true);
-        setError(null);
+      // Process summary data
+      if (summaryRes.ok) {
+        const summary = await summaryRes.json();
+        const skills = summary.skills || [];
 
-        // Fetch all data in parallel
-        const [profileRes, summaryRes, matchesRes, statsRes] =
-          await Promise.all([
-            fetch(`${API_BASE_URL}/resume-builder/profile`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            fetch(`${API_BASE_URL}/resume-builder/summary`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            fetch(`${API_BASE_URL}/jobs/matches?limit=50`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            fetch(`${API_BASE_URL}/jobs/stats`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-          ]);
+        const stats = {
+          profile_completed: summary.profile?.profile_completed || false,
+          resume_uploaded: summary.profile?.resume_uploaded || false,
+          resume_processed: summary.profile?.resume_processed || false,
+          total_skills: skills.length,
+          technical_skills_count: skills.filter(
+            (s: { skill_category: string }) => s.skill_category === 'technical',
+          ).length,
+          soft_skills_count: skills.filter(
+            (s: { skill_category: string }) => s.skill_category === 'soft',
+          ).length,
+          has_job_matches: false,
+          best_match_score: 0,
+        };
 
-        // Process profile data
-        if (profileRes.ok) {
-          const profileData = await profileRes.json();
-          setUserProfile(profileData);
-        }
+        setUserStats(stats);
+        setDashboardStats(stats); // Cache the stats
 
-        // Process summary data
-        if (summaryRes.ok) {
-          const summary = await summaryRes.json();
-          const skills = summary.skills || [];
+        // Process skill category data for pie chart
+        const technicalCount = skills.filter(
+          (s: { skill_category: string }) => s.skill_category === 'technical',
+        ).length;
+        const softCount = skills.filter(
+          (s: { skill_category: string }) => s.skill_category === 'soft',
+        ).length;
+        const otherCount = skills.filter(
+          (s: { skill_category: string }) =>
+            s.skill_category !== 'technical' && s.skill_category !== 'soft',
+        ).length;
 
-          setUserStats({
-            profile_completed: summary.profile?.profile_completed || false,
-            resume_uploaded: summary.profile?.resume_uploaded || false,
-            resume_processed: summary.profile?.resume_processed || false,
-            total_skills: skills.length,
-            technical_skills_count: skills.filter(
-              (s: { skill_category: string }) =>
-                s.skill_category === 'technical',
-            ).length,
-            soft_skills_count: skills.filter(
-              (s: { skill_category: string }) => s.skill_category === 'soft',
-            ).length,
-            has_job_matches: false,
-            best_match_score: 0,
+        setSkillCategoryData(
+          [
+            {
+              category: 'Technical',
+              count: technicalCount,
+              color: '#3b82f6',
+            },
+            { category: 'Soft Skills', count: softCount, color: '#10b981' },
+            { category: 'Other', count: otherCount, color: '#f59e0b' },
+          ].filter(item => item.count > 0),
+        );
+      }
+
+      // Process matches data
+      if (matchesRes.ok) {
+        const matches = await matchesRes.json();
+        const transformedMatches = matches.map(
+          (m: Record<string, unknown>) => ({
+            ...m,
+            created_at: (m.created_at as string) || new Date().toISOString(),
+          }),
+        ) as JobMatch[];
+        setRecentMatches(transformedMatches);
+        setDashboardMatches(matches); // Cache the matches (original format)
+
+        if (matches.length > 0) {
+          setUserStats(prev =>
+            prev
+              ? {
+                  ...prev,
+                  has_job_matches: true,
+                  best_match_score: Math.max(
+                    ...matches.map((m: JobMatch) => m.match_score),
+                  ),
+                }
+              : null,
+          );
+
+          // Calculate top skills from matches
+          const skillFrequency: Record<
+            string,
+            { count: number; category: string }
+          > = {};
+          matches.forEach((match: JobMatch) => {
+            match.matched_skills.forEach((skill: string) => {
+              if (!skillFrequency[skill]) {
+                skillFrequency[skill] = { count: 0, category: 'technical' };
+              }
+              skillFrequency[skill].count++;
+            });
           });
 
-          // Process skill category data for pie chart
-          const technicalCount = skills.filter(
-            (s: { skill_category: string }) => s.skill_category === 'technical',
-          ).length;
-          const softCount = skills.filter(
-            (s: { skill_category: string }) => s.skill_category === 'soft',
-          ).length;
-          const otherCount = skills.filter(
-            (s: { skill_category: string }) =>
-              s.skill_category !== 'technical' && s.skill_category !== 'soft',
-          ).length;
+          const sortedSkills = Object.entries(skillFrequency)
+            .sort((a, b) => b[1].count - a[1].count)
+            .slice(0, 5)
+            .map(([name, data]) => ({
+              name,
+              count: data.count,
+              category: data.category,
+            }));
+          setTopSkills(sortedSkills);
 
-          setSkillCategoryData(
-            [
-              {
-                category: 'Technical',
-                count: technicalCount,
-                color: '#3b82f6',
-              },
-              { category: 'Soft Skills', count: softCount, color: '#10b981' },
-              { category: 'Other', count: otherCount, color: '#f59e0b' },
-            ].filter(item => item.count > 0),
-          );
+          // Calculate top job titles
+          const titleFrequency: Record<
+            string,
+            { count: number; totalScore: number }
+          > = {};
+          matches.forEach((match: JobMatch) => {
+            const title = match.job_title;
+            if (!titleFrequency[title]) {
+              titleFrequency[title] = { count: 0, totalScore: 0 };
+            }
+            titleFrequency[title].count++;
+            titleFrequency[title].totalScore += match.match_score;
+          });
+
+          const sortedTitles = Object.entries(titleFrequency)
+            .sort((a, b) => b[1].count - a[1].count)
+            .slice(0, 3)
+            .map(([title, data]) => ({
+              title,
+              count: data.count,
+              avgMatchScore: data.totalScore / data.count,
+            }));
+          setTopJobTitles(sortedTitles);
         }
-
-        // Process matches data
-        if (matchesRes.ok) {
-          const matches = await matchesRes.json();
-          setRecentMatches(matches);
-          if (matches.length > 0) {
-            setUserStats(prev =>
-              prev
-                ? {
-                    ...prev,
-                    has_job_matches: true,
-                    best_match_score: Math.max(
-                      ...matches.map((m: JobMatch) => m.match_score),
-                    ),
-                  }
-                : null,
-            );
-
-            // Calculate top skills from matches
-            const skillFrequency: Record<
-              string,
-              { count: number; category: string }
-            > = {};
-            matches.forEach((match: JobMatch) => {
-              match.matched_skills.forEach((skill: string) => {
-                if (!skillFrequency[skill]) {
-                  skillFrequency[skill] = { count: 0, category: 'technical' };
-                }
-                skillFrequency[skill].count++;
-              });
-            });
-
-            const sortedSkills = Object.entries(skillFrequency)
-              .sort((a, b) => b[1].count - a[1].count)
-              .slice(0, 5)
-              .map(([name, data]) => ({
-                name,
-                count: data.count,
-                category: data.category,
-              }));
-            setTopSkills(sortedSkills);
-
-            // Calculate top job titles
-            const titleFrequency: Record<
-              string,
-              { count: number; totalScore: number }
-            > = {};
-            matches.forEach((match: JobMatch) => {
-              const title = match.job_title;
-              if (!titleFrequency[title]) {
-                titleFrequency[title] = { count: 0, totalScore: 0 };
-              }
-              titleFrequency[title].count++;
-              titleFrequency[title].totalScore += match.match_score;
-            });
-
-            const sortedTitles = Object.entries(titleFrequency)
-              .sort((a, b) => b[1].count - a[1].count)
-              .slice(0, 3)
-              .map(([title, data]) => ({
-                title,
-                count: data.count,
-                avgMatchScore: data.totalScore / data.count,
-              }));
-            setTopJobTitles(sortedTitles);
-          }
-        }
-
-        // Process stats data
-        if (statsRes.ok) {
-          const stats = await statsRes.json();
-          setMatchingStats(stats);
-        }
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        setError('Failed to load dashboard data');
-      } finally {
-        setLoading(false);
       }
-    };
 
+      // Process stats data
+      if (statsRes.ok) {
+        const stats = await statsRes.json();
+        setMatchingStats(stats);
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    getAuthToken,
+    setDashboardStats,
+    setDashboardMatches,
+    getDashboardStats,
+    getDashboardMatches,
+  ]);
+
+  // Fetch Dashboard Data
+  useEffect(() => {
     fetchDashboardData();
-  }, [getAuthToken]);
+  }, [fetchDashboardData]);
 
   if (loading) {
     return <PageLoader text="Loading your dashboard..." size="lg" />;

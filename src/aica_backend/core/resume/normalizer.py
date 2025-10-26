@@ -410,10 +410,6 @@ class SkillNormalizer:
     
     @staticmethod
     def _is_likely_person_name(skill: str) -> bool:
-        """
-        Check if a skill is likely a person's name rather than a technical skill.
-        Returns True if it looks like a name (should be filtered out).
-        """
         if not skill or len(skill.strip()) < 3:
             return False
             
@@ -463,10 +459,6 @@ class SkillNormalizer:
     
     @staticmethod
     def validate_skills(skills: ResumeSkills) -> ResumeSkills:
-        """Validate and clean skills, removing duplicates, empty strings, person names, and invalid short skills."""
-        # Import logger if not already imported
-        import logging
-        logger = logging.getLogger(__name__)
         
         # List of valid single-letter or two-letter skills (very rare but valid)
         valid_short_skills = {'r', 'c', 'go', 'c#', 'c++', 'ui', 'ux', 'ml'}
@@ -489,18 +481,15 @@ class SkillNormalizer:
             # Filter out very short skills (1-2 characters) unless they're valid
             if len(skill_clean) <= 2:
                 if skill_lower not in valid_short_skills:
-                    logger.warning(f"Filtered out invalid short skill: '{skill_clean}'")
                     return False
             
             # Filter out person names
             if SkillNormalizer._is_likely_person_name(skill_clean):
-                logger.warning(f"Filtered out likely person name from skills: {skill_clean}")
                 return False
             
             # Filter out common non-skill words
             non_skill_words = {'and', 'or', 'the', 'with', 'for', 'from', 'to', 'in', 'at', 'by', 'on'}
             if skill_lower in non_skill_words:
-                logger.warning(f"Filtered out common word mistaken as skill: '{skill_clean}'")
                 return False
             
             return True

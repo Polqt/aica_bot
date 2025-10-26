@@ -244,10 +244,6 @@ class SkillExtractor:
     
     @staticmethod
     def _remove_certification_sections(text: str) -> str:
-        """
-        Aggressively remove certification, course, and training sections from text
-        to prevent skill extraction from these areas.
-        """
         lines = text.split('\n')
         filtered_lines = []
         skip_section = False
