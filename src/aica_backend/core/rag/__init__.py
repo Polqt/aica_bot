@@ -19,7 +19,7 @@ Public API (maintains backward compatibility):
 
 New functionality:
 - Retrieval: Retriever, QueryBuilder, UserContext, ResultRanker, ResultFilter
-- Pipeline: IndexingPipeline, SearchPipeline, StreamingIndexer, RealtimeSearcher
+- Pipeline: JobIndexer, SearchPipeline, RealtimeSearcher, JobSearcher
 """
 
 # Import from refactored modules
@@ -38,10 +38,10 @@ from .retrieval import (
     AggregatedMatch,
 )
 from .pipeline import (
-    IndexingPipeline,
     SearchPipeline,
-    StreamingIndexer,
     RealtimeSearcher,
+    JobIndexer,
+    JobSearcher,
 )
 from .config import (
     DEFAULT_EMBEDDING_MODEL,
@@ -75,10 +75,10 @@ __all__ = [
     'AggregatedMatch',
     
     # Pipeline classes (new)
-    'IndexingPipeline',
     'SearchPipeline',
-    'StreamingIndexer',
     'RealtimeSearcher',
+    'JobIndexer',
+    'JobSearcher',
     
     # Configuration constants
     'DEFAULT_EMBEDDING_MODEL',

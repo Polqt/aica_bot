@@ -412,27 +412,6 @@ class SkillExtractor:
         return None
     
     @staticmethod
-    def _extract_job_titles(text: str) -> List[str]:
-        # Look for common job title patterns
-        title_patterns = [
-            r'(?:^|\n)([A-Z][^.\n]{10,50}?)(?:\n|$)',  # Lines that look like job titles
-            r'(?:position|role|title)[:\s]*([A-Z][^.\n]{5,30})',  # Explicit position mentions
-            r'(?:software|web|full.?stack|backend|frontend|devops|data)\s+(?:engineer|developer|analyst|scientist|architect)',
-        ]
-        
-        found_titles = []
-        for pattern in title_patterns:
-            matches = re.findall(pattern, text, re.MULTILINE | re.IGNORECASE)
-            for match in matches:
-                title = match.strip()
-                if len(title) > 3 and len(title) < 50:
-                    # Filter out non-job-title content
-                    if not any(word in title.lower() for word in ['email', 'phone', 'address', 'www', 'http', 'university', 'college']):
-                        found_titles.append(title)
-        
-        return list(set(found_titles))[:5]  # Limit to 5 most relevant
-    
-    @staticmethod
     def _extract_education_level(text: str) -> Optional[str]:
         text_lower = text.lower()
         education_levels = [

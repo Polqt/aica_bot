@@ -3,16 +3,6 @@ from typing import List
 
 
 class BaseEmbedder(ABC):
-    """
-    Abstract base class for text embedding generators.
-    
-    This interface defines the contract that all embedder implementations must follow.
-    Concrete implementations can use different embedding models (HuggingFace, OpenAI, Cohere, etc.)
-    while maintaining a consistent interface.
-    
-    The base class intentionally uses abstract methods with 'pass' - this is correct design.
-    It defines WHAT methods must exist, not HOW they should be implemented.
-    """
     
     @abstractmethod
     def create_embeddings(self, texts: List[str], metadatas: List[dict] = None) -> List[List[float]]:

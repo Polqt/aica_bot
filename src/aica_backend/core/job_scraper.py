@@ -30,35 +30,35 @@ class JobScraper:
         "we_work_remotely": [
             # Programming category pages - each has 20+ recent tech jobs
             "https://weworkremotely.com/categories/remote-full-stack-programming-jobs",
-            "https://weworkremotely.com/categories/remote-front-end-programming-jobs",
-            "https://weworkremotely.com/categories/remote-back-end-programming-jobs",
-            "https://weworkremotely.com/categories/remote-programming-jobs",
-            # Design & Product categories
-            "https://weworkremotely.com/categories/remote-design-jobs",
-            "https://weworkremotely.com/categories/remote-product-jobs",
-            # Other tech categories
-            "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs",
-            "https://weworkremotely.com/categories/remote-customer-support-jobs",
-            "https://weworkremotely.com/categories/remote-sales-and-marketing-jobs",
+            # "https://weworkremotely.com/categories/remote-front-end-programming-jobs",
+            # "https://weworkremotely.com/categories/remote-back-end-programming-jobs",
+            # "https://weworkremotely.com/categories/remote-programming-jobs",
+            # # Design & Product categories
+            # "https://weworkremotely.com/categories/remote-design-jobs",
+            # "https://weworkremotely.com/categories/remote-product-jobs",
+            # # Other tech categories
+            # "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs",
+            # "https://weworkremotely.com/categories/remote-customer-support-jobs",
+            # "https://weworkremotely.com/categories/remote-sales-and-marketing-jobs",
         ],
         "wellfound": [
             # Each page typically has 20-50+ job listings
             "https://wellfound.com/role/r/software-engineer",
             "https://wellfound.com/role/r/frontend-engineer",
-            "https://wellfound.com/role/r/backend-engineer",
-            "https://wellfound.com/role/r/full-stack-engineer",
-            "https://wellfound.com/role/r/mobile-engineer",
-            "https://wellfound.com/role/r/devops-engineer",
-            "https://wellfound.com/role/r/data-scientist",
-            "https://wellfound.com/role/r/data-engineer",
-            "https://wellfound.com/role/r/machine-learning-engineer",
-            "https://wellfound.com/role/r/product-manager",
-            "https://wellfound.com/role/r/designer",
-            "https://wellfound.com/role/r/product-designer",
-            "https://wellfound.com/role/r/engineering-manager",
-            "https://wellfound.com/role/r/software-architect",
-            "https://wellfound.com/role/r/qa-engineer",
-            "https://wellfound.com/role/r/security-engineer",
+            # "https://wellfound.com/role/r/backend-engineer",
+            # "https://wellfound.com/role/r/full-stack-engineer",
+            # "https://wellfound.com/role/r/mobile-engineer",
+            # "https://wellfound.com/role/r/devops-engineer",
+            # "https://wellfound.com/role/r/data-scientist",
+            # "https://wellfound.com/role/r/data-engineer",
+            # "https://wellfound.com/role/r/machine-learning-engineer",
+            # "https://wellfound.com/role/r/product-manager",
+            # "https://wellfound.com/role/r/designer",
+            # "https://wellfound.com/role/r/product-designer",
+            # "https://wellfound.com/role/r/engineering-manager",
+            # "https://wellfound.com/role/r/software-architect",
+            # "https://wellfound.com/role/r/qa-engineer",
+            # "https://wellfound.com/role/r/security-engineer",
         ],
     }
     
@@ -189,7 +189,7 @@ class JobScraper:
             
         return True
 
-    async def scrape_and_extract_job(self, job_url: str) -> Optional[Job]:
+    async def scrape_and_extract_job(self, job_url: str, source: Optional[str] = None) -> Optional[Job]:
         try:
             # Scrape raw content
             raw_content = await self.scrape_job_posting(job_url)
@@ -208,6 +208,7 @@ class JobScraper:
                 company=extracted_data.company,
                 description=extracted_data.description,
                 location=extracted_data.location,
+                source=source,
                 created_at=datetime.now(),
                 requirements=extracted_data.requirements,
                 skills=extracted_data.skills,
@@ -217,7 +218,7 @@ class JobScraper:
             logger.error(f"Error processing job {job_url}: {e}")
             return None
 
-    async def scrape_job_board_search(self, search_url: str, max_jobs: int = 50) -> List[Job]:
+    async def scrape_job_board_search(self, search_url: str, max_jobs: int = 50, source: Optional[str] = None) -> List[Job]:
         try:
             logger.info(f"🔎 Extracting job URLs from page (target: {max_jobs} jobs)...")
             
@@ -268,7 +269,7 @@ class JobScraper:
             for i, job_url in enumerate(job_urls):
                 try:
                     logger.info(f"📄 [{i+1}/{len(job_urls)}] Processing: {job_url}")
-                    job = await self.scrape_and_extract_job(job_url)
+                    job = await self.scrape_and_extract_job(job_url, source=source)
                     if job:
                         jobs.append(job)
                         successful += 1
@@ -317,7 +318,7 @@ class JobScraper:
             try:
                 # Request jobs from this category page
                 jobs_to_fetch = min(jobs_needed, jobs_per_url)
-                jobs = await self.scrape_job_board_search(source_url, jobs_to_fetch)
+                jobs = await self.scrape_job_board_search(source_url, jobs_to_fetch, source=source_name)
                 all_jobs.extend(jobs)
                 jobs_needed -= len(jobs)
                 logger.info(f"✅ Got {len(jobs)} jobs from this page (Total: {len(all_jobs)}/{limit})")
@@ -363,7 +364,7 @@ class JobScraper:
                 try:
                     # Request more jobs per page (30-50 jobs per category)
                     jobs_to_fetch = min(jobs_needed, jobs_per_url)
-                    jobs = await self.scrape_job_board_search(source_url, jobs_to_fetch)
+                    jobs = await self.scrape_job_board_search(source_url, jobs_to_fetch, source=source_name)
                     source_jobs.extend(jobs)
                     jobs_needed -= len(jobs)
                     logger.info(f"✅ Got {len(jobs)} jobs from this page (Total: {len(source_jobs)}/{jobs_per_source})")

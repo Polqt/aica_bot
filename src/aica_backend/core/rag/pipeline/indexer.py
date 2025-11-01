@@ -1,366 +1,199 @@
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 import logging
 
-from ..embeddings.base import BaseEmbedder
-from ..chunking.base import BaseChunker
-from ..storage.base import BaseVectorStore
+from ..storage.faiss_store import FAISSStore
 
 logger = logging.getLogger(__name__)
 
 
-class IndexingPipeline:
+class JobIndexer:
     """
-    High-level pipeline for indexing jobs into the vector store.
+    Simplified indexer for scraped jobs to automatically index them into the vector store.
     
-    This class orchestrates the complete indexing process:
-    1. Chunk job documents using a chunker
-    2. Generate embeddings for chunks using an embedder
-    3. Store embeddings and metadata in a vector store
+    This is the bridge between job scraping and the RAG retrieval system.
+    After jobs are scraped and saved to the database, this class:
+    1. Formats job data into searchable content
+    2. Creates embeddings using the chunker
+    3. Stores in FAISS vector store for fast similarity search
     
     Example:
-        >>> from core.rag import HuggingFaceEmbedder, JobChunker, FAISSStore
+        >>> from core.rag import VectorJobStore, TextEmbedder
+        >>> embedder = TextEmbedder()
+        >>> vector_store = VectorJobStore(embedder)
+        >>> indexer = JobIndexer(vector_store)
         >>> 
-        >>> embedder = HuggingFaceEmbedder()
-        >>> chunker = JobChunker()
-        >>> store = FAISSStore("index.faiss", embedder)
-        >>> pipeline = IndexingPipeline(embedder, chunker, store)
-        >>> 
-        >>> job_data = {
-        ...     "title": "Senior Python Developer",
-        ...     "company": "Tech Corp",
-        ...     "description": "...",
-        ...     "requirements": "...",
-        ...     "location": "Remote"
-        ... }
-        >>> pipeline.index_job("job_123", job_data)
+        >>> # After scraping jobs
+        >>> jobs = [
+        ...     {"job_id": "1", "title": "Engineer", "company": "Corp", ...},
+        ...     {"job_id": "2", "title": "Designer", "company": "Inc", ...},
+        ... ]
+        >>> stats = indexer.index_scraped_jobs(jobs)
+        >>> print(f"Indexed {stats['indexed_jobs']} jobs")
     """
     
-    def __init__(
-        self,
-        embedder: BaseEmbedder,
-        chunker: BaseChunker,
-        vector_store: BaseVectorStore,
-    ):
-        self.embedder = embedder
-        self.chunker = chunker
+    def __init__(self, vector_store: FAISSStore):
+        """
+        Initialize the job indexer.
+        
+        Args:
+            vector_store: FAISSStore instance for storing job embeddings
+        """
         self.vector_store = vector_store
-        
-        logger.info(
-            f"IndexingPipeline initialized with "
-            f"embedder={type(embedder).__name__}, "
-            f"chunker={type(chunker).__name__}, "
-            f"vector_store={type(vector_store).__name__}"
-        )
+        self.chunker = vector_store.chunker
     
-    def index_job(
-        self,
-        job_id: str,
-        job_data: Dict[str, Any],
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> bool:
+    def index_scraped_jobs(self, jobs: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Index a single job into the vector store.
+        Index a batch of scraped jobs into the vector store.
+        
+        This is called automatically after job scraping to ensure
+        all jobs are immediately searchable.
         
         Args:
-            job_id: Unique identifier for the job
-            job_data: Job data dictionary containing title, description, etc.
-            metadata: Optional additional metadata to store with the job
+            jobs: List of job dictionaries with fields:
+                - job_id (required): Unique identifier
+                - title (required): Job title
+                - company (required): Company name
+                - location: Job location
+                - description: Full job description
+                - skills: List of required skills
+                - requirements: List of job requirements
+                - source: Source website
+                - url: Job posting URL
         
         Returns:
-            bool: True if indexing successful, False otherwise
-        
-        Example:
-            >>> job_data = {
-            ...     "title": "Data Scientist",
-            ...     "description": "Analyze data and build models",
-            ...     "requirements": "Python, ML, Statistics"
-            ... }
-            >>> success = pipeline.index_job("job_456", job_data)
+            Dictionary with indexing statistics:
+                - total_jobs: Number of jobs attempted
+                - indexed_jobs: Number successfully indexed
+                - failed_jobs: Number that failed
+                - skipped_jobs: Number skipped (already indexed)
         """
-        try:
-            # Merge metadata
-            combined_metadata = {
-                "job_id": job_id,
-                **(metadata or {}),
-            }
-            
-            # Chunk the job document
-            logger.debug(f"Chunking job {job_id}")
-            chunks = self.chunker.chunk_document(job_data, combined_metadata)
-            
-            if not chunks:
-                logger.warning(f"No chunks generated for job {job_id}")
-                return False
-            
-            logger.debug(f"Generated {len(chunks)} chunks for job {job_id}")
-            
-            # Generate embeddings for chunks
-            logger.debug(f"Generating embeddings for job {job_id}")
-            texts = [chunk["text"] for chunk in chunks]
-            embeddings = self.embedder.embed_batch(texts)
-            
-            # Store embeddings and metadata
-            logger.debug(f"Storing embeddings for job {job_id}")
-            for chunk, embedding in zip(chunks, embeddings):
-                self.vector_store.add(
-                    embedding=embedding,
-                    metadata={
-                        **chunk["metadata"],
-                        "chunk_text": chunk["text"],
-                    },
-                )
-            
-            logger.info(f"Successfully indexed job {job_id} with {len(chunks)} chunks")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error indexing job {job_id}: {str(e)}", exc_info=True)
-            return False
-    
-    def index_jobs_batch(
-        self,
-        jobs: List[Dict[str, Any]],
-        job_id_field: str = "job_id",
-    ) -> Dict[str, Any]:
-        """
-        Index multiple jobs in batch.
-        
-        Args:
-            jobs: List of job dictionaries to index
-            job_id_field: Field name containing the job ID in each job dict
-        
-        Returns:
-            Dict with indexing statistics:
-                - total: Total number of jobs
-                - successful: Number successfully indexed
-                - failed: Number of failures
-                - failed_ids: List of job IDs that failed
-        
-        Example:
-            >>> jobs = [
-            ...     {"job_id": "1", "title": "Engineer", ...},
-            ...     {"job_id": "2", "title": "Designer", ...},
-            ... ]
-            >>> stats = pipeline.index_jobs_batch(jobs)
-            >>> print(f"Indexed {stats['successful']}/{stats['total']} jobs")
-        """
-        stats = {
-            "total": len(jobs),
-            "successful": 0,
-            "failed": 0,
-            "failed_ids": [],
-        }
+        if not jobs:
+            logger.warning("No jobs provided for indexing")
+            return {"total_jobs": 0, "indexed_jobs": 0, "failed_jobs": 0, "skipped_jobs": 0}
         
         logger.info(f"Starting batch indexing of {len(jobs)} jobs")
         
-        for i, job in enumerate(jobs, 1):
-            job_id = job.get(job_id_field)
-            
-            if not job_id:
-                logger.warning(f"Job at index {i-1} missing '{job_id_field}' field, skipping")
-                stats["failed"] += 1
-                continue
-            
-            success = self.index_job(job_id, job)
-            
-            if success:
-                stats["successful"] += 1
-            else:
-                stats["failed"] += 1
-                stats["failed_ids"].append(job_id)
-            
-            # Log progress every 10 jobs
-            if i % 10 == 0:
-                logger.info(
-                    f"Progress: {i}/{len(jobs)} jobs processed "
-                    f"({stats['successful']} successful, {stats['failed']} failed)"
-                )
+        stats = {
+            "total_jobs": len(jobs),
+            "indexed_jobs": 0,
+            "failed_jobs": 0,
+            "skipped_jobs": 0
+        }
+        
+        for job in jobs:
+            try:
+                job_id = job.get("job_id") or job.get("id")
+                
+                if not job_id:
+                    logger.warning(f"Job missing ID, skipping: {job.get('title', 'Unknown')}")
+                    stats["failed_jobs"] += 1
+                    continue
+                
+                # Check if already indexed (optional optimization)
+                if self._is_already_indexed(job_id):
+                    logger.debug(f"Job {job_id} already indexed, skipping")
+                    stats["skipped_jobs"] += 1
+                    continue
+                
+                # Prepare job content for embedding
+                content = self._prepare_job_content(job)
+                
+                # Extract metadata
+                metadata = self._extract_metadata(job)
+                
+                # Add to vector store (handles chunking internally)
+                self.vector_store.add_job(job_id, content, metadata)
+                
+                stats["indexed_jobs"] += 1
+                
+            except Exception as e:
+                logger.error(f"Failed to index job {job.get('job_id', 'unknown')}: {str(e)}")
+                stats["failed_jobs"] += 1
+        
+        # Save the updated vector store
+        self.vector_store.save()
         
         logger.info(
-            f"Batch indexing complete: {stats['successful']}/{stats['total']} successful, "
-            f"{stats['failed']} failed"
+            f"Indexing complete: "
+            f"{stats['indexed_jobs']} indexed, "
+            f"{stats['failed_jobs']} failed, "
+            f"{stats['skipped_jobs']} skipped"
         )
         
         return stats
     
-    def reindex_job(
-        self,
-        job_id: str,
-        job_data: Dict[str, Any],
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> bool:
-        """
-        Remove old job data and reindex with new data.
+    def _prepare_job_content(self, job: Dict[str, Any]) -> str:
+        title = job.get("title", "")
+        company = job.get("company", "")
+        location = job.get("location", "Remote")
+        description = job.get("description", "")
+        skills = job.get("skills", [])
+        requirements = job.get("requirements", [])
         
-        This is useful when job details have been updated.
+        # Format skills and requirements
+        skills_text = ", ".join(skills) if skills else ""
+        requirements_text = "\n".join(requirements) if requirements else ""
         
-        Args:
-            job_id: Unique identifier for the job
-            job_data: Updated job data dictionary
-            metadata: Optional updated metadata
+        # Build structured content (weight important fields)
+        content_parts = [
+            f"Job Title: {title}",
+            f"Company: {company}",
+            f"Location: {location}",
+            "",
+            f"Required Skills: {skills_text}" if skills_text else "",
+            "",
+            f"Requirements:\n{requirements_text}" if requirements_text else "",
+            "",
+            f"Description:\n{description}" if description else ""
+        ]
         
-        Returns:
-            bool: True if reindexing successful, False otherwise
+        # Remove empty parts
+        content = "\n".join(part for part in content_parts if part)
         
-        Example:
-            >>> updated_job = {
-            ...     "title": "Senior Data Scientist",  # Updated title
-            ...     "description": "...",
-            ... }
-            >>> success = pipeline.reindex_job("job_456", updated_job)
-        """
+        return content
+    
+    def _extract_metadata(self, job: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "title": job.get("title", ""),
+            "company": job.get("company", ""),
+            "location": job.get("location", ""),
+            "source": job.get("source", ""),
+            "url": job.get("url", ""),
+            "skills": job.get("skills", []),
+            "posted_date": job.get("posted_date", "")
+        }
+    
+    def _is_already_indexed(self, job_id: str) -> bool:
         try:
-            # Remove old job data
-            logger.debug(f"Removing old data for job {job_id}")
-            self.remove_job(job_id)
-            
-            # Index new data
-            logger.debug(f"Reindexing job {job_id} with updated data")
-            return self.index_job(job_id, job_data, metadata)
-            
-        except Exception as e:
-            logger.error(f"Error reindexing job {job_id}: {str(e)}", exc_info=True)
+            # Check metadata manager
+            metadata = self.vector_store.metadata_manager.get_job_metadata(job_id)
+            return metadata is not None
+        except Exception:
             return False
     
     def remove_job(self, job_id: str) -> bool:
         """
-        Remove a job from the vector store.
+        Remove a job from the vector store (e.g., expired jobs).
         
         Args:
-            job_id: Unique identifier for the job to remove
-        
+            job_id: ID of the job to remove
+            
         Returns:
-            bool: True if removal successful, False otherwise
-        
-        Example:
-            >>> pipeline.remove_job("job_456")
+            True if removed successfully, False otherwise
         """
         try:
-            # Call vector store's remove method (if implemented)
-            if hasattr(self.vector_store, "remove"):
-                self.vector_store.remove(job_id=job_id)
-                logger.info(f"Successfully removed job {job_id}")
-                return True
-            else:
-                logger.warning(
-                    f"Vector store {type(self.vector_store).__name__} "
-                    f"does not support removal"
-                )
-                return False
-                
+            # Note: FAISS doesn't support direct deletion
+            # This removes from metadata only
+            self.vector_store.metadata_manager.remove_job(job_id)
+            logger.info(f"Removed job {job_id} from metadata")
+            return True
         except Exception as e:
-            logger.error(f"Error removing job {job_id}: {str(e)}", exc_info=True)
+            logger.error(f"Failed to remove job {job_id}: {str(e)}")
             return False
     
-    def get_stats(self) -> Dict[str, Any]:
-        """
-        Get statistics about the indexed data.
-        
-        Returns:
-            Dict with statistics like total_jobs, total_chunks, etc.
-        
-        Example:
-            >>> stats = pipeline.get_stats()
-            >>> print(f"Total jobs indexed: {stats.get('total_jobs', 'N/A')}")
-        """
-        stats = {}
-        
-        try:
-            # Get vector store stats if available
-            if hasattr(self.vector_store, "get_stats"):
-                stats = self.vector_store.get_stats()
-            elif hasattr(self.vector_store, "index") and hasattr(self.vector_store.index, "ntotal"):
-                stats["total_vectors"] = self.vector_store.index.ntotal
-            
-            stats["embedder"] = type(self.embedder).__name__
-            stats["chunker"] = type(self.chunker).__name__
-            stats["vector_store"] = type(self.vector_store).__name__
-            
-        except Exception as e:
-            logger.error(f"Error getting stats: {str(e)}", exc_info=True)
-        
-        return stats
-
-
-class StreamingIndexer:
-    """
-    Streaming indexer for real-time job indexing.
-    
-    This indexer is optimized for indexing jobs one at a time as they arrive,
-    with automatic batching for efficiency.
-    
-    Example:
-        >>> indexer = StreamingIndexer(embedder, chunker, store, batch_size=10)
-        >>> 
-        >>> # Add jobs as they arrive
-        >>> for job in job_stream:
-        ...     indexer.add_job(job["job_id"], job)
-        >>> 
-        >>> # Flush remaining jobs
-        >>> indexer.flush()
-    """
-    
-    def __init__(
-        self,
-        embedder: BaseEmbedder,
-        chunker: BaseChunker,
-        vector_store: BaseVectorStore,
-        batch_size: int = 10,
-    ):
-        """
-        Initialize the streaming indexer.
-        
-        Args:
-            embedder: Embedder for generating text embeddings
-            chunker: Chunker for splitting documents into chunks
-            vector_store: Vector store for storing embeddings and metadata
-            batch_size: Number of jobs to accumulate before batch processing
-        """
-        self.pipeline = IndexingPipeline(embedder, chunker, vector_store)
-        self.batch_size = batch_size
-        self.pending_jobs: List[Dict[str, Any]] = []
-        
-        logger.info(f"StreamingIndexer initialized with batch_size={batch_size}")
-    
-    def add_job(self, job_id: str, job_data: Dict[str, Any]) -> None:
-        """
-        Add a job to the indexing queue.
-        
-        Jobs are automatically batched and processed when batch_size is reached.
-        
-        Args:
-            job_id: Unique identifier for the job
-            job_data: Job data dictionary
-        
-        Example:
-            >>> indexer.add_job("job_789", {"title": "Developer", ...})
-        """
-        job_with_id = {**job_data, "job_id": job_id}
-        self.pending_jobs.append(job_with_id)
-        
-        # Process batch if full
-        if len(self.pending_jobs) >= self.batch_size:
-            self.flush()
-    
-    def flush(self) -> Dict[str, Any]:
-        """
-        Process all pending jobs in the queue.
-        
-        Returns:
-            Dict with indexing statistics
-        
-        Example:
-            >>> stats = indexer.flush()
-            >>> print(f"Processed {stats['successful']} jobs")
-        """
-        if not self.pending_jobs:
-            return {"total": 0, "successful": 0, "failed": 0, "failed_ids": []}
-        
-        logger.info(f"Flushing {len(self.pending_jobs)} pending jobs")
-        stats = self.pipeline.index_jobs_batch(self.pending_jobs)
-        self.pending_jobs.clear()
-        
-        return stats
-    
-    def get_pending_count(self) -> int:
-        return len(self.pending_jobs)
+    def get_indexing_stats(self) -> Dict[str, Any]:
+        return {
+            "total_jobs": self.vector_store.get_document_count(),
+            "metadata_count": self.vector_store.metadata_manager.get_job_count(),
+            **self.vector_store.get_stats()
+        }

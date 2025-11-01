@@ -12,7 +12,6 @@ from .scorer import MatchScorer
 from .ai_analyzer import AIAnalyzer
 
 from core.rag import VectorJobStore, TextEmbedder 
-from core.resume import ParsedResume
 
 from database.user_db import UserDatabase
 from database.job_db import JobDatabase
@@ -24,14 +23,9 @@ class JobMatcher:
 
     def __init__(self):
         try:
-            # Check for API key
             api_key = os.getenv("ANTHROPIC_API_KEY")
             if not api_key:
-                logger.error("❌ ANTHROPIC_API_KEY environment variable is not set!")
                 raise ValueError("ANTHROPIC_API_KEY is required")
-            
-            logger.info("✅ ANTHROPIC_API_KEY found")
-            logger.info("Initializing ChatAnthropic LLM...")
             
             self.llm = ChatAnthropic(
                 model="claude-3-haiku-20240307", 
@@ -41,20 +35,15 @@ class JobMatcher:
             )
             self.parser = PydanticOutputParser(pydantic_object=MatchResult)
             self.ai_analyzer = AIAnalyzer(self.llm)
-            logger.info("✅ ChatAnthropic LLM initialized successfully")
-        except Exception as e:
-            logger.error(f"❌ Failed to initialize ChatAnthropic LLM: {str(e)}")
+        except Exception:
             raise
         
         # Initialize vector search components
         try:
-            logger.info("Initializing vector search with FAISS...")
             self.embedder = TextEmbedder()
             self.vector_store = VectorJobStore(self.embedder)
-            self.use_vector_search = True  # ENABLED for better semantic matching
-            logger.info("✅ Vector search (FAISS) enabled successfully")
-        except Exception as e:
-            logger.warning(f"Vector search initialization failed: {str(e)}")
+            self.use_vector_search = True 
+        except Exception:
             self.embedder = None
             self.vector_store = None
             self.use_vector_search = False
@@ -62,10 +51,10 @@ class JobMatcher:
         # Prompt for basic match evaluation
         self.match_prompt = ChatPromptTemplate.from_messages([
             ("system", """You are an expert job interviewer. Analyze resumes against job postings 
-and provide detailed matching assessment. Be thorough and fair in your evaluation."""),
-            ("human", """Resume Information:\n{resume_info}\n\n
-Job Posting:\n{job_posting}\n\n
-Provide a detailed match analysis.\n{format_instructions}""")
+                    and provide detailed matching assessment. Be thorough and fair in your evaluation."""),
+                                ("human", """Resume Information:\n{resume_info}\n\n
+                    Job Posting:\n{job_posting}\n\n
+                    Provide a detailed match analysis.\n{format_instructions}""")
         ])
     
     async def add_job_to_index(
@@ -92,7 +81,6 @@ Provide a detailed match analysis.\n{format_instructions}""")
         resume_text: str,
         top_k: int = 20
     ) -> List[JobMatch]:
-        """Find matching jobs using vector search with RAG."""
         search_text = self._create_search_text_from_resume_text(resume_text)
         similar_jobs = self.vector_store.search_similar_jobs(search_text, k=top_k)
         
@@ -102,7 +90,6 @@ Provide a detailed match analysis.\n{format_instructions}""")
             if not job_content:
                 continue
             
-            # RAG: Use vector similarity context to augment LLM evaluation
             match_result = await self._evaluate_match_with_context(
                 resume_text, 
                 job_content,
@@ -343,8 +330,6 @@ Provide a detailed match analysis.\n{format_instructions}""")
         return "\n".join(text_parts)
     
     def _create_search_text_from_resume_text(self, resume_text: str) -> str:
-        """Create optimized search query from resume text for better retrieval."""
-        # For short text, use as-is
         if len(resume_text) < 300:
             return resume_text
         
@@ -459,8 +444,6 @@ Be thorough, accurate, and honest in your assessment."""),
             return match_result
         
         except Exception as e:
-            logger.error(f"RAG match evaluation failed: {str(e)}")
-            # Fallback: Use semantic similarity to estimate match
             estimated_score = similarity_score * 100
             return MatchResult(
                 match_score=estimated_score,
@@ -472,7 +455,6 @@ Be thorough, accurate, and honest in your assessment."""),
             )
     
     def _get_similarity_description(self, score: float) -> str:
-        """Convert similarity score to human-readable description."""
         if score >= 0.8:
             return "very strongly"
         elif score >= 0.65:
@@ -515,7 +497,6 @@ Be thorough, accurate, and honest in your assessment."""),
             return self.parser.parse(response.content)
         
         except Exception as e:
-            logger.error(f"Match evaluation failed: {str(e)}")
             return MatchResult(
                 match_score=50.0,
                 is_match=True,

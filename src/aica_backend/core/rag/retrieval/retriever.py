@@ -2,7 +2,7 @@ import logging
 from typing import List, Dict
 
 from .query_builder import QueryBuilder, UserContext
-from .ranker import ScoreAggregator, ResultRanker, ResultFilter, AggregatedMatch, ChunkMatch
+from .ranker import ScoreAggregator, ResultRanker, AggregatedMatch
 
 logger = logging.getLogger(__name__)
 
@@ -165,7 +165,6 @@ class Retriever:
             aggregated.append(match)
         
         return aggregated
-
 
 class HybridRetriever(Retriever):
     

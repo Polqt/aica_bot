@@ -54,13 +54,13 @@ async def startup_event():
     faiss_path = Path(__file__).parent / "faiss_job_index" / "index.faiss"
     
     if not faiss_path.exists():
-        logger.warning("⚠️  FAISS index not found at startup")
-        logger.warning("⚠️  Will rebuild on first job matching request")
+        logger.warning("FAISS index not found at startup")
+        logger.warning("Will rebuild on first job matching request")
     else:
-        logger.info(f"✅ FAISS index found ({faiss_path.stat().st_size / 1024 / 1024:.2f} MB)")
-        logger.info("✅ Will load FAISS on first job matching request (lazy loading)")
+        logger.info(f"FAISS index found ({faiss_path.stat().st_size / 1024 / 1024:.2f} MB)")
+        logger.info("Will load FAISS on first job matching request (lazy loading)")
     
-    logger.info("✅ Startup complete - Ready to serve requests")
+    logger.info("Startup complete - Ready to serve requests")
     logger.info("="*60)
 
 # Rate limiting setup

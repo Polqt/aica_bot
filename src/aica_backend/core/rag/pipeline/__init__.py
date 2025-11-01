@@ -1,11 +1,11 @@
-from .indexer import IndexingPipeline, StreamingIndexer
-from .searcher import SearchPipeline, RealtimeSearcher
+from .indexer import JobIndexer
+from .searcher import SearchPipeline, RealtimeSearcher, JobSearcher
 
 __all__ = [
     # Indexing pipelines
-    "IndexingPipeline",
-    "StreamingIndexer",
+    "JobIndexer",
     # Search pipelines
     "SearchPipeline",
     "RealtimeSearcher",
+    "JobSearcher",
 ]

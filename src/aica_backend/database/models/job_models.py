@@ -10,6 +10,7 @@ class Job(BaseModel):
     company: str = Field(description="Company name")
     description: Optional[str] = Field(default=None, description="Job description")
     location: Optional[str] = Field(default=None, description="Job location")
+    source: Optional[str] = Field(default=None, description="Job source (wellfound, we_work_remotely, etc.)")
     created_at: Optional[datetime] = Field(default_factory=datetime.now, description="Job creation timestamp")
 
     requirements: List[str] = Field(default_factory=list, description="Job requirements and qualifications")

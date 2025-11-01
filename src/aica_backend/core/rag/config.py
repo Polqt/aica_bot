@@ -1,8 +1,5 @@
 from typing import Final
 
-# ==============================================================================
-# EMBEDDING CONFIGURATION
-# ==============================================================================
 
 # Default embedding model from sentence-transformers
 DEFAULT_EMBEDDING_MODEL: Final[str] = "all-MiniLM-L6-v2"
@@ -13,10 +10,6 @@ EMBEDDING_DEVICE: Final[str] = "cpu"
 # Whether to normalize embeddings for better cosine similarity
 NORMALIZE_EMBEDDINGS: Final[bool] = True
 
-# ==============================================================================
-# TEXT CHUNKING CONFIGURATION
-# ==============================================================================
-
 # Maximum size of each text chunk in characters
 CHUNK_SIZE: Final[int] = 400
 
@@ -26,19 +19,12 @@ CHUNK_OVERLAP: Final[int] = 50
 # Separators for splitting text (in order of priority)
 TEXT_SEPARATORS: Final[list[str]] = ["\n\n", "\n", ". ", "! ", "? ", ", ", " ", ""]
 
-# ==============================================================================
-# VECTOR STORE CONFIGURATION
-# ==============================================================================
-
 # Default path for FAISS index persistence
 DEFAULT_VECTOR_STORE_PATH: Final[str] = "./faiss_job_index"
 
 # FAISS index file extension
 FAISS_INDEX_EXTENSION: Final[str] = ".faiss"
 
-# ==============================================================================
-# SEARCH AND RETRIEVAL CONFIGURATION
-# ==============================================================================
 
 # Default number of results to return
 DEFAULT_SEARCH_K: Final[int] = 10
@@ -48,10 +34,6 @@ DEFAULT_SCORE_THRESHOLD: Final[float] = 0.3
 
 # Multiplier for initial search to allow for re-ranking
 SEARCH_EXPANSION_FACTOR: Final[int] = 4
-
-# ==============================================================================
-# SCORING WEIGHTS
-# ==============================================================================
 
 # Weight for top matching chunk
 TOP_CHUNK_WEIGHT: Final[float] = 0.5
@@ -71,10 +53,6 @@ MAX_COVERAGE_BONUS: Final[float] = 1.0
 # Divisor for coverage bonus calculation
 COVERAGE_BONUS_DIVISOR: Final[int] = 5
 
-# ==============================================================================
-# JOB METADATA FIELDS
-# ==============================================================================
-
 # Standard metadata fields for job documents
 JOB_METADATA_FIELDS: Final[list[str]] = [
     "job_id",
@@ -83,10 +61,6 @@ JOB_METADATA_FIELDS: Final[list[str]] = [
     "location",
     "is_dummy"
 ]
-
-# ==============================================================================
-# INITIALIZATION CONSTANTS
-# ==============================================================================
 
 # Content for dummy initialization document
 DUMMY_DOC_CONTENT: Final[str] = "Initialization document for job matching system"

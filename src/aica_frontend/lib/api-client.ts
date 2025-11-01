@@ -275,23 +275,6 @@ export class ApiClient {
     return this.delete<{ message: string }>(`/resume/skills/${id}`);
   }
 
-  async bulkUpdateSkills(data: {
-    skills_to_add: Array<{
-      skill_name: string;
-      skill_category?: string;
-      confidence_score?: number;
-      source?: string;
-    }>;
-    skill_ids_to_delete: string[];
-  }): Promise<{
-    message: string;
-    deleted_count: number;
-    added_count: number;
-    added_skills: UserSkill[];
-  }> {
-    return this.post('/resume/skills/bulk-update', data);
-  }
-
   async updateProfile(profile: Partial<UserProfile>): Promise<UserProfile> {
     return this.put<UserProfile>('/resume/profile', profile);
   }

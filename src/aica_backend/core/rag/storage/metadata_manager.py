@@ -5,16 +5,6 @@ logger = logging.getLogger(__name__)
 
 
 class MetadataManager:
-    """
-    Manager for job metadata storage and retrieval.
-    
-    This class maintains a separate dictionary of job metadata to enable
-    fast lookups without querying the vector store. It tracks information
-    like job_id, title, company, location, etc.
-    
-    Attributes:
-        _metadata: Dictionary mapping job_id to metadata dictionary
-    """
     
     def __init__(self):
         self._metadata: Dict[str, Dict] = {}
@@ -50,5 +40,5 @@ class MetadataManager:
     def get_stats(self) -> Dict:
         return {
             "total_jobs": len(self._metadata),
-            "job_ids": list(self._metadata.keys())[:10]  # Sample of job IDs
+            "job_ids": list(self._metadata.keys())[:10]  
         }

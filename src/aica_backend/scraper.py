@@ -8,7 +8,7 @@ sys.path.insert(0, str(project_root))
 
 from core.job_scraper import JobScraper
 from database.job_db import JobDatabase
-from core.rag import TextEmbedder, VectorJobStore  
+from core.rag import TextEmbedder, VectorJobStore, JobIndexer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -17,104 +17,78 @@ async def main():
     scraper = JobScraper()
     db = JobDatabase()
     
+    # Initialize RAG components for auto-indexing
     try:
         embedder = TextEmbedder()
         vector_store = VectorJobStore(embedder)
-        logger.info("✅ Vector store initialized for job indexing")
+        indexer = JobIndexer(vector_store)
     except Exception as e:
-        logger.error(f"❌ Failed to initialize vector store: {e}")
         vector_store = None
+        indexer = None
 
     sources = ["wellfound", "we_work_remotely"]  
-    jobs_per_source = 250  # Target ~500 jobs total (250 per source)
-
-    logger.info("=" * 60)
-    logger.info(f"🚀 Starting job scraping process")
-    logger.info(f"📊 Target: {jobs_per_source} jobs per source")
-    logger.info(f"🌐 Sources: {', '.join(sources)}")
-    logger.info("=" * 60)
+    jobs_per_source = 10  # Just 10 jobs per source for testing (20 total) 
 
     # Scrape jobs
     jobs = await scraper.batch_scrape_ethical_sources(sources, jobs_per_source)
     
     if not jobs:
-        logger.warning("⚠️  No jobs were scraped. Exiting...")
         return
     
-    logger.info(f"✅ Successfully scraped {len(jobs)} jobs")
-    logger.info("=" * 60)
-
-    # Save to Supabase and index in vector store
     saved_count = 0
-    indexed_count = 0
     failed_saves = 0
-    failed_indexes = 0
+    saved_jobs_for_indexing = []
     
-    logger.info("💾 Starting to save and index jobs...")
     
     for i, job in enumerate(jobs, 1):
         try:
-            # Save to database first
             job_id = db.save_job(job)
             
             if not job_id:
-                logger.error(f"❌ Failed to save job: {job.title} (no job_id returned)")
+                logger.error(f"Failed to save job: {job.title}")
                 failed_saves += 1
                 continue
             
             saved_count += 1
-            logger.info(f"✅ [{i}/{len(jobs)}] Saved: {job.title} at {job.company} -> ID: {job_id}")
             
-            # Automatically index the job in vector store
-            if vector_store:
-                try:
-                    job_content = f"""
-                    Title: {job.title}
-                    Company: {job.company}
-                    Location: {job.location}
-                    Description: {job.description}
-                    Requirements: {job.requirements}
-                    Skills: {', '.join(job.skills) if job.skills else 'None'}
-                    """
-                    
-                    metadata = {
-                        "title": job.title,
-                        "company": job.company,
-                        "location": job.location,
-                    }
-                    
-                    vector_store.add_job(job_id, job_content, metadata)
-                    indexed_count += 1
-                    
-                    if i % 10 == 0:
-                        logger.info(f"📊 Progress: {i}/{len(jobs)} jobs processed, {saved_count} saved, {indexed_count} indexed")
-                        
-                except Exception as e:
-                    logger.error(f"❌ Failed to index job {job_id} ({job.title}): {e}")
-                    failed_indexes += 1
-            else:
-                logger.warning("⚠️  Vector store not initialized, skipping indexing")
+            # Prepare for batch indexing
+            if indexer:
+                job_dict = {
+                    "job_id": job_id,
+                    "title": job.title,
+                    "company": job.company,
+                    "location": job.location or "Remote",
+                    "description": job.description or "",
+                    "skills": job.skills or [],
+                    "requirements": job.requirements or [],
+                    "source": job.source,
+                    "url": job.url
+                }
+                saved_jobs_for_indexing.append(job_dict)
                 
         except Exception as e:
-            logger.error(f"❌ Error processing job {job.title}: {e}")
+            logger.error(f"Error saving job {job.title}: {e}")
             failed_saves += 1
     
-    # Final summary
-    logger.info("=" * 60)
-    logger.info("📈 SCRAPING & INDEXING SUMMARY")
-    logger.info("=" * 60)
-    logger.info(f"✅ Jobs scraped: {len(jobs)}")
-    logger.info(f"✅ Jobs saved to database: {saved_count}")
-    logger.info(f"❌ Failed saves: {failed_saves}")
-    
-    if vector_store:
-        logger.info(f"✅ Jobs indexed in vector store: {indexed_count}")
-        logger.info(f"❌ Failed indexes: {failed_indexes}")
-        logger.info(f"📊 Vector store stats: {vector_store.get_stats()}")
-    
-    logger.info("=" * 60)
-    logger.info("✅ Job scraping and indexing completed!")
-    logger.info("=" * 60)
+    if indexer and saved_jobs_for_indexing:
+        try:
+            stats = indexer.index_scraped_jobs(saved_jobs_for_indexing)
+            logger.info(f"Indexed {stats['indexed_jobs']} jobs ({stats['skipped_jobs']} skipped, {stats['failed_jobs']} failed)")
+            
+            # Update database to mark jobs as indexed
+            if stats['indexed_jobs'] > 0:
+                indexed_count = 0
+                for job_dict in saved_jobs_for_indexing:
+                    try:
+                        db.mark_job_as_indexed(job_dict['job_id'])
+                        indexed_count += 1
+                    except Exception as e:
+                        logger.error(f"Failed to mark job {job_dict['job_id']} as indexed: {e}")
+                
+                logger.info(f"Marked {indexed_count} jobs as indexed in database")
+                
+        except Exception as e:
+            logger.error(f"Indexing failed: {e}")
 
 if __name__ == "__main__":
     asyncio.run(main())

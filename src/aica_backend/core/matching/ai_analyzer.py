@@ -23,15 +23,13 @@ class AIAnalyzer:
         compatibility_score: float
     ) -> str:
         try:
-            logger.info(f"🤖 Starting AI analysis for {job_title} at {company}...")
-            
             user_skills_text = ", ".join(user_skills[:20]) if user_skills else "No skills listed"  # Limit to top 20
             job_skills_text = ", ".join(job_skills[:15]) if job_skills else "No specific skills listed"  # Limit to 15
             matched_skills_text = ", ".join(matched_skills[:10]) if matched_skills else "None"
             partial_matches_text = ", ".join(partial_matches[:8]) if partial_matches else "None"
             missing_skills_text = ", ".join(missing_skills[:10]) if missing_skills else "None"
             
-            analysis_prompt = f"""As a technical recruiter, analyze this job match concisely.
+            analysis = f"""As a technical recruiter, analyze this job match concisely.
                                 **CANDIDATE SKILLS:** {user_skills_text}
                                 **JOB REQUIREMENTS:** {job_skills_text}
                                 **POSITION:** {job_title} at {company}
@@ -71,13 +69,10 @@ class AIAnalyzer:
                                 Be accurate, specific, and actionable. Focus on what matters most.
                             """
             
-            logger.info("📤 Sending request to Anthropic API...")
-            response = await self.llm.ainvoke(analysis_prompt)
-            logger.info(f"✅ AI analysis completed successfully ({len(response.content)} chars)")
+            response = await self.llm.ainvoke(analysis)
             return response.content
         
         except Exception as e:
-            logger.error(f"AI analysis generation failed: {str(e)}")
             return self._generate_fallback_analysis(
                 matched_skills,
                 partial_matches,
