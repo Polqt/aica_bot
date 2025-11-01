@@ -19,3 +19,4 @@ sentence-transformers==5.1.1
 faiss-cpu==1.12.0
 numpy==2.3.4
 slowapi==0.1.9
+reportlab==4.4.4

@@ -320,6 +320,36 @@ export class ApiClient {
   async getJobRecommendations(limit: number = 20): Promise<unknown[]> {
     return this.get(`/jobs/recommendations?limit=${limit}`);
   }
+
+  async exportResumePDF(): Promise<Blob> {
+    const token = this.getAuthToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/resume/export/pdf`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        this.handleAuthError();
+        throw new Error('Authentication expired. Please log in again.');
+      }
+
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.detail ||
+          errorData.message ||
+          `Failed to export resume: ${response.statusText}`,
+      );
+    }
+
+    return response.blob();
+  }
 }
 
 export const apiClient = new ApiClient();

@@ -25,10 +25,14 @@ import {
   Calendar,
   CheckCircle2,
   ArrowRight,
+  Download,
+  Loader2,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useResumeBuilder } from '@/hooks/useResumeBuilder';
 import { PageLoader } from '@/components/PageLoader';
+import { apiClient } from '@/lib/api-client';
+import { toast } from 'sonner';
 
 export default function UserProfilePage() {
   const router = useRouter();
@@ -42,6 +46,7 @@ export default function UserProfilePage() {
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [showExperienceModal, setShowExperienceModal] = useState(false);
   const [showUploadSuccess, setShowUploadSuccess] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -84,9 +89,65 @@ export default function UserProfilePage() {
     }
   };
 
+  const handleExportResume = async () => {
+    try {
+      setIsExporting(true);
+
+      // Check if user has any data to export
+      if (
+        !profile?.full_name &&
+        skills.length === 0 &&
+        experience.length === 0 &&
+        education.length === 0
+      ) {
+        toast.error('No data to export', {
+          description: 'Please complete your profile or upload a resume first.',
+        });
+        return;
+      }
+
+      toast.loading('Generating your resume PDF...', { id: 'export-pdf' });
+
+      // Call the export API
+      const pdfBlob = await apiClient.exportResumePDF();
+
+      // Create download link
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      // Generate filename
+      const fileName = profile?.full_name
+        ? `${profile.full_name.replace(/\s+/g, '_')}_Resume.pdf`
+        : 'Resume.pdf';
+      link.download = fileName;
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Resume exported successfully!', {
+        id: 'export-pdf',
+        description: 'Your resume has been downloaded as a PDF.',
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export resume', {
+        id: 'export-pdf',
+        description:
+          error instanceof Error ? error.message : 'Please try again later.',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
-      {/* Success Banner after Resume Upload */}
       {showUploadSuccess && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -187,6 +248,29 @@ export default function UserProfilePage() {
           </p>
         </div>
         <div className="flex gap-3">
+          {/* Export Resume Button - Show if user has data */}
+          {(skills.length > 0 ||
+            experience.length > 0 ||
+            education.length > 0) && (
+            <Button
+              onClick={handleExportResume}
+              disabled={isExporting}
+              className="border border-blue-200 hover:bg-blue-50 text-blue-700 bg-white"
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Resume
+                </>
+              )}
+            </Button>
+          )}
+
           <Button
             onClick={handleUploadClick}
             className="border border-gray-200 hover:bg-gray-50 text-gray-700 bg-white"

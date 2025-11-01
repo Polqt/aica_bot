@@ -8,8 +8,6 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from scripts.index_jobs import index_all_jobs
-
 from pathlib import Path
 
 # Configure logging for Google Cloud
@@ -190,6 +188,6 @@ async def root():
 if __name__ == "__main__":
     try:
         uvicorn.run(app, host="0.0.0.0", port=8000)
-    except Exception as e:
+    except Exception:
         raise
     

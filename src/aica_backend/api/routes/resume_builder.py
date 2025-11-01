@@ -1,10 +1,13 @@
 import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from io import BytesIO
 
 from api.dependencies import get_current_user
 from core.resume_builder import ResumeBuilder
+from core.resume.pdf_generator import generate_resume_pdf
 from database.models.user_models import (
     User, UserEducation, UserEducationCreate,
     UserExperience, UserExperienceCreate,
@@ -327,4 +330,74 @@ async def reset_resume_data(current_user: User = Depends(get_current_user)):
         return {"message": "Resume data reset successfully"}
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to reset resume data")
+
+
+@router.get("/export/pdf")
+async def export_resume_pdf(current_user: User = Depends(get_current_user)):
+    """
+    Export user's resume data as a professionally formatted PDF
+    
+    This endpoint generates a PDF resume from the user's profile data including:
+    - Personal information and contact details
+    - Skills grouped by category
+    - Work experience with descriptions
+    - Education history
+    
+    Returns:
+        StreamingResponse: PDF file download
+    """
+    try:
+        builder = ResumeBuilder()
+        
+        # Fetch all user data
+        profile = builder.get_profile(current_user.id)
+        if not profile:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Profile not found. Please complete your profile first."
+            )
+        
+        education = builder.get_user_education(current_user.id)
+        experience = builder.get_user_experience(current_user.id)
+        skills = builder.get_user_skills(current_user.id)
+        
+        # Check if user has any data to export
+        if not any([education, experience, skills]):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No resume data available to export. Please add your experience, education, or skills first."
+            )
+        
+        # Generate PDF with user's email from current_user
+        pdf_buffer = generate_resume_pdf(
+            profile, 
+            education, 
+            experience, 
+            skills, 
+            user_email=current_user.email
+        )
+        
+        # Generate filename
+        name_part = profile.full_name.replace(" ", "_") if profile.full_name else "Resume"
+        filename = f"{name_part}_Resume.pdf"
+        
+        logger.info(f"Successfully generated PDF resume for user {current_user.id}")
+        
+        # Return as downloadable file
+        return StreamingResponse(
+            pdf_buffer,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to export resume PDF for user {current_user.id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate PDF resume: {str(e)}"
+        )
     

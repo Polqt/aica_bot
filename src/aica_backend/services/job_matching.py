@@ -101,7 +101,6 @@ class JobMatchingService:
 
             for i, job in enumerate(top_candidates[:max_ai_calls]):
                 try:
-                    print(f"   🤖 AI analyzing job {i+1}/{max_ai_calls}: {job.title} at {job.company}")
                     match_result = await self._ai_calculate_job_match_fast(user_context, user_skills, job)
 
                     # Safe comparison with None check
@@ -110,8 +109,6 @@ class JobMatchingService:
                         ai_matches.append(match_result)
 
                 except Exception as e:
-                    logger.error(f"⚠️ Error in AI analysis for job {job.id}: {e}")
-                    logger.info(f"Continuing with remaining jobs...")
                     continue
 
             logger.info(f"✅ Found {len(ai_matches)} matches from AI analysis")
