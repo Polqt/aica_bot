@@ -32,8 +32,8 @@ export default function ChoicePage() {
           const skills = await apiClient.getUserSkills();
           hasResumeBuilderData =
             skills.technical_skills.length > 0 || skills.soft_skills.length > 0;
-        } catch (e) {
-          console.log('Could not check skills:', e);
+        } catch {
+          // Silent error - skills check is not critical
         }
 
         if (

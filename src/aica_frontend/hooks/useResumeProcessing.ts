@@ -92,13 +92,17 @@ export const useResumeProcessing = () => {
         const matchCount = data.matches_found || 0;
         stopPolling();
 
-        // Only show toast once
-        if (!hasShownCompletionToastRef.current) {
+        // Only show success toast if matches were actually found
+        // If 0 matches, the UI already shows appropriate status - no need for toast
+        if (!hasShownCompletionToastRef.current && matchCount > 0) {
           hasShownCompletionToastRef.current = true;
           toast.success(
-            `Resume processed successfully! Found ${matchCount} job matches.`,
+            `Processing complete! Found ${matchCount} job ${
+              matchCount === 1 ? 'match' : 'matches'
+            }.`,
           );
         }
+        // If matchCount is 0, don't show a toast - user can see empty state in UI
         // Navigation is handled by the upload page component
       } else if (data.status === 'error') {
         stopPolling();

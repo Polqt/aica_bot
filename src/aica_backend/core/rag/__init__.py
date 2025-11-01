@@ -38,8 +38,6 @@ from .retrieval import (
     AggregatedMatch,
 )
 from .pipeline import (
-    SearchPipeline,
-    RealtimeSearcher,
     JobIndexer,
     JobSearcher,
 )
@@ -75,8 +73,6 @@ __all__ = [
     'AggregatedMatch',
     
     # Pipeline classes (new)
-    'SearchPipeline',
-    'RealtimeSearcher',
     'JobIndexer',
     'JobSearcher',
     

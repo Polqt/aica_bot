@@ -54,13 +54,6 @@ export default function JobMatchesPage() {
         matches_found?: number;
       }>('/auth/processing-status');
 
-      console.log('[page.tsx] Processing status check:', {
-        status: status.status,
-        message: status.message,
-        matchesFound: status.matches_found,
-        timestamp: new Date().toISOString(),
-      });
-
       setProcessingStatus(status.status);
 
       if (
@@ -74,10 +67,6 @@ export default function JobMatchesPage() {
       } else if (status.status === 'completed') {
         // Only set as completed if we actually have matches or explicitly 0 matches
         setProcessingStatus('completed');
-        console.log(
-          '[page.tsx] Processing completed with matches:',
-          status.matches_found,
-        );
       }
     } catch (error) {
       console.error('[page.tsx] Error checking processing status:', error);
@@ -104,9 +93,6 @@ export default function JobMatchesPage() {
           processingStatus === 'matching' ||
           processingStatus === 'finalizing')
       ) {
-        console.log(
-          '[page.tsx] Still processing, waiting for completion - NOT loading matches yet',
-        );
         return;
       }
 
@@ -123,13 +109,6 @@ export default function JobMatchesPage() {
         processingStatus !== 'matching' &&
         processingStatus !== 'finalizing'
       ) {
-        console.log('[page.tsx] Loading job matches:', {
-          isFromUpload,
-          processingStatus,
-          shouldSkipCache,
-          isCheckingStatus,
-          timestamp: new Date().toISOString(),
-        });
         loadJobMatches(shouldSkipCache);
         loadStats(shouldSkipCache);
       }
@@ -175,12 +154,6 @@ export default function JobMatchesPage() {
             matches_found?: number;
           }>('/auth/processing-status');
 
-          console.log('[page.tsx] Polling status:', {
-            status: status.status,
-            matchesFound: status.matches_found,
-            timestamp: new Date().toISOString(),
-          });
-
           if (status.status === 'completed') {
             setProcessingStatus('completed');
             setPollingForMatches(false);
@@ -193,18 +166,12 @@ export default function JobMatchesPage() {
               'aica_recommendations',
             );
 
-            console.log(
-              '[page.tsx] Processing completed, loading fresh matches...',
-            );
-
             // Add a small delay to ensure database is fully synced (reduced from 1s to 0.5s)
             await new Promise(resolve => setTimeout(resolve, 500));
 
             // Force reload with cache bypass
             await loadJobMatches(true);
             await loadStats(true);
-
-            console.log('[page.tsx] Fresh data loaded after completion');
           }
         } catch (error) {
           console.error('[page.tsx] Error polling processing status:', error);
@@ -227,13 +194,6 @@ export default function JobMatchesPage() {
   // This ensures we show real matches as soon as they're loaded
   useEffect(() => {
     const hasRealMatches = jobMatches && jobMatches.length > 0;
-    console.log('[page.tsx] jobMatches effect triggered:', {
-      jobMatchesLength: jobMatches?.length,
-      hasRealMatches,
-      willShowRecommendations: !hasRealMatches,
-      jobMatches: jobMatches?.slice(0, 2),
-      timestamp: new Date().toISOString(),
-    });
     setShowingRecommendations(!hasRealMatches);
   }, [jobMatches]);
 

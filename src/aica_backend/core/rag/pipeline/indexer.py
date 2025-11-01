@@ -8,8 +8,6 @@ logger = logging.getLogger(__name__)
 
 class JobIndexer:
     """
-    Simplified indexer for scraped jobs to automatically index them into the vector store.
-    
     This is the bridge between job scraping and the RAG retrieval system.
     After jobs are scraped and saved to the database, this class:
     1. Formats job data into searchable content
@@ -32,43 +30,11 @@ class JobIndexer:
     """
     
     def __init__(self, vector_store: FAISSStore):
-        """
-        Initialize the job indexer.
-        
-        Args:
-            vector_store: FAISSStore instance for storing job embeddings
-        """
         self.vector_store = vector_store
         self.chunker = vector_store.chunker
     
     def index_scraped_jobs(self, jobs: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Index a batch of scraped jobs into the vector store.
-        
-        This is called automatically after job scraping to ensure
-        all jobs are immediately searchable.
-        
-        Args:
-            jobs: List of job dictionaries with fields:
-                - job_id (required): Unique identifier
-                - title (required): Job title
-                - company (required): Company name
-                - location: Job location
-                - description: Full job description
-                - skills: List of required skills
-                - requirements: List of job requirements
-                - source: Source website
-                - url: Job posting URL
-        
-        Returns:
-            Dictionary with indexing statistics:
-                - total_jobs: Number of jobs attempted
-                - indexed_jobs: Number successfully indexed
-                - failed_jobs: Number that failed
-                - skipped_jobs: Number skipped (already indexed)
-        """
         if not jobs:
-            logger.warning("No jobs provided for indexing")
             return {"total_jobs": 0, "indexed_jobs": 0, "failed_jobs": 0, "skipped_jobs": 0}
         
         logger.info(f"Starting batch indexing of {len(jobs)} jobs")
@@ -172,17 +138,7 @@ class JobIndexer:
             return False
     
     def remove_job(self, job_id: str) -> bool:
-        """
-        Remove a job from the vector store (e.g., expired jobs).
-        
-        Args:
-            job_id: ID of the job to remove
-            
-        Returns:
-            True if removed successfully, False otherwise
-        """
         try:
-            # Note: FAISS doesn't support direct deletion
             # This removes from metadata only
             self.vector_store.metadata_manager.remove_job(job_id)
             logger.info(f"Removed job {job_id} from metadata")

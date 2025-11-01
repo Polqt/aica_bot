@@ -1,6 +1,5 @@
 import traceback
 import logging
-import time
 import asyncio
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, BackgroundTasks, Request
@@ -19,6 +18,28 @@ logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter()
+
+def _ensure_user_exists(user_id: str, email: str, db: UserDatabase) -> bool:
+    try:
+        user = db.get_user_by_id(user_id)
+        if user:
+            return True
+            
+        # Create user if doesn't exist
+        try:
+            db.create_user(email=email, password_hash="", user_id=user_id)
+            return True
+        except Exception as create_error:
+            # Handle duplicate email error
+            if "duplicate key" in str(create_error).lower() and "email" in str(create_error).lower():
+                logger.info(f"User already exists with email {email}, attempting to fetch")
+                user = db.get_user_by_email(email)
+                return user is not None
+            logger.error(f"Failed to create user {user_id}: {create_error}")
+            return False
+    except Exception as e:
+        logger.error(f"Error in _ensure_user_exists for user {user_id}: {e}")
+        return False
 
 async def _signup(user: UserCreate):
     try:
@@ -42,15 +63,14 @@ async def _signup(user: UserCreate):
         
         # Always try to create user in our database, even if email needs confirmation
         try:
-            db_user = db.create_user(
+            db.create_user(
                 email=user.email,
                 password_hash="",
                 user_id=response.user.id
             )
             db.create_user_profile(response.user.id)
-            traceback.print_exc()
-        except Exception:
-            traceback.print_exc()
+        except Exception as e:
+            logger.warning(f"Error creating user profile: {e}")
 
         # Check if user needs email confirmation
         if response.session is None:
@@ -73,11 +93,7 @@ async def _signup(user: UserCreate):
 @router.post("/signup", response_model=dict)
 @limiter.limit("5/minute")
 async def signup(request: Request, user: UserCreate):
-    return await _signup(user)
-
-@router.post("/register", response_model=dict)
-@limiter.limit("5/minute")
-async def register(request: Request, user: UserCreate):
+    """Create a new user account."""
     return await _signup(user)
 
 @router.post("/login", response_model=TokenResponse)
@@ -129,39 +145,23 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
 
         # If user doesn't exist in our database but exists in Supabase, create them
         if not user:
-            try:
-                user = db.create_user(
-                    email=current_user["email"],
-                    password_hash="",
-                    user_id=current_user["id"]
-                )
-                profile = db.create_user_profile(current_user["id"])
-            except Exception as create_error:
-                # Check if user already exists by email
-                if "duplicate key" in str(create_error) and "email" in str(create_error):
-                    try:
-                        user = db.get_user_by_email(current_user["email"])
-                        if user:
-                            profile = db.get_user_profile(user.id)
-                    except Exception:
-                        traceback.print_exc()
-                else:
-                    traceback.print_exc()
-                
-                if not user:
-                    return {
-                        "id": current_user["id"],
-                        "email": current_user["email"],
-                        "created_at": None,
-                        "resume_uploaded": False,
-                        "resume_processed": False,
-                        "profile_completed": False,
-                        "full_name": None,
-                        "phone": None,
-                        "location": None,
-                        "experience_years": None,
-                        "education_level": None
-                    }
+            if not _ensure_user_exists(current_user["id"], current_user["email"], db):
+                return {
+                    "id": current_user["id"],
+                    "email": current_user["email"],
+                    "created_at": None,
+                    "resume_uploaded": False,
+                    "resume_processed": False,
+                    "profile_completed": False,
+                    "full_name": None,
+                    "phone": None,
+                    "location": None,
+                    "experience_years": None,
+                    "education_level": None
+                }
+            # Fetch the newly created user
+            user = db.get_user_by_id(current_user["id"])
+            profile = db.get_user_profile(current_user["id"])
 
         user_data = {
             "id": user.id if user else current_user["id"],
@@ -178,7 +178,7 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
         }
 
         return user_data
-    except Exception as e:
+    except Exception:
         return {
             "id": current_user["id"],
             "email": current_user["email"],
@@ -198,15 +198,61 @@ async def logout():
     return {"message": "Logged out successfully"}
 
 async def delayed_job_matching_background(user_id: str):
-    await asyncio.sleep(10)  # Wait 10 seconds for resume processing
+    await asyncio.sleep(3)  # Wait for resume processing to complete
+    
+    db = UserDatabase()
+    
     try:
-        logger.info(f"🔄 Delayed job matching starting for user {user_id}")
+        db.update_user_profile(user_id, {"processing_step": "matching"})
+        
+        # Get user skills (from parsed resume)
+        user_skills = db.get_user_skills(user_id)
+        if not user_skills:
+            logger.warning(f"⚠️ No skills found for user {user_id}")
+            db.update_user_profile(user_id, {
+                "processing_step": "completed",
+                "matches_generated": False
+            })
+            return
+        
+        # Get available jobs
+        job_db = JobDatabase()
+        jobs = job_db.get_jobs_for_matching(limit=500)
+        
+        if not jobs:
+            logger.warning("⚠️ No jobs available for matching")
+            db.update_user_profile(user_id, {
+                "processing_step": "completed",
+                "matches_generated": False
+            })
+            return
+        
+        # Use JobMatchingService with AI analysis
         matching_service = JobMatchingService()
+        
+        # Use update_matches_for_user which handles everything internally
         result = await matching_service.update_matches_for_user(user_id)
-        logger.info(f"✅ Delayed job matching completed for user {user_id}: {result.get('matches_saved', 0)} matches saved")
+        
+        matches_saved = result.get('matches_saved', 0)
+        logger.info(f"Background job matching completed for user {user_id}: {matches_saved} matches saved")
+        
+        # Update profile to indicate matches are ready
+        db.update_user_profile(user_id, {
+            "processing_step": "completed",
+            "matches_generated": matches_saved > 0
+        })
+        
     except Exception as e:
-        logger.error(f"❌ Delayed job matching failed for user {user_id}: {e}")
         traceback.print_exc()
+        
+        # Mark as completed with error
+        try:
+            db.update_user_profile(user_id, {
+                "processing_step": "error",
+                "processing_error": f"Job matching failed: {str(e)}"
+            })
+        except Exception as update_error:
+            logger.error(f"Failed to update error status: {update_error}")
 
 async def process_resume_background(user_id: str, file_content: bytes, file_type: str, mode: str = None):
     db = UserDatabase()
@@ -217,132 +263,37 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
             return
 
         if mode == "replace" or mode is None:
-            logger.info(f"🗑️ Replace mode: Clearing existing data for user {user_id}")
             db.update_user_profile(user_id, {"processing_step": "clearing_old_data"})
-            
             try:
-                # Clear all existing user data to ensure clean state
-                logger.info(f"Clearing skills for user {user_id}")
                 db.clear_user_skills(user_id)
                 
-                logger.info(f"Clearing education for user {user_id}")
                 db.clear_user_education(user_id)
                 
-                logger.info(f"Clearing experience for user {user_id}")
                 db.clear_user_experience(user_id)
                 
-                logger.info(f"Clearing job matches for user {user_id}")
                 db.clear_job_matches(user_id)
                 
-                logger.info(f"✅ Successfully cleared all old data for user {user_id}")
+                logger.info(f"Successfully cleared all old data for user {user_id}")
             except Exception as clear_error:
-                logger.error(f"⚠️ Error clearing old data for user {user_id}: {clear_error}")
-                # Continue processing even if clearing fails - this ensures users can still upload
+                logger.error(f"Error clearing old data for user {user_id}: {clear_error}")
 
     
-        # Step 1: Parse resume and extract skills
-        logger.info(f"🔍 Starting resume parsing for user {user_id} (mode: {mode or 'replace (default)'})")
         db.update_user_profile(user_id, {"processing_step": "parsing"})
         
         parser = ResumeParser()
         await parser.process_and_store_resume(user_id, file_content, file_type)
         
-        logger.info(f"✅ Resume parsed successfully for user {user_id}")
+        logger.info(f"Resume parsed successfully for user {user_id}")
         
-        # Step 2: Generate AI-powered job matches
-        logger.info(f"🤖 Starting AI job matching for user {user_id}")
-        db.update_user_profile(user_id, {"processing_step": "matching"})
-        
-        try:
-            # Get user skills (from parsed resume)
-            user_skills = db.get_user_skills(user_id)
-            if not user_skills:
-                logger.warning(f"⚠️ No skills found for user {user_id}")
-                matches = []
-            else:
-                logger.info(f"📊 Found {len(user_skills)} skills for user {user_id}")
-                
-                # Get available jobs
-                job_db = JobDatabase()
-                jobs = job_db.get_jobs_for_matching(limit=500)
-                
-                if not jobs:
-                    logger.warning("⚠️ No jobs available for matching")
-                    matches = []
-                else:
-                    logger.info(f"🎯 Matching against {len(jobs)} available jobs")
-                    
-                    # Use JobMatchingService with AI analysis
-                    job_matching_service = JobMatchingService()
-                    
-                    # This will use AI reasoning generation for top matches
-                    matches = await job_matching_service.find_job_matches(user_id, limit=20)
-                    
-                    logger.info(f"✅ Generated {len(matches)} AI-powered job matches")
-                    
-                    # Save matches with AI reasoning to database
-                    if matches:
-                        try:
-                            saved_matches = await job_matching_service.save_job_matches(user_id, matches)
-                            logger.info(f"💾 Saved {len(saved_matches)} matches with AI reasoning")
-                            
-                            # Wait for database to commit all writes (reduced from 3s to 1.5s)
-                            logger.info("⏳ Waiting for database commits to complete...")
-                            await asyncio.sleep(1.5)
-                            
-                            # Verify matches were actually saved with retry logic
-                            max_retries = 3  # Reduced from 5 to 3
-                            verification_matches = None
-                            for attempt in range(1, max_retries + 1):
-                                verification_matches = db.get_user_job_matches(user_id)
-                                match_count = len(verification_matches) if verification_matches else 0
-                                logger.info(f"✅ Verified {match_count} matches in database (attempt {attempt})")
-                                
-                                if match_count >= len(matches):
-                                    logger.info(f"✅ All {match_count} matches confirmed in database!")
-                                    break
-                                
-                                if attempt < max_retries:
-                                    logger.warning(f"⚠️ Expected {len(matches)} matches but found {match_count}, retrying...")
-                                    await asyncio.sleep(1)  # Reduced from 2s to 1s
-                                else:
-                                    logger.error(f"❌ Failed to verify all matches after {max_retries} attempts")
-                                    
-                        except Exception as save_error:
-                            logger.error(f"❌ Error saving matches: {save_error}")
-                            traceback.print_exc()
-                    else:
-                        logger.info("ℹ️ No matches generated (threshold not met)")
-                        
-        except Exception as matching_error:
-            logger.error(f"❌ Error in job matching: {matching_error}")
-            traceback.print_exc()
-            matches = []
-        
-        # Step 3: Finalize processing - ONLY after all database writes are complete
-        logger.info(f"🏁 Finalizing processing for user {user_id}")
-        db.update_user_profile(user_id, {"processing_step": "finalizing"})
-        
-        # Final wait to ensure all database transactions are committed (reduced from 2s to 1s)
-        await asyncio.sleep(1)
-
-        # Mark as completed
         db.update_user_profile(user_id, {
             "resume_processed": True,
             "profile_completed": True,
             "processing_step": "completed",
-            "matches_generated": len(matches) > 0
+            "matches_generated": False  # Will be updated after job matching completes
         })
-        
-        # Extra safety delay after marking completed (reduced from 1.5s to 0.5s)
-        logger.info("⏳ Final sync delay before completing...")
-        await asyncio.sleep(0.5)
-
-        logger.info(f"✅ Resume processing completed for user {user_id}")
-        logger.info(f"📊 Matches generated during processing: {len(matches)}")
+    
         
     except Exception as e:
-        logger.error(f"❌ Fatal error in resume processing for user {user_id}: {e}")
         traceback.print_exc()
         
         try:
@@ -354,7 +305,7 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
         except Exception as db_error:
             logger.error(f"❌ Error updating error status: {db_error}")
         except Exception as update_error:
-            print(f"Failed to update error status for user {user_id}: {str(update_error)}")
+            logger.error(f"Failed to update error status for user {user_id}: {str(update_error)}")
         
 
 @router.post("/upload-resume", response_model=ResumeUploadResponse)
@@ -385,35 +336,17 @@ async def upload_resume(
         # Ensure user exists in our database
         db = UserDatabase()
         user_id = current_user["id"]
-        user = db.get_user_by_id(user_id)
         
-        if not user:
-            try:
-                user = db.create_user(
-                    email=current_user["email"],
-                    password_hash="",
-                    user_id=user_id
-                )
-            except Exception as user_create_error:
-                if "duplicate key" in str(user_create_error) and "email" in str(user_create_error):
-                    print(f"User already exists with email {current_user['email']}, trying to get existing user")
-                    try:
-                        user = db.get_user_by_email(current_user["email"])
-                        if user:
-                            print(f"Found existing user: {user.id}")
-                        else:
-                            raise HTTPException(status_code=500, detail="User exists but cannot be retrieved")
-                    except Exception as get_error:
-                        raise HTTPException(status_code=500, detail="Failed to prepare user for resume upload")
-                else:
-                    raise HTTPException(status_code=500, detail="Failed to prepare user for resume upload")
+        if not _ensure_user_exists(user_id, current_user["email"], db):
+            raise HTTPException(status_code=500, detail="Failed to prepare user for resume upload")
         
+        # Ensure profile exists
         try:
             profile = db.get_user_profile(user_id)
             if not profile:
                 db.create_user_profile(user_id)
         except Exception as profile_error:
-            print(f"Profile creation/check error: {str(profile_error)}")
+            logger.warning(f"Profile creation/check error: {str(profile_error)}")
 
         # Generate unique filename
         file_extension = file.filename.split(".")[-1] if "." in file.filename else "pdf"
@@ -495,29 +428,7 @@ async def upload_resume(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
-    
-    
-@router.get("/skills")
-async def get_user_skills(current_user: dict = Depends(get_current_user)):
-    try:
-        db = UserDatabase()
-        skills = db.get_user_skills(current_user["id"])
-        
-        skills_by_category = {}
-        for skill in skills:
-            if skill.skill_category not in skills_by_category:
-                skills_by_category[skill.skill_category] = []
-            skills_by_category[skill.skill_category].append(skill.skill_name)
-            
-        return {
-            "technical_skills": skills_by_category.get("technical", []),
-            "soft_skills": skills_by_category.get("soft", []),
-            "industries": skills_by_category.get("industry", []),
-            "job_titles": skills_by_category.get("job_title", [])
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve skills: {str(e)}")   
-    
+   
 @router.get("/processing-status")
 async def get_processing_status(current_user: dict = Depends(get_current_user)):
     try:

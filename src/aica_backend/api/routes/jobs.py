@@ -244,7 +244,6 @@ async def get_job_recommendations(
         logger.error(f"Error getting job recommendations for user {current_user.id}: {str(e)}", exc_info=True)
         return []
 
-
 @router.delete("/matches")
 async def clear_job_matches(
     current_user: User = Depends(get_current_user)

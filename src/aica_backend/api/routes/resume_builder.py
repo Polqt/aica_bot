@@ -3,7 +3,6 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from io import BytesIO
 
 from api.dependencies import get_current_user
 from core.resume_builder import ResumeBuilder
@@ -20,9 +19,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# Background task for regenerating job matches
 async def regenerate_job_matches_background(user_id: str):
-    """Regenerate job matches for a user after skill changes"""
     try:
         from services.job_matching import JobMatchingService
         logger.info(f"🔄 Background task: Regenerating job matches for user {user_id}")

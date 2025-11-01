@@ -167,7 +167,7 @@ class JobMatchingService:
             
             # Run AI analysis on top candidates
             max_ai_calls = min(len(candidate_jobs), 15)
-            logger.info(f"📈 Running AI analysis on {max_ai_calls} RAG candidates")
+            logger.info(f"Running AI analysis on {max_ai_calls} RAG candidates")
             
             for job in candidate_jobs[:max_ai_calls]:
                 try:
@@ -186,7 +186,7 @@ class JobMatchingService:
             # Final ranking
             final_matches = self._rank_final_matches(ai_matches)
             
-            logger.info(f"🏆 Returning {len(final_matches)} final RAG matches")
+            logger.info(f"Returning {len(final_matches)} final RAG matches")
             for i, match in enumerate(final_matches[:5]):
                 logger.info(
                     f"   Match {i+1}: {match.job.title} - "
@@ -223,11 +223,16 @@ class JobMatchingService:
             user_context = self._prepare_user_skill_context(user_skills)
             ai_matches = []
 
-            max_ai_calls = min(len(top_candidates), 10)
+            # Reduce AI calls to top 5 candidates to avoid rate limiting
+            max_ai_calls = min(len(top_candidates), 5)
             logger.info(f"📈 Running AI analysis on {max_ai_calls} top candidates")
 
-            for job in top_candidates[:max_ai_calls]:
+            for i, job in enumerate(top_candidates[:max_ai_calls]):
                 try:
+                    # Add small delay between AI calls to avoid rate limiting (except for first call)
+                    if i > 0:
+                        await asyncio.sleep(0.5)
+                    
                     match_result = await self._ai_calculate_job_match_fast(user_context, user_skills, job)
 
                     # Safe comparison with None check
@@ -236,6 +241,11 @@ class JobMatchingService:
                         ai_matches.append(match_result)
 
                 except Exception as e:
+                    logger.warning(f"AI analysis failed for job {job.id}: {str(e)}")
+                    # Add delay if rate limited
+                    if "rate" in str(e).lower() or "429" in str(e):
+                        logger.warning("Rate limit detected, waiting 2 seconds...")
+                        await asyncio.sleep(2)
                     continue
 
             logger.info(f"✅ Found {len(ai_matches)} matches from AI analysis")

@@ -143,10 +143,6 @@ export function useJobMatchesWithCache() {
     if (!skipCache) {
       const cached = cacheManager.get<JobMatch[]>(CACHE_KEYS.JOB_MATCHES);
       if (cached) {
-        console.log('[useCacheManager] Using cached matches:', {
-          cachedLength: cached.length,
-          timestamp: new Date().toISOString(),
-        });
         setJobMatches(cached);
         // Clear recommendations when we have real matches from cache
         if (cached.length > 0) {
@@ -161,17 +157,7 @@ export function useJobMatchesWithCache() {
       setLoading(true);
       setError(null);
 
-      console.log(
-        '[useCacheManager] Fetching matches from API (skipCache:',
-        skipCache,
-        ')',
-      );
       const matches = await apiClient.get<JobMatch[]>('/jobs/matches?limit=50');
-      console.log('[useCacheManager] API Response from /jobs/matches:', {
-        matchesLength: matches?.length,
-        hasMatches: matches && matches.length > 0,
-        timestamp: new Date().toISOString(),
-      });
 
       setJobMatches(matches || []);
 
@@ -186,22 +172,12 @@ export function useJobMatchesWithCache() {
 
       // If we got real matches, clear recommendations
       if (matches && matches.length > 0) {
-        console.log(
-          '[useCacheManager] Real matches found, clearing recommendations',
-        );
         setRecommendations([]);
         // Clear recommendations cache so they don't come back
         cacheManager.remove(CACHE_KEYS.RECOMMENDATIONS);
       } else {
         // Only load recommendations if no real matches exist
-        console.log(
-          '[useCacheManager] No real matches, loading recommendations',
-        );
         const recommendedJobs = await apiClient.getJobRecommendations(20);
-        console.log('[useCacheManager] Recommendations loaded:', {
-          recommendedLength: (recommendedJobs as JobMatch[])?.length,
-          timestamp: new Date().toISOString(),
-        });
         setRecommendations((recommendedJobs as JobMatch[]) || []);
         if (recommendedJobs) {
           cacheManager.set(

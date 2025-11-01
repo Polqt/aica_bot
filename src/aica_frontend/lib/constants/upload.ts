@@ -1,5 +1,5 @@
 export const MAX_FILE_SIZE_MB = 10;
-export const MAX_POLLS = 30;
+export const MAX_POLLS = 60; // Increased from 30 to allow 2 minutes for background job matching
 export const POLL_INTERVAL_MS = 2000;
 
 export const ALLOWED_FILE_TYPES = [
