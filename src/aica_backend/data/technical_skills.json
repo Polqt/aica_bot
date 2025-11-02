@@ -1,0 +1,123 @@
+{
+  "programming_languages": [
+    "python", "java", "javascript", "typescript", "c++", "c#", "php", "ruby",
+    "swift", "kotlin", "r", "matlab", "scala", "perl", "bash", "powershell",
+    "go", "golang", "rust", "dart", "lua", "haskell", "clojure", "elixir",
+    "objective-c", "visual basic", "vb.net", "fortran", "cobol", "assembly"
+  ],
+  "web_frontend": [
+    "html", "html5", "css", "css3", "react", "reactjs", "react.js",
+    "angular", "angularjs", "angular.js", "vue", "vuejs", "vue.js",
+    "jquery", "bootstrap", "tailwind", "tailwind css", "tailwindcss",
+    "material-ui", "mui", "ant design", "chakra ui", "sass", "scss", "less",
+    "webpack", "vite", "parcel", "rollup", "babel", "eslint", "prettier",
+    "next.js", "nextjs", "nuxt.js", "nuxtjs", "gatsby", "svelte", "ember",
+    "backbone", "knockout", "preact", "lit", "stencil", "alpine.js"
+  ],
+  "backend": [
+    "node.js", "nodejs", "node", "express", "express.js", "expressjs",
+    "django", "flask", "fastapi", "spring", "spring boot", "springboot",
+    "asp.net", "asp.net core", "laravel", "symfony", "codeigniter",
+    "ruby on rails", "rails", "sinatra", "phoenix", "elixir", "nest.js",
+    "koa", "hapi", "adonis", "meteor", "sails", "loopback", "strapi"
+  ],
+  "databases_sql": [
+    "sql", "mysql", "postgresql", "postgres", "oracle", "sql server",
+    "sqlite", "mariadb", "db2", "teradata", "amazon aurora", "cockroachdb",
+    "snowflake", "bigquery", "redshift"
+  ],
+  "databases_nosql": [
+    "mongodb", "mongo", "redis", "cassandra", "dynamodb", "couchbase",
+    "neo4j", "arangodb", "couchdb", "riak", "hbase", "memcached",
+    "elasticsearch", "solr", "firebase", "realm", "influxdb", "timescaledb"
+  ],
+  "cloud_platforms": [
+    "aws", "amazon web services", "ec2", "s3", "lambda", "rds", "dynamodb",
+    "cloudfront", "route53", "elastic beanstalk", "ecs", "eks", "fargate",
+    "azure", "microsoft azure", "azure devops", "azure functions",
+    "google cloud", "gcp", "google cloud platform", "app engine",
+    "cloud functions", "cloud run", "heroku", "digitalocean", "vercel",
+    "netlify", "cloudflare", "linode", "vultr", "ibm cloud", "oracle cloud"
+  ],
+  "devops_cicd": [
+    "docker", "kubernetes", "k8s", "jenkins", "gitlab ci", "github actions",
+    "travis ci", "circle ci", "circleci", "terraform", "ansible",
+    "chef", "puppet", "cloudformation", "vagrant", "packer",
+    "ci/cd", "continuous integration", "continuous deployment"
+  ],
+  "version_control": [
+    "git", "github", "gitlab", "bitbucket", "svn", "subversion",
+    "mercurial", "perforce", "cvs"
+  ],
+  "web_servers": [
+    "nginx", "apache", "apache tomcat", "iis", "lighttpd", "caddy",
+    "traefik", "haproxy", "varnish"
+  ],
+  "data_science_ai": [
+    "tensorflow", "pytorch", "keras", "scikit-learn", "pandas", "numpy",
+    "scipy", "matplotlib", "seaborn", "plotly", "jupyter", "jupyter notebook",
+    "apache spark", "pyspark", "hadoop", "hive", "pig", "kafka",
+    "airflow", "luigi", "mlflow", "kubeflow", "dask", "ray",
+    "opencv", "pillow", "nltk", "spacy", "transformers", "hugging face",
+    "xgboost", "lightgbm", "catboost", "statsmodels",
+    "machine learning", "deep learning", "neural networks", "cnn", "rnn",
+    "lstm", "nlp", "natural language processing", "computer vision",
+    "reinforcement learning", "supervised learning", "unsupervised learning"
+  ],
+  "data_visualization": [
+    "tableau", "power bi", "looker", "qlik", "quicksight", "metabase",
+    "superset", "grafana", "kibana", "d3.js", "d3", "chart.js"
+  ],
+  "mobile": [
+    "react native", "flutter", "ios", "android", "swift ui", "xamarin",
+    "ionic", "cordova", "phonegap", "android sdk", "ios sdk",
+    "kotlin multiplatform", "nativescript"
+  ],
+  "testing": [
+    "jest", "mocha", "chai", "jasmine", "karma", "cypress", "selenium",
+    "playwright", "puppeteer", "testcafe", "nightwatch", "webdriverio",
+    "junit", "testng", "pytest", "unittest", "nose", "cucumber",
+    "behave", "robot framework", "postman", "insomnia", "jmeter",
+    "loadrunner", "gatling", "tdd", "bdd", "unit testing",
+    "integration testing", "e2e testing", "test automation"
+  ],
+  "api_protocols": [
+    "rest", "rest api", "restful", "graphql", "grpc", "soap",
+    "websocket", "webhooks", "oauth", "oauth2", "jwt", "saml",
+    "openapi", "swagger", "json", "xml", "yaml", "protobuf"
+  ],
+  "messaging": [
+    "rabbitmq", "activemq", "zeromq", "kafka", "kinesis", "pub/sub",
+    "mqtt", "nats", "pulsar", "event-driven architecture", "message queue"
+  ],
+  "methodologies": [
+    "agile", "scrum", "kanban", "lean", "waterfall", "devops",
+    "microservices", "monolithic", "serverless", "event-driven",
+    "domain-driven design", "ddd", "clean architecture", "solid",
+    "design patterns", "mvc", "mvvm", "rest architecture"
+  ],
+  "operating_systems": [
+    "linux", "unix", "ubuntu", "debian", "centos", "red hat", "fedora",
+    "windows", "windows server", "macos", "ios", "android"
+  ],
+  "blockchain": [
+    "blockchain", "ethereum", "solidity", "smart contracts", "web3",
+    "bitcoin", "cryptocurrency", "nft", "defi", "hyperledger"
+  ],
+  "security": [
+    "cybersecurity", "infosec", "penetration testing", "owasp",
+    "ssl", "tls", "https", "authentication", "authorization",
+    "encryption", "firewall", "vpn", "iam", "oauth", "sso"
+  ],
+  "cms_ecommerce": [
+    "wordpress", "drupal", "joomla", "magento", "shopify", "woocommerce",
+    "contentful", "strapi", "ghost", "sanity"
+  ],
+  "tools": [
+    "jira", "confluence", "slack", "trello", "asana", "notion",
+    "figma", "sketch", "adobe xd", "photoshop", "illustrator",
+    "vs code", "visual studio", "intellij", "pycharm", "eclipse",
+    "netbeans", "sublime text", "atom", "vim", "emacs",
+    "raspberry pi", "arduino", "iot", "embedded systems"
+  ]
+}

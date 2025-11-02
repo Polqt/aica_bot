@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from typing import List, Dict
+from typing import List, Dict, Optional
 from dataclasses import dataclass
 
 from database.user_db import UserDatabase
@@ -25,6 +25,8 @@ class JobMatchResult:
 
 
 class JobMatchingService:
+    _instance: Optional['JobMatchingService'] = None
+    _initialized: bool = False
     async def save_user_job(self, user_id: str, job_id: str):
         return self.user_db.save_user_job(user_id, job_id)
 
@@ -39,9 +41,26 @@ class JobMatchingService:
             if job:
                 jobs.append(job)
         return jobs
+    
+    def __new__(cls, user_db: UserDatabase = None, job_db: JobDatabase = None):
+        """Singleton pattern - return existing instance if available."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
     def __init__(self, user_db: UserDatabase = None, job_db: JobDatabase = None):
+        """Initialize heavy components only once."""
+        # Skip if already initialized
+        if self._initialized:
+            return
+            
+        logger.info("🔧 Initializing JobMatchingService (singleton)")
+        
         self.user_db = user_db or UserDatabase()
         self.job_db = job_db or JobDatabase()
+        
+        # Initialize embedder once
+        logger.info("📦 Loading sentence transformer model...")
         self.embedder = TextEmbedder()
         
         # Initialize RAG searcher (NEW - for semantic search)
@@ -67,6 +86,10 @@ class JobMatchingService:
         self.INITIAL_RANKING_THRESHOLD = 0.01  # Very low threshold for initial ranking - let AI decide
         self.HIGH_CONFIDENCE_THRESHOLD = 0.75
         self.MEDIUM_CONFIDENCE_THRESHOLD = 0.55
+        
+        # Mark as initialized
+        JobMatchingService._initialized = True
+        logger.info("✅ JobMatchingService initialized successfully")
 
     def get_combined_user_skills(self, user_id: str) -> List[UserSkill]:
         # Get all skills from database (includes both resume-uploaded and manually entered)

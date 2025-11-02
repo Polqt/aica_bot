@@ -1,0 +1,82 @@
+{
+  "leadership_management": [
+    "leadership", "team leadership", "project leadership", "strategic leadership",
+    "management", "team management", "project management", "product management",
+    "people management", "resource management", "change management",
+    "strategic planning", "decision making", "delegation", "supervision",
+    "executive leadership", "servant leadership", "transformational leadership"
+  ],
+  "communication": [
+    "communication", "communication skills", "verbal communication",
+    "written communication", "presentation", "presentation skills",
+    "public speaking", "technical writing", "documentation",
+    "stakeholder management", "client communication", "reporting",
+    "negotiation", "persuasion", "active listening", "articulation",
+    "cross-cultural communication", "interpersonal communication"
+  ],
+  "teamwork_collaboration": [
+    "teamwork", "team collaboration", "collaboration", "team player",
+    "cross-functional", "cross-functional collaboration",
+    "interpersonal skills", "relationship building", "networking",
+    "partnership", "cooperative", "consensus building",
+    "conflict resolution", "mediation", "remote collaboration"
+  ],
+  "problem_solving": [
+    "problem solving", "problem-solving", "analytical", "analytical thinking",
+    "critical thinking", "troubleshooting", "debugging", "root cause analysis",
+    "solution oriented", "strategic thinking", "systems thinking",
+    "logical thinking", "research", "data analysis", "investigation",
+    "innovation", "creative problem solving", "decision making"
+  ],
+  "organization": [
+    "organization", "organizational skills", "time management",
+    "prioritization", "multitasking", "multi-tasking", "planning",
+    "scheduling", "attention to detail", "detail-oriented",
+    "task management", "workflow management", "efficiency",
+    "productivity", "process improvement", "optimization"
+  ],
+  "adaptability": [
+    "adaptability", "flexibility", "learning agility", "fast learner",
+    "quick learner", "continuous learning", "self-learning",
+    "growth mindset", "resilience", "versatility", "open-minded",
+    "change management", "embracing change", "proactive"
+  ],
+  "customer_service": [
+    "customer service", "client service", "customer focus", "client focus",
+    "user experience", "ux", "customer satisfaction", "client relations",
+    "customer relations", "empathy", "patience", "service orientation",
+    "customer support", "technical support", "help desk"
+  ],
+  "creativity": [
+    "creativity", "creative", "innovation", "innovative",
+    "design thinking", "brainstorming", "ideation", "imagination",
+    "artistic", "original thinking", "out-of-the-box thinking",
+    "creative problem solving", "inventive"
+  ],
+  "work_ethic": [
+    "work ethic", "strong work ethic", "reliability", "reliable",
+    "accountability", "responsible", "initiative", "self-starter",
+    "self-motivated", "motivated", "driven", "discipline",
+    "commitment", "dedicated", "passionate", "enthusiastic",
+    "professional", "integrity", "honesty", "punctuality",
+    "dependable", "hardworking", "diligent", "persistent"
+  ],
+  "mentoring": [
+    "mentoring", "mentorship", "coaching", "teaching", "training",
+    "knowledge sharing", "knowledge transfer", "onboarding",
+    "professional development", "talent development", "guidance",
+    "instructing", "educating", "facilitating"
+  ],
+  "business_strategy": [
+    "business acumen", "strategic thinking", "business strategy",
+    "market analysis", "competitive analysis", "financial analysis",
+    "budget management", "cost optimization", "roi analysis",
+    "stakeholder management", "vendor management", "procurement"
+  ],
+  "agile_project_management": [
+    "agile", "scrum", "scrum master", "kanban", "sprint planning",
+    "backlog management", "user stories", "story pointing",
+    "retrospectives", "stand-ups", "product owner", "pmp",
+    "risk management", "quality assurance", "delivery management"
+  ]
+}

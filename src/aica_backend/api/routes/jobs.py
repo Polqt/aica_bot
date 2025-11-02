@@ -8,10 +8,23 @@ from typing import List, Dict, Any, Optional
 from api.dependencies import get_current_user
 from database.models.user_models import User
 from services.job_matching import JobMatchingService
+from database.user_db import UserDatabase
+from database.job_db import JobDatabase
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Initialize singleton service at module level for reuse
+_matching_service: Optional[JobMatchingService] = None
+
+def get_matching_service() -> JobMatchingService:
+    """Get or create singleton JobMatchingService instance."""
+    global _matching_service
+    if _matching_service is None:
+        logger.info("🔧 Creating JobMatchingService singleton")
+        _matching_service = JobMatchingService()
+    return _matching_service
 
 class JobMatchResponse(BaseModel):
     job_id: str
@@ -42,7 +55,7 @@ async def find_and_save_job_matches(
     current_user: User = Depends(get_current_user)
 ) -> MatchingSummaryResponse:
     try:
-        matching_service = JobMatchingService()
+        matching_service = get_matching_service()
         
         # Run the complete matching workflow
         summary = await matching_service.update_matches_for_user(current_user.id)
@@ -62,109 +75,76 @@ async def get_job_matches(
     limit: int = 20,
     current_user: User = Depends(get_current_user)
 ) -> List[JobMatchResponse]:
-    logger.info(f"Starting get_job_matches for user {current_user.id} with limit {limit}")
+    """
+    Retrieve existing job matches from database.
+    
+    This endpoint is optimized for fast retrieval - it does NOT run matching logic,
+    only fetches pre-computed matches. Use /find-matches to regenerate matches.
+    """
+    logger.info(f"📥 Fetching {limit} cached job matches for user {current_user.id}")
     try:
-        async def fetch_matches():
-            matching_service = JobMatchingService()
-            logger.debug(f"JobMatchingService initialized for user {current_user.id}")
-
-            # Get matches from database
-            logger.debug(f"Calling get_user_job_matches for user {current_user.id}")
-            saved_matches = matching_service.user_db.get_user_job_matches(current_user.id, limit=limit)
-            logger.info(f"Retrieved {len(saved_matches) if saved_matches else 0} job matches for user {current_user.id}")
-
-            if not saved_matches:
-                logger.info(f"No job matches found for user {current_user.id}")
-                return []
-
-            # Convert to response format
-            responses = []
-            for match in saved_matches:
-                try:
-                    logger.debug(f"Processing match {match.id} for job {match.job_id}")
-                    # Get job details
-                    job = matching_service.job_db.get_job_by_id(match.job_id)
-                    if not job:
-                        logger.warning(f"Job {match.job_id} not found in database for user {current_user.id}")
-                        continue
-
-                    response = JobMatchResponse(
-                        job_id=match.job_id,
-                        job_title=job.title,
-                        company=job.company,
-                        location=job.location or "Not specified",
-                        match_score=match.match_score,
-                        matched_skills=match.matched_skills,
-                        missing_critical_skills=match.missing_critical_skills,
-                        skill_coverage=match.skill_coverage,
-                        confidence=match.confidence,
-                        job_url=job.url,
-                        ai_reasoning=match.ai_reasoning
-                    )
-                    responses.append(response)
-
-                except Exception as e:
-                    logger.error(f"Error processing match {match.id}: {str(e)}", exc_info=True)
-                    continue
-
-            logger.info(f"Successfully processed {len(responses)} job matches for user {current_user.id}")
-            return responses
+        # Use lightweight database connections directly - no need for full service
+        user_db = UserDatabase()
+        job_db = JobDatabase()
         
-        # Timeout after 30 seconds
-        try:
-            return await asyncio.wait_for(fetch_matches(), timeout=30.0)
-        except asyncio.TimeoutError:
-            logger.error(f"Timeout fetching job matches for user {current_user.id}")
+        # Get matches from database - fast operation
+        saved_matches = user_db.get_user_job_matches(current_user.id, limit=limit)
+        logger.info(f"✅ Retrieved {len(saved_matches)} matches from database")
+
+        if not saved_matches:
             return []
 
+        # Convert to response format
+        responses = []
+        for match in saved_matches:
+            try:
+                # Get job details
+                job = job_db.get_job_by_id(match.job_id)
+                if not job:
+                    logger.warning(f"Job {match.job_id} not found in database")
+                    continue
+
+                response = JobMatchResponse(
+                    job_id=match.job_id,
+                    job_title=job.title,
+                    company=job.company,
+                    location=job.location or "Not specified",
+                    match_score=match.match_score,
+                    matched_skills=match.matched_skills,
+                    missing_critical_skills=match.missing_critical_skills,
+                    skill_coverage=match.skill_coverage,
+                    confidence=match.confidence,
+                    job_url=job.url,
+                    ai_reasoning=match.ai_reasoning
+                )
+                responses.append(response)
+
+            except Exception as e:
+                logger.error(f"Error processing match {match.id}: {str(e)}")
+                continue
+
+        logger.info(f"✅ Returning {len(responses)} job matches")
+        return responses
+
     except Exception as e:
-        logger.error(f"Error getting job matches for user {current_user.id}: {str(e)}", exc_info=True)
-        # Return empty list instead of raising 500 error
+        logger.error(f"Error getting job matches for user {current_user.id}: {str(e)}")
         return []
 
 @router.get("/stats")
 async def get_matching_stats(
     current_user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
+    """
+    Get matching statistics from cached matches.
+    
+    Fast endpoint - only queries database, no ML processing.
+    """
     try:
-        async def fetch_stats():
-            matching_service = JobMatchingService()
-            matches = matching_service.user_db.get_user_job_matches(current_user.id, limit=100)
+        # Lightweight database access - no service needed
+        user_db = UserDatabase()
+        matches = user_db.get_user_job_matches(current_user.id, limit=100)
 
-            if not matches:
-                return {
-                    "total_matches": 0,
-                    "average_score": 0.0,
-                    "high_confidence_matches": 0,
-                    "medium_confidence_matches": 0,
-                    "low_confidence_matches": 0,
-                    "last_updated": None
-                }
-
-            # Calculate stats
-            logger.debug(f"Calculating stats for {len(matches)} matches")
-            total_matches = len(matches)
-            average_score = sum(m.match_score for m in matches) / total_matches
-
-            high_confidence = len([m for m in matches if m.match_score >= 0.8])
-            medium_confidence = len([m for m in matches if 0.6 <= m.match_score < 0.8])
-            low_confidence = len([m for m in matches if m.match_score < 0.6])
-
-            last_updated = max(m.created_at for m in matches) if matches else None
-
-            result = {
-                "total_matches": total_matches,
-                "average_score": round(average_score, 3),
-                "high_confidence_matches": high_confidence,
-                "medium_confidence_matches": medium_confidence,
-                "low_confidence_matches": low_confidence,
-                "last_updated": last_updated
-            }
-            return result
-        
-        try:
-            return await asyncio.wait_for(fetch_stats(), timeout=20.0)
-        except asyncio.TimeoutError:
+        if not matches:
             return {
                 "total_matches": 0,
                 "average_score": 0.0,
@@ -174,7 +154,27 @@ async def get_matching_stats(
                 "last_updated": None
             }
 
+        # Calculate stats
+        total_matches = len(matches)
+        average_score = sum(m.match_score for m in matches) / total_matches
+
+        high_confidence = len([m for m in matches if m.match_score >= 0.8])
+        medium_confidence = len([m for m in matches if 0.6 <= m.match_score < 0.8])
+        low_confidence = len([m for m in matches if m.match_score < 0.6])
+
+        last_updated = max(m.created_at for m in matches) if matches else None
+
+        return {
+            "total_matches": total_matches,
+            "average_score": round(average_score, 3),
+            "high_confidence_matches": high_confidence,
+            "medium_confidence_matches": medium_confidence,
+            "low_confidence_matches": low_confidence,
+            "last_updated": last_updated
+        }
+
     except Exception as e:
+        logger.error(f"Error getting stats: {str(e)}")
         return {
             "total_matches": 0,
             "average_score": 0.0,
@@ -276,7 +276,8 @@ async def clear_job_matches(
 @router.post("/saved-jobs/{job_id}", response_model=SavedJobResponse)
 async def save_job(job_id: str, current_user: User = Depends(get_current_user)):
     try:
-        matching_service = JobMatchingService()
+        # Use singleton service for database access
+        matching_service = get_matching_service()
         saved = await matching_service.save_user_job(current_user.id, job_id)
 
         if not saved:
@@ -352,7 +353,8 @@ async def save_job(job_id: str, current_user: User = Depends(get_current_user)):
 @router.delete("/saved-jobs/{job_id}")
 async def remove_saved_job(job_id: str, current_user: User = Depends(get_current_user)):
     try:
-        matching_service = JobMatchingService()
+        # Use singleton service
+        matching_service = get_matching_service()
         success = await matching_service.remove_user_saved_job(current_user.id, job_id)
 
         if not success:
@@ -367,85 +369,82 @@ async def remove_saved_job(job_id: str, current_user: User = Depends(get_current
 
 @router.get("/saved-jobs", response_model=List[SavedJobResponse])
 async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: int = 50):
+    """Fast retrieval of saved jobs from database."""
     try:
-        async def fetch_saved_jobs():
-            matching_service = JobMatchingService()
-            # Get basic saved jobs first
-            saved_jobs = matching_service.user_db.get_user_saved_jobs(current_user.id, limit)
+        # Lightweight database access - no need for full service
+        user_db = UserDatabase()
+        job_db = JobDatabase()
+        
+        # Get basic saved jobs first
+        saved_jobs = user_db.get_user_saved_jobs(current_user.id, limit)
 
-            if not saved_jobs:
-                return []
-
-            responses = []
-            for saved in saved_jobs:
-                job = matching_service.job_db.get_job_by_id(saved.job_id)
-                if job:
-                    # Try to get match data using the new method
-                    match_data = matching_service.user_db.get_user_saved_job_with_match_data(current_user.id, saved.job_id)
-
-                    if match_data:
-                        # Use data from the joined query
-                        match_score = match_data.get("match_score")
-                        matched_skills = match_data.get("matched_skills", [])
-                        missing_critical_skills = match_data.get("missing_critical_skills", [])
-                        skill_coverage = match_data.get("skill_coverage", 0.0)
-                        ai_reasoning = match_data.get("ai_reasoning", "")
-                        confidence = match_data.get("confidence") or "medium"
-                    else:
-                        # Fallback: try separate query if join didn't work
-                        match_score = None
-                        matched_skills = []
-                        missing_critical_skills = []
-                        skill_coverage = 0.0
-                        ai_reasoning = ""
-                        confidence = "medium"
-
-                        try:
-                            match = matching_service.user_db.client.table("user_job_matches").select("*").eq("user_id", current_user.id).eq("job_id", saved.job_id).execute()
-                            if match.data and len(match.data) > 0:
-                                match_data = match.data[0]
-                                match_score = match_data.get("match_score")
-                                matched_skills = match_data.get("matched_skills", [])
-                                missing_critical_skills = match_data.get("missing_critical_skills", [])
-                                skill_coverage = match_data.get("skill_coverage", 0.0)
-                                ai_reasoning = match_data.get("ai_reasoning", "")
-
-                                # Get confidence from database or calculate if not provided
-                                confidence = match_data.get("confidence") or "medium"
-                                if not confidence and match_score is not None:
-                                    if match_score >= 0.8:
-                                        confidence = "high"
-                                    elif match_score >= 0.6:
-                                        confidence = "medium"
-                                    else:
-                                        confidence = "low"
-                        except Exception as e:
-                            logger.warning(f"Could not get match data for job {saved.job_id}: {str(e)}")
-
-                    responses.append(SavedJobResponse(
-                        job_id=saved.job_id,
-                        saved_at=saved.saved_at.isoformat() if saved.saved_at else "",
-                        title=job.title,
-                        company=job.company,
-                        location=job.location or "",
-                        url=job.url,
-                        description=job.description or "",
-                        match_score=match_score,
-                        confidence=confidence or "medium",
-                        ai_reasoning=ai_reasoning or "",
-                        matched_skills=matched_skills or [],
-                        missing_critical_skills=missing_critical_skills or [],
-                        skill_coverage=skill_coverage or 0.0
-                    ))
-
-            return responses
-
-        try:
-            return await asyncio.wait_for(fetch_saved_jobs(), timeout=30.0)
-        except asyncio.TimeoutError:
-            logger.error(f"Timeout fetching saved jobs for user {current_user.id}")
+        if not saved_jobs:
             return []
+
+        responses = []
+        for saved in saved_jobs:
+            job = job_db.get_job_by_id(saved.job_id)
+            if job:
+                # Try to get match data using the new method
+                match_data = user_db.get_user_saved_job_with_match_data(current_user.id, saved.job_id)
+
+                if match_data:
+                    # Use data from the joined query
+                    match_score = match_data.get("match_score")
+                    matched_skills = match_data.get("matched_skills", [])
+                    missing_critical_skills = match_data.get("missing_critical_skills", [])
+                    skill_coverage = match_data.get("skill_coverage", 0.0)
+                    ai_reasoning = match_data.get("ai_reasoning", "")
+                    confidence = match_data.get("confidence") or "medium"
+                else:
+                    # Fallback: try separate query if join didn't work
+                    match_score = None
+                    matched_skills = []
+                    missing_critical_skills = []
+                    skill_coverage = 0.0
+                    ai_reasoning = ""
+                    confidence = "medium"
+
+                    try:
+                        match = user_db.client.table("user_job_matches").select("*").eq("user_id", current_user.id).eq("job_id", saved.job_id).execute()
+                        if match.data and len(match.data) > 0:
+                            match_data = match.data[0]
+                            match_score = match_data.get("match_score")
+                            matched_skills = match_data.get("matched_skills", [])
+                            missing_critical_skills = match_data.get("missing_critical_skills", [])
+                            skill_coverage = match_data.get("skill_coverage", 0.0)
+                            ai_reasoning = match_data.get("ai_reasoning", "")
+
+                            # Get confidence from database or calculate if not provided
+                            confidence = match_data.get("confidence") or "medium"
+                            if not confidence and match_score is not None:
+                                if match_score >= 0.8:
+                                    confidence = "high"
+                                elif match_score >= 0.6:
+                                    confidence = "medium"
+                                else:
+                                    confidence = "low"
+                    except Exception as e:
+                        logger.warning(f"Could not get match data for job {saved.job_id}: {str(e)}")
+
+                responses.append(SavedJobResponse(
+                    job_id=saved.job_id,
+                    saved_at=saved.saved_at.isoformat() if saved.saved_at else "",
+                    title=job.title,
+                    company=job.company,
+                    location=job.location or "",
+                    url=job.url,
+                    description=job.description or "",
+                    match_score=match_score,
+                    confidence=confidence or "medium",
+                    ai_reasoning=ai_reasoning or "",
+                    matched_skills=matched_skills or [],
+                    missing_critical_skills=missing_critical_skills or [],
+                    skill_coverage=skill_coverage or 0.0
+                ))
+
+        return responses
             
     except Exception as e:
-        logger.error(f"Error getting saved jobs for user {current_user.id}: {str(e)}", exc_info=True)
+        logger.error(f"Error getting saved jobs for user {current_user.id}: {str(e)}")
         return []

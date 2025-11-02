@@ -44,12 +44,6 @@ class ScoreAggregator:
         2. Second-best chunk gets 25% weight
         3. Remaining chunks averaged get 15% weight
         4. Coverage bonus up to 10% weight
-        
-        Args:
-            scores: List of similarity scores from matched chunks
-            
-        Returns:
-            Weighted aggregate score
         """
         if not scores:
             return 0.0
