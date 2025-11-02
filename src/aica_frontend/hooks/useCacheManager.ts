@@ -190,7 +190,6 @@ export function useJobMatchesWithCache() {
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to load job matches';
-      console.error('[useCacheManager] Error loading job matches:', err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -216,10 +215,8 @@ export function useJobMatchesWithCache() {
           CACHE_DURATION_MS.DEFAULT,
         );
       }
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to load stats';
-      console.error(errorMessage);
+    } catch {
+      // Stats are optional, silently fail
     }
   }, []);
 

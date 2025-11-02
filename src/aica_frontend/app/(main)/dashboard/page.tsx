@@ -271,8 +271,7 @@ export default function DashboardPage() {
         const stats = await statsRes.json();
         setMatchingStats(stats);
       }
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
+    } catch {
       setError('Failed to load dashboard data');
     } finally {
       setLoading(false);

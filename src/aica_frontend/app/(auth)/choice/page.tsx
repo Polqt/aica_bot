@@ -46,8 +46,8 @@ export default function ChoicePage() {
         } else {
           setShouldShowChoice(true);
         }
-      } catch (error) {
-        console.error('Error checking user status:', error);
+      } catch {
+        // On error, show choice page
         setShouldShowChoice(true);
       } finally {
         setIsChecking(false);

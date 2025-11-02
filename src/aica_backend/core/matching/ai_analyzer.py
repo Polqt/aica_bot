@@ -42,31 +42,32 @@ class AIAnalyzer:
                                 
                                 -------------------------------
                                
-                                 NOW ANALYZE THIS MATCH:
+                                NOW ANALYZE THIS MATCH:
 
-                                 Provide a focused 250-300 word analysis with:
+                                Provide a focused 250-300 word analysis structured as follows:
 
-                                **1. SKILL ALIGNMENT** (100-120 words)
-                                Explain the compatibility in depth:
+                                **SKILL ALIGNMENT**
+                                Write 100-120 words explaining the compatibility in depth:
                                 - What makes this a {round(compatibility_score * 100, 1)}% match?
-                                - Key strengths that align with the role (Identify 3-4 specific skills that directly address the job's core requirements)
-                                - Most important skill gaps (Prioritize the 2-3 missing skills that matter most for this role's success)
-                                - Transferable skills from related matches (Explain how partial matches can bridge gaps or demonstrate capability)
+                                - Key strengths that align with the role (3-4 specific skills that directly address core requirements)
+                                - Most important skill gaps (2-3 missing skills that matter most for success)
+                                - Transferable skills from related matches (how partial matches bridge gaps)
 
-                                **2. APPLICATION RECOMMENDATION** (60-80 words)
-                                Give a clear, actionable verdict:
-                                - Should they apply now? (Strong Yes/Yes/Maybe/Not Yet)
-                                - Why or why not based on actual match quality (Reference specific skills, experience level, and market competitiveness).
-                                - Interview success likelihood  
+                                **APPLICATION RECOMMENDATION**
+                                Write 60-80 words with a clear, actionable verdict:
+                                - Should they apply? (Strong Yes/Yes/Maybe/Not Yet)
+                                - Why or why not based on match quality
+                                - Interview success likelihood
                                 - Best approach if applying
 
-                                **3. IMPROVEMENT STEPS** (60-80 words)
-                                Provide a concrete development roadmap:
-                                - (Prioritize by impact and feasibility - what will close the gap fastest?)                                   - Realistic timeline for readiness
+                                **IMPROVEMENT STEPS**
+                                Write 60-80 words with a concrete development roadmap:
+                                - Priority skills to develop (by impact and feasibility)
+                                - Realistic timeline for readiness
                                 - Quick wins to boost candidacy
-                                - Alternative roles if better aligned  (Suggest 1-3 specific job titles that might be a stronger match given their current skills)
+                                - Alternative roles if better aligned (1-3 job titles)
 
-                                Be accurate, specific, and actionable. Focus on what matters most.
+                                IMPORTANT: Use the exact section headers shown above (SKILL ALIGNMENT, APPLICATION RECOMMENDATION, IMPROVEMENT STEPS) without any word counts. Be accurate, specific, and actionable.
                             """
             
             response = await self.llm.ainvoke(analysis)

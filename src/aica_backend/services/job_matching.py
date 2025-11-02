@@ -1,6 +1,5 @@
 import logging
 import asyncio
-import traceback
 from typing import List, Dict
 from dataclasses import dataclass
 
@@ -108,7 +107,6 @@ class JobMatchingService:
 
         except Exception as e:
             logger.error(f"Error in job matching for user {user_id}: {str(e)}")
-            traceback.print_exc()
             return []
     
     async def _find_matches_with_rag(
@@ -261,7 +259,6 @@ class JobMatchingService:
             
         except Exception as e:
             logger.error(f"Traditional matching failed: {str(e)}")
-            traceback.print_exc()
             return []
 
     async def _rank_all_jobs_by_relevance(self, user_skills: List[UserSkill], jobs: List[Job]) -> List[Job]:
@@ -306,7 +303,6 @@ class JobMatchingService:
             
         except Exception as e:
             logger.error(f"Error in job ranking: {e}")
-            traceback.print_exc()
             return jobs[:100]  # Fallback
 
     def _rank_final_matches(self, matches: List[JobMatchResult]) -> List[JobMatchResult]:
@@ -489,7 +485,7 @@ class JobMatchingService:
                 skill_gap_analysis={}
             )
         except Exception as e:
-            logger.error(f"❌ Traceback: {traceback.format_exc()}")
+            logger.error(f"❌ AI analysis error for job {job.id}: {str(e)}")
             # Return a basic match result instead of fallback
             return JobMatchResult(
                 job=job,

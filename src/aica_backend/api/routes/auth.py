@@ -1,4 +1,3 @@
-import traceback
 import logging
 import asyncio
 
@@ -198,7 +197,7 @@ async def logout():
     return {"message": "Logged out successfully"}
 
 async def delayed_job_matching_background(user_id: str):
-    await asyncio.sleep(3)  # Wait for resume processing to complete
+    await asyncio.sleep(3)  
     
     db = UserDatabase()
     
@@ -208,7 +207,6 @@ async def delayed_job_matching_background(user_id: str):
         # Get user skills (from parsed resume)
         user_skills = db.get_user_skills(user_id)
         if not user_skills:
-            logger.warning(f"⚠️ No skills found for user {user_id}")
             db.update_user_profile(user_id, {
                 "processing_step": "completed",
                 "matches_generated": False
@@ -220,7 +218,6 @@ async def delayed_job_matching_background(user_id: str):
         jobs = job_db.get_jobs_for_matching(limit=500)
         
         if not jobs:
-            logger.warning("⚠️ No jobs available for matching")
             db.update_user_profile(user_id, {
                 "processing_step": "completed",
                 "matches_generated": False
@@ -243,7 +240,7 @@ async def delayed_job_matching_background(user_id: str):
         })
         
     except Exception as e:
-        traceback.print_exc()
+        logger.error(f"Job matching error for user {user_id}: {e}")
         
         # Mark as completed with error
         try:
@@ -283,8 +280,6 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
         parser = ResumeParser()
         await parser.process_and_store_resume(user_id, file_content, file_type)
         
-        logger.info(f"Resume parsed successfully for user {user_id}")
-        
         db.update_user_profile(user_id, {
             "resume_processed": True,
             "profile_completed": True,
@@ -294,7 +289,7 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
     
         
     except Exception as e:
-        traceback.print_exc()
+        logger.error(f"Error processing resume for user {user_id}: {e}")
         
         try:
             db.update_user_profile(user_id, {
@@ -302,11 +297,8 @@ async def process_resume_background(user_id: str, file_content: bytes, file_type
                 "processing_step": "error",
                 "processing_error": str(e)
             })
-        except Exception as db_error:
-            logger.error(f"❌ Error updating error status: {db_error}")
         except Exception as update_error:
-            logger.error(f"Failed to update error status for user {user_id}: {str(update_error)}")
-        
+            logger.error(f"Failed to update error status for user {user_id}: {str(update_error)}")      
 
 @router.post("/upload-resume", response_model=ResumeUploadResponse)
 async def upload_resume(
@@ -359,7 +351,7 @@ async def upload_resume(
         # Ensure bucket exists 
         try:
             supabase.storage.create_bucket(bucket_name)
-        except Exception as bucket_error:
+        except Exception:
             # Check if bucket actually exists
             try:
                 buckets = supabase.storage.list_buckets()
@@ -476,7 +468,6 @@ async def get_processing_status(current_user: dict = Depends(get_current_user)):
                 
                 # If matches_generated flag is True but no matches in DB yet, keep status as finalizing
                 if getattr(profile, 'matches_generated', False) and match_count == 0:
-                    logger.warning(f"⚠️ Profile marked as matches_generated but 0 matches found for user {current_user['id']}")
                     return {
                         "status": "processing",
                         "message": "Finalizing your job matches...",

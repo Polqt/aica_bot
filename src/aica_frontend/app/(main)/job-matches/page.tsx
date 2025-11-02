@@ -68,8 +68,8 @@ export default function JobMatchesPage() {
         // Only set as completed if we actually have matches or explicitly 0 matches
         setProcessingStatus('completed');
       }
-    } catch (error) {
-      console.error('[page.tsx] Error checking processing status:', error);
+    } catch {
+      // Failed to check status, assume not processing
       setProcessingStatus('not_processing');
     } finally {
       setIsCheckingStatus(false);
@@ -173,8 +173,8 @@ export default function JobMatchesPage() {
             await loadJobMatches(true);
             await loadStats(true);
           }
-        } catch (error) {
-          console.error('[page.tsx] Error polling processing status:', error);
+        } catch {
+          // Polling error, will retry on next interval
         }
       }, 3000); // Poll every 3 seconds
 

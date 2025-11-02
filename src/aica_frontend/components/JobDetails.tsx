@@ -169,6 +169,8 @@ export function JobDetails({
                 className="text-gray-700 leading-relaxed text-[15px]"
                 dangerouslySetInnerHTML={{
                   __html: job.ai_reasoning
+                    // Remove any standalone word count instructions in parentheses
+                    .replace(/\((?:\d+[-–]?\d*)\s*words?\)/gi, '')
                     // Match Analysis pattern (from job_matching.py)
                     .replace(
                       /\*\*Match Analysis:\*\*/g,
@@ -203,30 +205,24 @@ export function JobDetails({
                       /\*\*Recommendation:\*\*/g,
                       '<strong class="text-gray-900 font-bold">Recommendation:</strong>',
                     )
-                    // RAG-based analysis patterns
+                    // RAG-based analysis patterns - handle all variations
+                    // Matches: "**SKILL ALIGNMENT**", "**Skill Alignment**", "**Skill Alignment :**", "**1. SKILL ALIGNMENT**", etc.
                     .replace(
-                      /\*\*SKILL ALIGNMENT \(100-120 words\)\*\*/g,
+                      /\*\*(?:\d+\.\s*)?(?:SKILL ALIGNMENT|Skill Alignment)(?:\s*:)?(?:\s*\([^)]*\))?\s*\*\*/gi,
                       '<strong class="text-gray-900 font-bold">SKILL ALIGNMENT</strong>',
                     )
                     .replace(
-                      /\*\*SKILL ALIGNMENT\*\*/g,
-                      '<strong class="text-gray-900 font-bold">SKILL ALIGNMENT</strong>',
-                    )
-                    .replace(
-                      /\*\*APPLICATION RECOMMENDATION \(60-80 words\)\*\*/g,
+                      /\*\*(?:\d+\.\s*)?(?:APPLICATION RECOMMENDATION|Application Recommendation)(?:\s*:)?(?:\s*\([^)]*\))?\s*\*\*/gi,
                       '<strong class="text-gray-900 font-bold">APPLICATION RECOMMENDATION</strong>',
                     )
                     .replace(
-                      /\*\*APPLICATION RECOMMENDATION\*\*/g,
-                      '<strong class="text-gray-900 font-bold">APPLICATION RECOMMENDATION</strong>',
-                    )
-                    .replace(
-                      /\*\*IMPROVEMENT STEPS \(60-80 words\)\*\*/g,
+                      /\*\*(?:\d+\.\s*)?(?:IMPROVEMENT STEPS|Improvement Steps)(?:\s*:)?(?:\s*\([^)]*\))?\s*\*\*/gi,
                       '<strong class="text-gray-900 font-bold">IMPROVEMENT STEPS</strong>',
                     )
+                    // Catch any remaining bold markers and convert to HTML
                     .replace(
-                      /\*\*IMPROVEMENT STEPS\*\*/g,
-                      '<strong class="text-gray-900 font-bold">IMPROVEMENT STEPS</strong>',
+                      /\*\*([^*]+)\*\*/g,
+                      '<strong class="text-gray-900 font-bold">$1</strong>',
                     )
                     .replace(/\n/g, '<br />'),
                 }}
