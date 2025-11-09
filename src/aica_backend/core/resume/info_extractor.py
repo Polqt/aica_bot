@@ -54,9 +54,8 @@ class InfoExtractor:
             'character referee:', 'personal referee:', 'professional referee:'
         ]
         
-        # Only check first 5 lines for the applicant's name
-        # Names appearing after line 5 are likely references, not the applicant
-        for i, line in enumerate(lines[:5]):  # STRICT: Only first 5 lines
+        
+        for i, line in enumerate(lines[:5]):  
             line_lower = line.lower()
             
             # Skip lines that indicate reference sections (should not be in top 5, but check anyway)

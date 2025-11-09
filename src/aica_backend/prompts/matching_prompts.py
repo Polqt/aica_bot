@@ -1,0 +1,109 @@
+def create_ai_analysis_prompt(
+    user_skills: list,
+    job_skills: list,
+    job_title: str,
+    company: str,
+    matched_skills: list,
+    partial_matches: list,
+    missing_skills: list,
+    compatibility_score: float
+) -> str:
+    user_skills_text = ", ".join(user_skills[:20]) if user_skills else "No skills listed"
+    job_skills_text = ", ".join(job_skills[:15]) if job_skills else "No specific skills listed"
+    matched_skills_text = ", ".join(matched_skills[:10]) if matched_skills else "None"
+    partial_matches_text = ", ".join(partial_matches[:8]) if partial_matches else "None"
+    missing_skills_text = ", ".join(missing_skills[:10]) if missing_skills else "None"
+    
+    return f"""As a technical recruiter, analyze this job match concisely.
+                        **CANDIDATE SKILLS:** {user_skills_text}
+                        **JOB REQUIREMENTS:** {job_skills_text}
+                        **POSITION:** {job_title} at {company}
+
+                        **MATCH BREAKDOWN:**
+                        • Direct Matches ({len(matched_skills)}): {matched_skills_text}
+                        • Related Skills ({len(partial_matches)}): {partial_matches_text}
+                        • Missing Skills ({len(missing_skills)}): {missing_skills_text}
+                        • Overall Match: {round(compatibility_score * 100, 1)}%
+                        
+                        -------------------------------
+                       
+                        NOW ANALYZE THIS MATCH:
+
+                        Provide a focused 250-300 word analysis structured as follows:
+
+                        **SKILL ALIGNMENT**
+                        Write 100-120 words explaining the compatibility in depth:
+                        - What makes this a {round(compatibility_score * 100, 1)}% match?
+                        - Key strengths that align with the role (3-4 specific skills that directly address core requirements)
+                        - Most important skill gaps (2-3 missing skills that matter most for success)
+                        - Transferable skills from related matches (how partial matches bridge gaps)
+
+                        **APPLICATION RECOMMENDATION**
+                        Write 60-80 words with a clear, actionable verdict:
+                        - Should they apply? (Strong Yes/Yes/Maybe/Not Yet)
+                        - Why or why not based on match quality
+                        - Interview success likelihood
+                        - Best approach if applying
+
+                        **IMPROVEMENT STEPS**
+                        Write 60-80 words with a concrete development roadmap:
+                        - Priority skills to develop (by impact and feasibility)
+                        - Realistic timeline for readiness
+                        - Quick wins to boost candidacy
+                        - Alternative roles if better aligned (1-3 job titles)
+
+                        IMPORTANT: Use the exact section headers shown above (SKILL ALIGNMENT, APPLICATION RECOMMENDATION, IMPROVEMENT STEPS) without any word counts. Be accurate, specific, and actionable.
+                    """
+
+
+def create_fallback_analysis(
+    matched_skills: list,
+    partial_matches: list,
+    missing_skills: list,
+    compatibility_score: float,
+    job_title: str
+) -> str:
+    match_percentage = round(compatibility_score * 100, 1)
+    
+    analysis_parts = [
+        f"**Match Score: {match_percentage}%**\n",
+        f"**Position: {job_title}**\n",
+        "\n**Skills Analysis:**\n"
+    ]
+    
+    if matched_skills:
+        analysis_parts.append(f"\n✓ **Direct Matches ({len(matched_skills)}):**\n")
+        analysis_parts.append("• " + "\n• ".join(matched_skills[:10]))
+    
+    if partial_matches:
+        analysis_parts.append(f"\n\n⚠️ **Related Skills ({len(partial_matches)}):**\n")
+        analysis_parts.append("• " + "\n• ".join(partial_matches[:10]))
+    
+    if missing_skills:
+        analysis_parts.append(f"\n\n✗ **Skills to Develop ({len(missing_skills)}):**\n")
+        analysis_parts.append("• " + "\n• ".join(missing_skills[:10]))
+    
+    # Add recommendation based on score
+    analysis_parts.append("\n\n**Recommendation:**\n")
+    if match_percentage >= 80:
+        analysis_parts.append(
+            "Strong match! You should definitely apply for this position. "
+            "Focus on highlighting your directly matching skills in your application."
+        )
+    elif match_percentage >= 60:
+        analysis_parts.append(
+            "Good match! Consider applying, especially if you can quickly learn the missing skills. "
+            "Emphasize your related experience and transferable skills."
+        )
+    elif match_percentage >= 40:
+        analysis_parts.append(
+            "Moderate match. You may want to upskill in the missing areas before applying, "
+            "or look for positions with requirements closer to your current skill set."
+        )
+    else:
+        analysis_parts.append(
+            "Lower match. Consider this as a growth opportunity and focus on developing the missing skills before applying. "
+            "Look for intermediate roles that bridge your current skills to this position's requirements."
+        )
+    
+    return "".join(analysis_parts)

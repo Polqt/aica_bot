@@ -6,14 +6,14 @@ import logging
 from typing import Optional, Tuple, List, Dict
 
 from langchain_anthropic import ChatAnthropic
-from langchain.output_parsers import PydanticOutputParser
+from langchain_core.output_parsers import PydanticOutputParser
 
 from .models import ResumeSkills, PersonalInfo, ParsedResume
 from .extractor import FileExtractor
 from .skill_extractor import SkillExtractor
 from .info_extractor import InfoExtractor
 from .normalizer import SkillNormalizer, TextCleaner
-from .prompts import create_comprehensive_skills_prompt, create_personal_info_prompt
+from prompts.resume_prompts import create_comprehensive_skills_prompt, create_personal_info_prompt
 
 from database.user_db import UserDatabase
 from database.models.user_models import UserSkillCreate

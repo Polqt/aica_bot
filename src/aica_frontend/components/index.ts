@@ -1,4 +1,3 @@
-// Common components exports for easy importing
 export { PageLoader } from './PageLoader';
 export { LoadingState } from './LoadingState';
 export { EmptyState } from './EmptyState';

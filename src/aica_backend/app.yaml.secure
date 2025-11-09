@@ -1,0 +1,22 @@
+runtime: python311
+
+instance_class: F4
+
+# Update entrypoint with better timeout settings
+entrypoint: uvicorn main:app --host 0.0.0.0 --port $PORT --timeout-keep-alive 75 --timeout-graceful-shutdown 30
+
+automatic_scaling:
+  max_instances: 5
+  min_instances: 0
+  target_cpu_utilization: 0.65
+  max_concurrent_requests: 10
+
+# ⚠️ SECURITY: Secrets should be in .env.yaml (not committed to git)
+# Create .env.yaml from .env.yaml.template and add your actual keys
+# Deploy with: gcloud app deploy app.yaml --env-vars-file=.env.yaml
+
+env_variables:
+  # Public non-sensitive variables
+  SUPABASE_URL: "https://aswweshgqhfbrqcrslcy.supabase.co"
+  ANTHROPIC_MODEL: "claude-3-haiku-20240307"
+  # Sensitive keys should be in .env.yaml (see .env.yaml.template)

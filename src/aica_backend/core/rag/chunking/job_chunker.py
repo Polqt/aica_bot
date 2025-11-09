@@ -15,7 +15,7 @@ class JobChunker(BaseChunker):
     (title, company, location) to ensure critical data is always retrieved,
     then chunks the full job description while maintaining context.
     """
-    
+
     def __init__(self, embedder, chunk_size: int = CHUNK_SIZE, chunk_overlap: int = CHUNK_OVERLAP):
         self.embedder = embedder
         self.chunk_size = chunk_size
@@ -107,18 +107,11 @@ class JobChunker(BaseChunker):
         return None
     
     def _enrich_chunk_with_context(self, chunk: str, job_title: str) -> str:
-        """
-        Add job title context to a chunk if not already present.
-        
-        This helps with retrieval by ensuring each chunk contains context
-        about which job it belongs to.
-        """
         if job_title and job_title.lower() not in chunk.lower():
             return f"[{job_title}] {chunk}"
         return chunk
     
     def get_chunk_size(self) -> int:
-        """Get the configured chunk size."""
         return self.chunk_size
     
     def get_chunk_overlap(self) -> int:

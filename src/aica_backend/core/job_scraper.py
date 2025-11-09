@@ -9,8 +9,10 @@ from dotenv import load_dotenv
 
 from firecrawl import Firecrawl
 from langchain_anthropic import ChatAnthropic
-from langchain.prompts import ChatPromptTemplate
-from langchain.output_parsers import PydanticOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
+
+from prompts.job_scraper_prompts import create_job_extraction_prompt
 from pydantic import BaseModel, Field
 
 from database.models.job_models import Job
@@ -71,35 +73,7 @@ class JobScraper:
         self.llm = ChatAnthropic(model=model_name, temperature=0)
         self.parser = PydanticOutputParser(pydantic_object=ExtractedJobData)
         
-        self.extraction_prompt = ChatPromptTemplate.from_messages([
-            (
-                "system",
-                """
-                You are an expert job posting analyzer. Extract structured information 
-                from job postings with high accuracy. Focus on identifying all relevant 
-                skills, requirements, and qualifications that would be important for 
-                job matching algorithms.
-
-                CRITICAL: You must provide valid, complete JSON output. Do not repeat 
-                the same text multiple times. If you encounter parsing issues, provide
-                a minimal valid response rather than malformed output.
-
-                For the title field, extract ONLY the actual job title, not repeated text.
-                """
-            ),
-            (
-                "human",
-                """
-                Extract structured information from this job posting:
-                {job_content}
-
-                {format_instructions}
-
-                Remember: Provide clean, non-repetitive output. If the content is unclear,
-                make reasonable assumptions but keep the response well-structured.
-                """
-            )
-        ])
+        self.extraction_prompt = create_job_extraction_prompt()
 
     @st.cache_data(show_spinner=False)
     def _cached_parse_resume(pdf_link: str) -> str:

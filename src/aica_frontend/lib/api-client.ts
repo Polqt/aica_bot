@@ -121,7 +121,7 @@ export class ApiClient {
   }
 
   async getUserSkills(category?: string): Promise<SkillsResponse> {
-    const url = new URL(`${API_BASE_URL}${API_ENDPOINTS.AUTH.SKILLS}`);
+    const url = new URL(`${API_BASE_URL}${API_ENDPOINTS.RESUME.SKILLS}`);
     if (category) {
       url.searchParams.append('category', category);
     }

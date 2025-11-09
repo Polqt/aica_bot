@@ -1,8 +1,12 @@
 # Ignore environment files containing secrets
 .env
-.env.example
+.env.*
+.env.yaml
+.env.local
+.env.production
 
-# Ignore environment files containing secrets
-.env
-.env.example
+# Ignore environment files in backend
 src/aica_backend/app.yaml
+src/aica_backend/.env
+src/aica_backend/.env.yaml
+src/aica_backend/.env.local
