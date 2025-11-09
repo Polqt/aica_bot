@@ -1,6 +1,9 @@
 import re
+import json
 import logging
+from pathlib import Path
 from typing import Optional
+from functools import lru_cache
 
 from .models import PersonalInfo
 
@@ -11,6 +14,23 @@ class InfoExtractor:
     EMAIL_PATTERN = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
     PHONE_PATTERN = r'\b(?:\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}\b'
     LINKEDIN_PATTERN = r'(?:linkedin\.com/in/|linkedin\.com/pub/)[\w-]+'
+    
+    @classmethod
+    @lru_cache(maxsize=1)
+    def _load_name_extraction_config(cls) -> dict:
+        try:
+            config_path = Path(__file__).parent.parent.parent / 'data' / 'name_extraction_config.json'
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading name extraction config: {e}")
+            return {
+                "reference_keywords": [],
+                "skip_keywords": [],
+                "reference_indicators": [],
+                "invalid_name_words": [],
+                "name_prefixes_to_remove": []
+            }
     
     @classmethod
     def extract_with_fallback(cls, text: str) -> PersonalInfo:
@@ -46,13 +66,11 @@ class InfoExtractor:
         if not lines:
             return None
         
-        reference_keywords = [
-            'reference:', 'references:', 'character reference:', 'character references:',
-            'professional reference:', 'personal reference:', 'contact person:',
-            'recommended by:', 'referral:', 'referee:', 'provided by:',
-            'reference contact:', 'reference name:', 'for reference:',
-            'character referee:', 'personal referee:', 'professional referee:'
-        ]
+        # Load configuration
+        config = InfoExtractor._load_name_extraction_config()
+        reference_keywords = config.get('reference_keywords', [])
+        skip_keywords = config.get('skip_keywords', [])
+        invalid_name_words = config.get('invalid_name_words', [])
         
         
         for i, line in enumerate(lines[:5]):  
@@ -63,18 +81,9 @@ class InfoExtractor:
                 continue
             
             # Skip obvious non-name lines
-            skip_keywords = [
-                'resume', 'cv', 'curriculum', 'vitae', 'phone', 'email', 'address',
-                'objective', 'summary', 'profile', 'experience', 'education',
-                'skills', 'contact', 'www', 'http', '.com', '@', 'linkedin',
-                'portfolio', 'github', 'website', 'mobile:', 'tel:', 'location:',
-                'city:', 'state:', 'country:', 'zip:', 'postal:'
-            ]
-            
             if any(keyword in line_lower for keyword in skip_keywords):
                 continue
             
-            # Check if line looks like a name (2-4 words, proper capitalization)
             words = line.split()
             if 2 <= len(words) <= 4:
                 # Validate word patterns (proper names)
@@ -98,7 +107,6 @@ class InfoExtractor:
                     extracted_name = InfoExtractor.clean_extracted_name(' '.join(valid_words))
                     
                     # Final validation: Name should not contain obviously non-name words
-                    invalid_name_words = ['resume', 'curriculum', 'vitae', 'objective', 'profile']
                     if not any(word in extracted_name.lower() for word in invalid_name_words):
                         return extracted_name
         
@@ -109,8 +117,11 @@ class InfoExtractor:
         if not name:
             return name
         
+        # Load configuration
+        config = InfoExtractor._load_name_extraction_config()
+        prefixes_to_remove = config.get('name_prefixes_to_remove', [])
+        
         # Remove common prefixes
-        prefixes_to_remove = ['resume of ', 'cv of ', 'name:', 'full name:']
         name_lower = name.lower().strip()
         
         for prefix in prefixes_to_remove:
@@ -132,6 +143,10 @@ class InfoExtractor:
         if not extracted_name:
             return False
         
+        # Load configuration
+        config = InfoExtractor._load_name_extraction_config()
+        reference_indicators = config.get('reference_indicators', [])
+        
         # Find where the name appears in the text
         name_positions = []
         text_lower = full_text.lower()
@@ -148,7 +163,7 @@ class InfoExtractor:
         if not name_positions:
             return False
         
-        # CRITICAL: Check if the FIRST occurrence is in the header (top 800 chars)
+        # Check if the FIRST occurrence is in the header (top 800 chars)
         first_pos = name_positions[0]
         
         # If name appears in first 800 characters, it's likely the applicant
@@ -157,14 +172,6 @@ class InfoExtractor:
             context_start = max(0, first_pos - 300)
             context_end = min(len(full_text), first_pos + 300)
             context = full_text[context_start:context_end].lower()
-            
-            reference_indicators = [
-                'reference:', 'references:', 'character reference:', 
-                'professional reference:', 'personal reference:',
-                'contact person:', 'recommended by:', 'referral:', 
-                'reference:', 'character reference:', 'provided by:',
-                'reference name:', 'reference contact:'
-            ]
             
             # If reference keywords are very close (within 100 chars), it's a reference
             for indicator in reference_indicators:
@@ -186,14 +193,6 @@ class InfoExtractor:
         context_start = max(0, first_pos - 500)
         context_end = min(len(full_text), first_pos + 500)
         context = full_text[context_start:context_end].lower()
-        
-        # Reference section indicators
-        reference_indicators = [
-            'reference:', 'references:', 'character reference:', 
-            'professional reference:', 'personal reference:',
-            'contact person:', 'recommended by:', 'referral:', 
-            'referee:', 'character referee:'
-        ]
         
         # If the name appears near reference keywords, it's likely a reference
         for indicator in reference_indicators:

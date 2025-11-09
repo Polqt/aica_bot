@@ -17,6 +17,20 @@ class SkillExtractor:
     
     @classmethod
     @lru_cache(maxsize=1)
+    def _load_skill_extraction_config(cls) -> dict:
+        """Load skill extraction configuration from JSON file."""
+        try:
+            data_dir = Path(__file__).parent.parent.parent / 'data'
+            with open(data_dir / 'skill_extraction_config.json', 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            logger.info(f"Loaded skill extraction config with {len(config)} sections")
+            return config
+        except Exception as e:
+            logger.error(f"Error loading skill extraction config: {e}")
+            return {}
+    
+    @classmethod
+    @lru_cache(maxsize=1)
     def _load_skills_data(cls) -> tuple:
         try:
             data_dir = Path(__file__).parent.parent.parent / 'data'
@@ -79,17 +93,11 @@ class SkillExtractor:
             industries=industries
         )
     
-    @staticmethod
-    def _remove_certification_sections(text: str) -> str:
-        cert_headers = [
-            'certification', 'licenses', 'training', 'courses', 'coursework',
-            'professional development', 'continuing education', 'seminars', 'workshops'
-        ]
-        
-        other_headers = [
-            'experience', 'projects', 'skills', 'education', 'summary',
-            'achievements', 'references'
-        ]
+    @classmethod
+    def _remove_certification_sections(cls, text: str) -> str:
+        config = cls._load_skill_extraction_config()
+        cert_headers = config.get('cert_headers', [])
+        other_headers = config.get('other_headers', [])
         
         lines = text.split('\n')
         filtered_lines = []
@@ -139,13 +147,9 @@ class SkillExtractor:
         found_skills = []
         keywords = cls._get_technical_keywords()
         
-        # Uppercase acronym skills
-        uppercase_skills = {
-            'aws', 'gcp', 'api', 'sql', 'html', 'css', 'php', 'ios', 'iot',
-            'jwt', 'rest', 'soap', 'xml', 'json', 'yaml', 'ci/cd', 'tdd',
-            'bdd', 'mvc', 'mvvm', 'nlp', 'ddd', 'sso', 'iam', 'ssl', 'tls',
-            'cnn', 'rnn', 'lstm', 'ux', 'ui', 'ml', 'bi', 'http', 'https'
-        }
+        # Load uppercase acronym skills from config
+        config = cls._load_skill_extraction_config()
+        uppercase_skills = set(config.get('uppercase_skills', []))
         
         for skill in keywords:
             # Flexible pattern matching
@@ -199,16 +203,10 @@ class SkillExtractor:
         
         return None
     
-    @staticmethod
-    def _extract_education_level(text: str) -> Optional[str]:
-        education_levels = [
-            ('phd', 'PhD'), ('doctorate', 'PhD'),
-            ("master's", "Master's"), ('masters', "Master's"), ('mba', 'MBA'),
-            ('ms', 'MS'), ('ma', 'MA'), ('msc', 'MSc'),
-            ("bachelor's", "Bachelor's"), ('bachelors', "Bachelor's"),
-            ('bs', 'BS'), ('ba', 'BA'), ('bsc', 'BSc'),
-            ('associate', 'Associate'), ('diploma', 'Diploma')
-        ]
+    @classmethod
+    def _extract_education_level(cls, text: str) -> Optional[str]:
+        config = cls._load_skill_extraction_config()
+        education_levels = [tuple(item) for item in config.get('education_levels', [])]
         
         text_lower = text.lower()
         for keyword, level in education_levels:
@@ -217,14 +215,10 @@ class SkillExtractor:
         
         return None
     
-    @staticmethod
-    def _extract_industries(text: str) -> List[str]:
-        industries = [
-            'technology', 'software', 'it', 'finance', 'banking', 'healthcare',
-            'retail', 'e-commerce', 'education', 'consulting', 'manufacturing',
-            'telecommunications', 'energy', 'government', 'marketing', 'media',
-            'hospitality', 'real estate', 'logistics', 'construction', 'pharmaceuticals'
-        ]
+    @classmethod
+    def _extract_industries(cls, text: str) -> List[str]:
+        config = cls._load_skill_extraction_config()
+        industries = config.get('industries', [])
         
         found = [industry for industry in industries if industry in text.lower()]
         return list(set(found))

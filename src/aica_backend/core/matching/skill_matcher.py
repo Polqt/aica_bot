@@ -1,73 +1,47 @@
+import json
+import logging
+from pathlib import Path
 from typing import List, Dict
+from functools import lru_cache
+
+logger = logging.getLogger(__name__)
+
 
 class SkillMatcher:
 
-    SKILL_RELATIONSHIPS: Dict[str, List[str]] = {
-        # Frontend frameworks
-        'react': ['reactjs', 'react.js', 'react native'],
-        'angular': ['angularjs', 'angular.js'],
-        'vue': ['vuejs', 'vue.js', 'nuxt', 'nuxtjs'],
-        
-        # Backend frameworks
-        'node': ['nodejs', 'node.js', 'express', 'expressjs', 'nest', 'nestjs'],
-        'django': ['python', 'drf', 'django rest framework'],
-        'flask': ['python'],
-        'spring': ['spring boot', 'java', 'springboot'],
-        
-        # Databases
-        'sql': ['mysql', 'postgresql', 'postgres', 'mssql', 'sql server', 'oracle'],
-        'nosql': ['mongodb', 'cassandra', 'couchdb', 'dynamodb'],
-        'mongodb': ['mongo', 'nosql'],
-        'postgresql': ['postgres', 'sql'],
-        
-        # Cloud
-        'aws': ['amazon web services', 'ec2', 's3', 'lambda', 'cloud'],
-        'azure': ['microsoft azure', 'azure devops', 'cloud'],
-        'gcp': ['google cloud', 'google cloud platform', 'cloud'],
-        
-        # Languages
-        'javascript': ['js', 'typescript', 'ts', 'node', 'react', 'angular', 'vue'],
-        'typescript': ['ts', 'javascript', 'js'],
-        'python': ['django', 'flask', 'fastapi', 'pandas'],
-        
-        # DevOps
-        'docker': ['containerization', 'kubernetes', 'k8s'],
-        'kubernetes': ['k8s', 'docker', 'containerization'],
-        'ci/cd': ['jenkins', 'gitlab ci', 'github actions', 'travis'],
-        
-        # Testing
-        'testing': ['jest', 'mocha', 'pytest', 'junit', 'tdd', 'bdd'],
-        'jest': ['testing', 'unit testing', 'react testing'],
-        
-        # Mobile
-        'ios': ['swift', 'objective-c', 'xcode', 'mobile'],
-        'android': ['kotlin', 'java', 'android studio', 'mobile'],
-        'mobile': ['ios', 'android', 'react native', 'flutter'],
-    }
+    _skill_relationships: Dict[str, List[str]] = None
+    _skill_variations: Dict[str, List[str]] = None
     
-    # Common skill name variations and normalizations
-    SKILL_VARIATIONS: Dict[str, List[str]] = {
-        'js': ['javascript', 'java script'],
-        'ts': ['typescript', 'type script'],
-        'react.js': ['react', 'reactjs'],
-        'node.js': ['nodejs', 'node', 'node js'],
-        'vue.js': ['vue', 'vuejs'],
-        'mongodb': ['mongo', 'mongo db'],
-        'postgresql': ['postgres', 'postgre sql'],
-        'mysql': ['sql', 'my sql'],
-        'tailwindcss': ['tailwind css', 'tailwind', 'tailwind-css'],
-        'nextjs': ['next.js', 'next js', 'next'],
-        'expressjs': ['express.js', 'express js', 'express'],
-        'aws': ['amazon web services', 'amazonwebservices'],
-        'docker': ['containerization', 'container'],
-        'kubernetes': ['k8s', 'kube'],
-        'html': ['html5', 'hypertext markup language'],
-        'css': ['css3', 'cascading style sheets'],
-        'sass': ['scss', 'syntactically awesome style sheets'],
-        'git': ['github', 'gitlab', 'version control'],
-        'api': ['rest api', 'restful api', 'web api'],
-        'testing': ['unit testing', 'integration testing', 'test'],
-    }
+    @classmethod
+    @lru_cache(maxsize=1)
+    def _load_skill_matching_config(cls) -> dict:
+        """Load skill matching configuration from JSON file."""
+        try:
+            config_path = Path(__file__).parent.parent.parent / 'data' / 'skill_matching_config.json'
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading skill matching config: {e}")
+            return {
+                "skill_relationships": {},
+                "skill_variations": {}
+            }
+    
+    @classmethod
+    def _get_skill_relationships(cls) -> Dict[str, List[str]]:
+        """Get skill relationships, loading from config if needed."""
+        if cls._skill_relationships is None:
+            config = cls._load_skill_matching_config()
+            cls._skill_relationships = config.get('skill_relationships', {})
+        return cls._skill_relationships
+    
+    @classmethod
+    def _get_skill_variations(cls) -> Dict[str, List[str]]:
+        """Get skill variations, loading from config if needed."""
+        if cls._skill_variations is None:
+            config = cls._load_skill_matching_config()
+            cls._skill_variations = config.get('skill_variations', {})
+        return cls._skill_variations
     
     @classmethod
     def find_exact_matches(cls, user_skills: List[str], job_skills: List[str]) -> List[str]:
@@ -123,8 +97,12 @@ class SkillMatcher:
     
     @classmethod
     def check_skill_relationship(cls, user_skill: str, job_skill: str) -> bool:
+        """Check if two skills are related."""
+        skill_relationships = cls._get_skill_relationships()
+        skill_variations = cls._get_skill_variations()
+        
         # Check direct relationships
-        for key, related_skills in cls.SKILL_RELATIONSHIPS.items():
+        for key, related_skills in skill_relationships.items():
             if key in user_skill and job_skill in related_skills:
                 return True
             if key in job_skill and user_skill in related_skills:
@@ -134,7 +112,7 @@ class SkillMatcher:
                 return True
         
         # Check variations
-        for main_skill, variations in cls.SKILL_VARIATIONS.items():
+        for main_skill, variations in skill_variations.items():
             if (user_skill in variations or user_skill == main_skill) and \
                (job_skill in variations or job_skill == main_skill):
                 return True
@@ -143,6 +121,7 @@ class SkillMatcher:
     
     @classmethod
     def skills_match_with_variations(cls, user_skill: str, job_skill: str) -> bool:
+        """Check if skills match considering variations."""
         user_skill = user_skill.lower().strip()
         job_skill = job_skill.lower().strip()
         
@@ -165,7 +144,8 @@ class SkillMatcher:
             return True
         
         # Check skill variations
-        for main_skill, variations in cls.SKILL_VARIATIONS.items():
+        skill_variations = cls._get_skill_variations()
+        for main_skill, variations in skill_variations.items():
             if (user_skill in variations or user_skill == main_skill or
                 job_skill in variations or job_skill == main_skill or
                 user_normalized in variations or user_normalized == main_skill or
@@ -173,7 +153,7 @@ class SkillMatcher:
                 return True
         
         # Check reverse mappings
-        for main_skill, variations in cls.SKILL_VARIATIONS.items():
+        for main_skill, variations in skill_variations.items():
             if user_skill == main_skill and job_skill in variations:
                 return True
             if job_skill == main_skill and user_skill in variations:

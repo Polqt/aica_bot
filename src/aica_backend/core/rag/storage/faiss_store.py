@@ -47,9 +47,7 @@ class FAISSStore(BaseVectorStore):
                     self.embedder.embeddings,
                     allow_dangerous_deserialization=True
                 )
-                logger.info(f"Loaded existing FAISS index from {self.persist_path}")
             except Exception as e:
-                logger.warning(f"Failed to load FAISS index: {e}, creating new one")
                 self._create_empty_store()
         else:
             self._create_empty_store()
@@ -63,7 +61,6 @@ class FAISSStore(BaseVectorStore):
             [dummy_doc],
             self.embedder.embeddings
         )
-        logger.info("Created new FAISS index")
     
     def add_documents(self, documents: List[dict], embeddings: List[List[float]] = None) -> None:
         if not documents:
@@ -158,6 +155,45 @@ class FAISSStore(BaseVectorStore):
             
         except Exception as e:
             logger.error(f"Error adding job {job_id} to vector store: {e}")
+    
+    def search(self, query_embedding: List[float], k: int = 10, score_threshold: float = 0.0) -> List[Dict]:
+
+        if self.vector_store is None:
+            logger.warning("Vector store not initialized")
+            return []
+        
+        try:
+            # FAISS similarity search with scores using the embedding directly
+            results = self.vector_store.similarity_search_by_vector(
+                query_embedding,
+                k=k
+            )
+            
+            # Format results to match expected output
+            formatted_results = []
+            for doc in results:
+                # Skip dummy documents
+                if doc.metadata.get("is_dummy") or doc.metadata.get("job_id") == "dummy":
+                    continue
+                
+                formatted_results.append({
+                    "document": {
+                        "content": doc.page_content,
+                        "metadata": doc.metadata
+                    },
+                    "score": 1.0,  # FAISS similarity_search_by_vector doesn't return scores by default
+                    "metadata": doc.metadata
+                })
+            
+            # Filter by threshold if needed
+            if score_threshold > 0.0:
+                formatted_results = [r for r in formatted_results if r["score"] >= score_threshold]
+            
+            return formatted_results[:k]
+            
+        except Exception as e:
+            logger.error(f"Error in search: {e}")
+            return []
     
     def search_similar_jobs(
         self,
