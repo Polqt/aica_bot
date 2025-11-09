@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from .base import BaseEmbedder
 from ..config import (

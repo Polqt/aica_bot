@@ -1,6 +1,4 @@
 import os
-import re
-import json
 import asyncio
 import logging
 from typing import Optional, Tuple, List, Dict
@@ -14,6 +12,7 @@ from .skill_extractor import SkillExtractor
 from .info_extractor import InfoExtractor
 from .normalizer import SkillNormalizer, TextCleaner
 from prompts.resume_prompts import create_comprehensive_skills_prompt, create_personal_info_prompt
+from utils.text_utils import extract_json_from_text
 
 from database.user_db import UserDatabase
 from database.models.user_models import UserSkillCreate
@@ -26,23 +25,6 @@ class ResumeParser:
         self.llm = self._create_llm_client()
         self.skills_parser = PydanticOutputParser(pydantic_object=ResumeSkills)
         self.info_parser = PydanticOutputParser(pydantic_object=PersonalInfo)
-    
-    @staticmethod
-    def _extract_json_from_text(text: str) -> str:
-        # Try to find JSON object in the text
-        # Look for patterns like { ... } that span multiple lines
-        json_match = re.search(r'\{[\s\S]*\}', text)
-        if json_match:
-            potential_json = json_match.group()
-            try:
-                # Validate it's actual JSON
-                json.loads(potential_json)
-                return potential_json
-            except json.JSONDecodeError:
-                pass
-        
-        # If no valid JSON found, return original text
-        return text
     
     def _create_llm_client(self) -> Optional[ChatAnthropic]:
         try:
@@ -123,48 +105,37 @@ class ResumeParser:
             )
             response = await self.llm.ainvoke(prompt)
             
-            # Extract JSON from response (handles cases with extra text)
-            clean_json = self._extract_json_from_text(response.content)
+            clean_json = extract_json_from_text(response.content)
             
-            # Parse the JSON manually to handle edge cases
             try:
                 import json
                 parsed_data = json.loads(clean_json)
                 
-                # Fix email if it's a list (common AI mistake)
                 if isinstance(parsed_data.get('email'), list):
-                    # Take the first email if it's a list
                     parsed_data['email'] = parsed_data['email'][0] if parsed_data['email'] else None
                     logger.warning(f"Fixed email format: AI returned list, using first email: {parsed_data['email']}")
                 
-                # Convert back to JSON string for Pydantic parsing
                 clean_json = json.dumps(parsed_data)
             except json.JSONDecodeError:
-                pass  # If parsing fails, use original clean_json
+                pass
             
             llm_result = self.info_parser.parse(clean_json)
             
-            # Aggressive name validation - MUST be from top of resume
             if llm_result.full_name:
-                # Clean the name first
                 llm_result.full_name = InfoExtractor.clean_extracted_name(llm_result.full_name)
                 
-                # Verify the name appears in the VERY TOP of the resume (first 800 chars)
                 name_lower = llm_result.full_name.lower()
                 top_section = text[:800].lower()
                 
                 if name_lower not in top_section:
-                    # Name doesn't appear in header - likely picked up from references
                     logger.warning(f"Name '{llm_result.full_name}' not found in resume header, using fallback")
                     fallback_result = InfoExtractor.extract_with_fallback(truncated_for_name)
                     llm_result.full_name = fallback_result.full_name
                 elif InfoExtractor.is_likely_reference_name(text, llm_result.full_name):
-                    # Additional validation: filter out reference names
                     logger.warning(f"Name '{llm_result.full_name}' appears to be a reference, using fallback")
                     fallback_result = InfoExtractor.extract_with_fallback(truncated_for_name)
                     llm_result.full_name = fallback_result.full_name
             
-            # If still no valid name, try fallback
             if not llm_result.full_name or len(llm_result.full_name.strip()) < 2:
                 fallback_result = InfoExtractor.extract_with_fallback(truncated_for_name)
                 if fallback_result.full_name:
@@ -190,8 +161,7 @@ class ResumeParser:
             )
             response = await self.llm.ainvoke(prompt)
             
-            # Extract JSON from response (handles cases with extra text)
-            clean_json = self._extract_json_from_text(response.content)
+            clean_json = extract_json_from_text(response.content)
             parsed_skills = self.skills_parser.parse(clean_json)
             
             # Validate, clean, and normalize skills
