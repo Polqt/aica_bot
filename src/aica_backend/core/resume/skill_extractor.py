@@ -1,6 +1,8 @@
 import re
+import json
 import logging
-from typing import List, Optional
+from pathlib import Path
+from typing import List, Optional, Dict, Any
 
 from .models import ResumeSkills
 from utils.config_loader import load_skill_extraction_config, load_skills_data
@@ -12,9 +14,28 @@ logger = logging.getLogger(__name__)
 
 
 class SkillExtractor:
+    """Extracts skills and related information from resume text using pattern matching."""
 
     _technical_skills: Optional[List[str]] = None
     _soft_skills: Optional[List[str]] = None
+    _education_patterns: Optional[List[Dict[str, Any]]] = None
+    
+    @classmethod
+    def _load_education_patterns(cls) -> List[Dict[str, Any]]:
+        if cls._education_patterns is None:
+            data_dir = Path(__file__).parent.parent.parent / "data"
+            pattern_file = data_dir / "education_patterns.json"
+            
+            try:
+                with open(pattern_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    cls._education_patterns = data.get('patterns', [])
+                    logger.info(f"Loaded {len(cls._education_patterns)} education patterns")
+            except Exception as e:
+                logger.error(f"Failed to load education patterns: {e}")
+                cls._education_patterns = []
+        
+        return cls._education_patterns
     
     @classmethod
     def _get_technical_keywords(cls) -> List[str]:
@@ -30,6 +51,14 @@ class SkillExtractor:
     
     @classmethod
     def extract_with_fallback(cls, text: str) -> ResumeSkills:
+        """Extract skills, experience, education, and industries from resume text.
+        
+        Args:
+            text: Resume text to analyze
+            
+        Returns:
+            ResumeSkills object with extracted data
+        """
         text_lower = text.lower()
         
         certification_free_text = cls._remove_certification_sections(text_lower)
@@ -97,67 +126,65 @@ class SkillExtractor:
     
     @classmethod
     def _extract_education_level(cls, text: str) -> Optional[str]:
-
         text_lower = text.lower()
         
-        skip_chars = 500
+        # Load patterns from JSON
+        patterns_data = cls._load_education_patterns()
+        if not patterns_data:
+            return None
+        
+        # Load skip config
+        data_dir = Path(__file__).parent.parent.parent / "data"
+        pattern_file = data_dir / "education_patterns.json"
+        skip_chars = 500  
+        
+        try:
+            with open(pattern_file, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+                skip_chars = config.get('skip_header_chars', 500)
+        except Exception:
+            pass
+        
+        # Skip header section to avoid reference names
         if len(text) > skip_chars:
-            # Only analyze text after the header section
             text_to_analyze = text[skip_chars:]
             text_lower = text_to_analyze.lower()
         else:
-            # For short resumes, be more careful
             text_to_analyze = text
         
-        # Define education patterns in order of priority 
-        education_patterns = [
-            # Doctoral degrees
-            (r'ph\.?d\.?|doctor of philosophy|doctorate', 'PhD/Doctorate'),
-            (r'doctor of|doctoral degree', 'PhD/Doctorate'),
+        # Sort patterns by priority (already sorted in JSON, but ensure)
+        sorted_patterns = sorted(patterns_data, key=lambda x: x.get('priority', 999))
+        
+        # Find first matching pattern
+        for pattern_config in sorted_patterns:
+            pattern = pattern_config['pattern']
+            level_name = pattern_config['level']
+            captures_field = pattern_config.get('captures_field', False)
             
-            # Master's degrees - with field specificity
-            (r'master[\'s]?\s+(?:of\s+)?(?:science|business administration|arts|engineering|computer science|information technology)',
-             'Master\'s Degree'),
-            (r'mba\s+degree|master\s+in\s+business', 'Master\'s in Business Administration (MBA)'),
-            (r'master[\'s]?|m\.s\.|m\.sc\.|m\.a\.|m\.eng', 'Master\'s Degree'),
-            (r'graduate degree|post\s*graduate', 'Master\'s Degree'),
-            
-            # Bachelor's degrees - with field specificity
-            (r'bachelor[\'s]?\s+(?:of\s+)?(?:science|arts|engineering|computer science|information technology)',
-             'Bachelor\'s Degree'),
-            (r'bachelor[\'s]?|b\.s\.|b\.sc\.|b\.a\.|b\.eng|b\.tech', 'Bachelor\'s Degree'),
-            (r'undergraduate degree|college degree', 'Bachelor\'s Degree'),
-            (r'bsit|bs\s+(?:in\s+)?(?:it|computer|information)', 'Bachelor\'s in Information Technology'),
-            (r'bscs|bs\s+(?:in\s+)?computer science', 'Bachelor\'s in Computer Science'),
-            
-            # Associate degrees
-            (r'associate[\'s]?\s+degree|a\.s\.|a\.a\.', 'Associate Degree'),
-            
-            # High school / Secondary
-            (r'high\s*school|secondary\s+(?:school|education)', 'High School'),
-            (r'diploma|senior high school|shs', 'High School Diploma'),
-        ]
+            try:
+                match = re.search(pattern, text_lower)
+                if match:
+                    # If pattern captures a field name, include it
+                    if captures_field and match.groups() and match.group(1):
+                        field = match.group(1).strip().title()
+                        
+                        # Format based on degree type
+                        if level_name == 'Bachelor of Science':
+                            return f'Bachelor of Science in {field}'
+                        elif level_name == 'Bachelor of Arts':
+                            return f'Bachelor of Arts in {field}'
+                        elif level_name == 'PhD':
+                            return f'PhD in {field}'
+                        elif level_name == 'Associate Degree':
+                            return f'Associate Degree in {field}'
+                    
+                    # Return the level name as-is
+                    return level_name
+            except re.error as e:
+                logger.warning(f"Invalid regex pattern '{pattern}': {e}")
+                continue
         
-        # Find all matching education levels
-        found_levels = []
-        for pattern, level_name in education_patterns:
-            if re.search(pattern, text_lower):
-                found_levels.append(level_name)
-        
-        # Return the first (highest) match
-        if found_levels:
-            # Remove duplicates while preserving order
-            unique_levels = list(dict.fromkeys(found_levels))
-            return unique_levels[0]
-        
-        # Fallback to config-based extraction (also skipping header)
-        config = load_skill_extraction_config()
-        education_levels = [tuple(item) for item in config.get('education_levels', [])]
-        
-        for keyword, level in education_levels:
-            if keyword in text_lower:
-                return level
-        
+        # No matches found
         return None
     
     @classmethod

@@ -5,16 +5,24 @@ from typing import Optional
 from .models import PersonalInfo
 from utils.config_loader import load_name_extraction_config
 from utils.pattern_utils import extract_email, extract_phone, extract_linkedin
-from utils.validation_utils import extract_name_from_text, is_likely_reference_name
-from utils.text_utils import clean_extracted_name
+from utils.validation_utils import extract_name_from_text
 
 logger = logging.getLogger(__name__)
 
 
 class InfoExtractor:
+    """Extracts personal information from resume text."""
     
     @classmethod
     def extract_with_fallback(cls, text: str) -> PersonalInfo:
+        """Extract personal information using pattern matching.
+        
+        Args:
+            text: Resume text to extract information from
+            
+        Returns:
+            PersonalInfo object with extracted data
+        """
         extracted_info = {}
         
         extracted_info['email'] = extract_email(text)
@@ -39,18 +47,4 @@ class InfoExtractor:
             config.get('skip_keywords', []),
             config.get('invalid_name_words', []),
             config.get('name_prefixes_to_remove', [])
-        )
-    
-    @staticmethod
-    def clean_extracted_name(name: str) -> str:
-        config = load_name_extraction_config()
-        return clean_extracted_name(name, config.get('name_prefixes_to_remove', []))
-    
-    @staticmethod
-    def is_likely_reference_name(full_text: str, extracted_name: str) -> bool:
-        config = load_name_extraction_config()
-        return is_likely_reference_name(
-            full_text,
-            extracted_name,
-            config.get('reference_indicators', [])
         )

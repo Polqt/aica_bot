@@ -11,9 +11,12 @@ from .models import ResumeSkills, PersonalInfo, ParsedResume
 from .extractor import FileExtractor
 from .skill_extractor import SkillExtractor
 from .info_extractor import InfoExtractor
-from .normalizer import SkillNormalizer, TextCleaner
+from .normalizer import SkillNormalizer
 from prompts.resume_prompts import create_comprehensive_skills_prompt, create_personal_info_prompt
-from utils.text_utils import extract_json_from_text
+from utils.text_utils import extract_json_from_text, clean_extracted_name
+from utils.text_cleaner import TextCleaner
+from utils.validation_utils import is_likely_reference_name
+from utils.config_loader import load_name_extraction_config
 
 from database.user_db import UserDatabase
 from database.models.user_models import UserSkillCreate
@@ -121,7 +124,11 @@ class ResumeParser:
             llm_result = self.info_parser.parse(clean_json)
             
             if llm_result.full_name:
-                llm_result.full_name = InfoExtractor.clean_extracted_name(llm_result.full_name)
+                config = load_name_extraction_config()
+                llm_result.full_name = clean_extracted_name(
+                    llm_result.full_name,
+                    config.get('name_prefixes_to_remove', [])
+                )
                 
                 name_lower = llm_result.full_name.lower()
                 top_section = text[:1000].lower()  
@@ -130,7 +137,11 @@ class ResumeParser:
                     logger.warning(f"Name '{llm_result.full_name}' not found in resume header, using fallback")
                     fallback_result = InfoExtractor.extract_with_fallback(truncated_for_name)
                     llm_result.full_name = fallback_result.full_name
-                elif InfoExtractor.is_likely_reference_name(text, llm_result.full_name):
+                elif is_likely_reference_name(
+                    text, 
+                    llm_result.full_name,
+                    config.get('reference_indicators', [])
+                ):
                     logger.warning(f"Name '{llm_result.full_name}' appears to be a reference, using fallback")
                     fallback_result = InfoExtractor.extract_with_fallback(truncated_for_name)
                     llm_result.full_name = fallback_result.full_name

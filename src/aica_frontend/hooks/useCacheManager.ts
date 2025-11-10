@@ -14,8 +14,8 @@ const CACHE_KEYS = {
 };
 
 const CACHE_DURATION_MS = {
-  DEFAULT: 5 * 60 * 1000, // 5 minutes
-  PROFILE: 30 * 60 * 1000, // 30 minutes
+  DEFAULT: 5 * 60 * 1000, 
+  PROFILE: 30 * 60 * 1000, 
 };
 
 interface CachedData<T> {

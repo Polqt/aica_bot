@@ -10,7 +10,6 @@ from .pattern_utils import (
     EMAIL_PATTERN,
     PHONE_PATTERN,
     LINKEDIN_PATTERN,
-    EXPERIENCE_YEAR_PATTERNS,
     extract_email,
     extract_phone,
     extract_linkedin,
@@ -28,6 +27,8 @@ from .text_utils import (
     normalize_whitespace,
     remove_duplicates_preserve_order
 )
+
+from .text_cleaner import TextCleaner
 
 from .validation_utils import (
     is_likely_person_name,
@@ -66,6 +67,7 @@ __all__ = [
     'normalize_skill_capitalization',
     'normalize_whitespace',
     'remove_duplicates_preserve_order',
+    'TextCleaner',
     'is_likely_person_name',
     'is_likely_reference_name',
     'extract_name_from_text',

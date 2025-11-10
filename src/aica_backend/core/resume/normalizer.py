@@ -8,6 +8,7 @@ from utils.validation_utils import is_valid_skill
 
 
 class SkillNormalizer:
+    """Utilities for normalizing and validating extracted skills."""
     
     @classmethod
     def normalize_skills(cls, skills: ResumeSkills) -> ResumeSkills:
@@ -72,91 +73,3 @@ class SkillNormalizer:
             skills.experience_years = max(0, min(70, skills.experience_years))
         
         return skills
-    
-    @classmethod
-    def get_skill_variants(cls, skill: str) -> List[str]:
-        skill_lower = skill.lower().strip()
-        variants = [skill_lower]
-        
-        # Find the normalized form
-        normalized_skill = cls.SKILL_NORMALIZATIONS.get(skill_lower, skill)
-        
-        # Find all variants that map to the same normalized form
-        for variant, normalized in cls.SKILL_NORMALIZATIONS.items():
-            if normalized == normalized_skill and variant != skill_lower:
-                variants.append(variant)
-        
-        return variants
-    
-    @classmethod
-    def are_skills_equivalent(cls, skill1: str, skill2: str) -> bool:
-        skill1_lower = skill1.lower().strip()
-        skill2_lower = skill2.lower().strip()
-        
-        # Direct match
-        if skill1_lower == skill2_lower:
-            return True
-        
-        # Normalize both and compare
-        normalized1 = cls.SKILL_NORMALIZATIONS.get(skill1_lower, skill1)
-        normalized2 = cls.SKILL_NORMALIZATIONS.get(skill2_lower, skill2)
-        
-        return normalized1.lower() == normalized2.lower()
-    
-    @classmethod
-    def get_normalization_stats(cls) -> dict:
-        # Count skill families by grouping normalized values
-        normalized_values = set(cls.SKILL_NORMALIZATIONS.values())
-        
-        # Count mappings per normalized skill
-        mappings_per_skill = {}
-        for variant, normalized in cls.SKILL_NORMALIZATIONS.items():
-            if normalized not in mappings_per_skill:
-                mappings_per_skill[normalized] = []
-            mappings_per_skill[normalized].append(variant)
-        
-        return {
-            "total_mappings": len(cls.SKILL_NORMALIZATIONS),
-            "unique_normalized_skills": len(normalized_values),
-            "skill_families": 25,  # Documented in the dictionary
-            "average_variants_per_skill": len(cls.SKILL_NORMALIZATIONS) / len(normalized_values),
-            "top_skills_by_variants": sorted(
-                [(skill, len(variants)) for skill, variants in mappings_per_skill.items()],
-                key=lambda x: x[1],
-                reverse=True
-            )[:10]
-        }
-
-
-class TextCleaner:
-    @staticmethod
-    def clean_text(text: str) -> str:
-        if not text:
-            return ""
-        
-        # Remove common resume artifacts
-        artifacts_to_remove = [
-            r'Page \d+ of \d+',
-            r'\x00',  # null characters
-        ]
-        
-        for pattern in artifacts_to_remove:
-            text = re.sub(pattern, '', text, flags=re.MULTILINE)
-        
-        # Clean up each line individually to preserve line structure
-        lines = text.split('\n')
-        cleaned_lines = []
-        
-        for line in lines:
-            # Remove excessive horizontal whitespace within each line
-            line = re.sub(r'[ \t]+', ' ', line)
-            # Remove leading/trailing whitespace
-            line = line.strip()
-            # Only keep non-empty lines
-            if line:
-                cleaned_lines.append(line)
-        
-        # Join lines back with newlines
-        cleaned_text = '\n'.join(cleaned_lines)
-        
-        return cleaned_text.strip()
