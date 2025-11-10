@@ -205,8 +205,13 @@ export class ApiClient {
     return this.get<SavedJob[]>(API_ENDPOINTS.JOBS.SAVED_JOBS);
   }
 
-  async saveJob(jobId: string): Promise<SavedJob> {
-    return this.post<SavedJob>(`${API_ENDPOINTS.JOBS.SAVED_JOBS}/${jobId}`);
+  async saveJob(
+    jobId: string,
+    isRecommendation: boolean = false,
+  ): Promise<SavedJob> {
+    return this.post<SavedJob>(
+      `${API_ENDPOINTS.JOBS.SAVED_JOBS}/${jobId}?is_recommendation=${isRecommendation}`,
+    );
   }
 
   async removeSavedJob(jobId: string): Promise<{ message: string }> {

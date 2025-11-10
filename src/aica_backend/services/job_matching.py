@@ -145,11 +145,7 @@ class JobMatchingService:
         user_skills: List[UserSkill], 
         limit: int
     ) -> List[JobMatchResult]:
-        """
-        Find matches using RAG semantic search pipeline.
-        
-        This is more accurate than keyword matching as it understands semantic similarity.
-        """
+
         try:
             # Build user context for RAG search
             skill_names = [skill.skill_name for skill in user_skills]

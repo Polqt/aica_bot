@@ -168,19 +168,6 @@ class UserDatabase:
             return len(response.data) > 0
         except Exception as e:
             return False
-    
-    def mark_resume_processed(self, user_id: str) -> bool:
-        try:
-            update_data = {
-                "resume_processed": True,
-                "updated_at": datetime.now().isoformat()
-            }
-            response = self.client.table("user_profiles").update(update_data).eq("user_id", user_id).execute()
-            self._handle_db_response(response, "mark resume processed")
-            
-            return len(response.data) > 0
-        except Exception as e:
-            return False
 
     def add_user_skill(self, user_id: str, skill: UserSkillCreate) -> UserSkill:
         try:
@@ -275,40 +262,6 @@ class UserDatabase:
             logger.error(f"Failed to clear experience for user {user_id}: {e}")
             return False
     
-    def delete_user_skill(self, skill_id: str) -> bool:
-        try:
-            response = self.client.table("user_skills").delete().eq("id", skill_id).execute()
-            self._handle_db_response(response, "delete user skill")
-            
-            return len(response.data) > 0
-        except Exception as e:
-            return False
-    
-    def delete_user_skills_batch(self, skill_ids: List[str]) -> int:
-        """Delete multiple skills in one operation. Returns count of deleted skills."""
-        if not skill_ids:
-            return 0
-            
-        try:
-            response = self.client.table("user_skills").delete().in_("id", skill_ids).execute()
-            self._handle_db_response(response, "delete user skills batch")
-            
-            return len(response.data) if response.data else 0
-        except Exception as e:
-            logger.error(f"Failed to delete skills batch: {str(e)}")
-            return 0
-
-    def update_user_skill(self, skill_id: str, update_data: dict) -> Optional[UserSkill]:
-        try:
-            response = self.client.table("user_skills").update(update_data).eq("id", skill_id).execute()
-            self._handle_db_response(response, "update user skill")
-            
-            if response.data:
-                return UserSkill(**response.data[0])
-            return None
-        except Exception as e:
-            return None
-    
     def save_job_match(self, user_id: str, job_id: str, match_score: float, matched_skills: List[str],
                        missing_critical_skills: List[str] = None, skill_coverage: float = 0.0,
                        confidence: str = "medium", ai_reasoning: str = "") -> UserJobMatch:
@@ -381,10 +334,8 @@ class UserDatabase:
     def clear_job_matches(self, user_id: str) -> bool:
         try:
             response = self.client.table("user_job_matches").delete().eq("user_id", user_id).execute()
-            logger.info(f"✅ Cleared all job matches for user {user_id}")
             return True
         except Exception as e:
-            logger.error(f"❌ Failed to clear job matches for user {user_id}: {e}")
             return False
 
     def get_user_stats(self, user_id: str) -> Dict[str, Any]:
@@ -441,8 +392,21 @@ class UserDatabase:
                 industries=[]
             )
             
-    def save_user_job(self, user_id: str, job_id: str) -> 'UserSavedJob':
+    def save_user_job(self, user_id: str, job_id: str, is_recommendation: bool = False) -> 'UserSavedJob':
         try:
+            existing = (self.client.table("user_saved_jobs")
+                       .select("*")
+                       .eq("user_id", user_id)
+                       .eq("job_id", job_id)
+                       .execute())
+            
+            if existing.data and len(existing.data) > 0:
+                # Job already saved, return existing record
+                saved_job = UserSavedJob(**existing.data[0])
+                self.ensure_job_match_exists(user_id, job_id, is_recommendation=is_recommendation)
+                return saved_job
+            
+            # Insert new saved job
             data = {
                 "user_id": user_id,
                 "job_id": job_id
@@ -454,16 +418,14 @@ class UserDatabase:
             saved_job = UserSavedJob(**response.data[0])
 
             # Ensure match data exists for this job
-            self.ensure_job_match_exists(user_id, job_id)
+            self.ensure_job_match_exists(user_id, job_id, is_recommendation=is_recommendation)
 
             return saved_job
         except Exception as e:
             raise ValueError(f"Failed to save user job: {str(e)}")
 
-    def ensure_job_match_exists(self, user_id: str, job_id: str) -> bool:
-        """Ensure a job has match data, create basic match if none exists"""
+    def ensure_job_match_exists(self, user_id: str, job_id: str, is_recommendation: bool = False) -> bool:
         try:
-            # Check if match data exists
             response = (self.client.table("user_job_matches")
                         .select("id")
                         .eq("user_id", user_id)
@@ -473,16 +435,16 @@ class UserDatabase:
             if response.data and len(response.data) > 0:
                 return True  # Match data already exists
 
-            # Create basic match data if none exists
+            # For recommendations, mark them clearly so they can be distinguished
             match_data = {
                 "user_id": user_id,
                 "job_id": job_id,
-                "match_score": 0.5,  # Default medium match
+                "match_score": 0.0 if is_recommendation else 0.5,  # 0.0 for recommendations
                 "matched_skills": [],
                 "missing_critical_skills": [],
                 "skill_coverage": 0.0,
-                "confidence": "medium",
-                "ai_reasoning": "Job saved before detailed matching was performed"
+                "confidence": "recommendation" if is_recommendation else "medium",
+                "ai_reasoning": "This is a recommended job saved before skills matching. Update your skills for personalized matches!" if is_recommendation else "Job saved before detailed matching was performed"
             }
 
             response = self.client.table("user_job_matches").insert(match_data).execute()
@@ -513,44 +475,4 @@ class UserDatabase:
             return [UserSavedJob(**item) for item in response.data] if response.data else []
         except Exception as e:
             return []
-
-    def get_user_saved_job_with_match_data(self, user_id: str, job_id: str) -> Optional[Dict[str, Any]]:
-        """Get saved job with its match data"""
-        try:
-            # First get the saved job
-            saved_response = (self.client.table("user_saved_jobs")
-                            .select("*")
-                            .eq("user_id", user_id)
-                            .eq("job_id", job_id)
-                            .execute())
-
-            if not saved_response.data or len(saved_response.data) == 0:
-                return None
-
-            saved_data = saved_response.data[0]
-
-            # Then get the match data separately
-            match_response = (self.client.table("user_job_matches")
-                            .select("*")
-                            .eq("user_id", user_id)
-                            .eq("job_id", job_id)
-                            .execute())
-
-            # Merge the data
-            if match_response.data and len(match_response.data) > 0:
-                match_data = match_response.data[0]
-
-                # Parse JSON fields
-                if isinstance(match_data.get("matched_skills"), str):
-                    match_data["matched_skills"] = json.loads(match_data["matched_skills"])
-                if isinstance(match_data.get("missing_critical_skills"), str):
-                    match_data["missing_critical_skills"] = json.loads(match_data["missing_critical_skills"])
-
-                # Merge match data into saved data
-                saved_data.update(match_data)
-
-            return saved_data
-        except Exception as e:
-            logger.warning(f"Could not get saved job with match data for user {user_id}, job {job_id}: {str(e)}")
-            return None
         

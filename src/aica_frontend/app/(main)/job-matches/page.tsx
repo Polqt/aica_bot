@@ -501,7 +501,12 @@ export default function JobMatchesPage() {
               variant="match"
               isSaved={savedJobIds.includes(selectedJob.job_id)}
               isSaving={savingJobId === selectedJob.job_id}
-              onSave={() => saveJob(selectedJob.job_id)}
+              onSave={() =>
+                saveJob(
+                  selectedJob.job_id,
+                  selectedJob.confidence === 'recommendation',
+                )
+              }
               onUnsave={() => removeJob(selectedJob.job_id)}
             />
           ) : (

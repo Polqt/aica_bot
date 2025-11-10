@@ -81,8 +81,13 @@ async def get_job_matches(
         job_db = JobDatabase()
         
         # Get matches from database - fast operation
-        saved_matches = user_db.get_user_job_matches(current_user.id, limit=limit)
-        logger.info(f"✅ Retrieved {len(saved_matches)} matches from database")
+        # Filter to EXCLUDE recommendations (confidence='recommendation') since those aren't real matches
+        all_matches = user_db.get_user_job_matches(current_user.id, limit=limit * 2)  # Get extra to filter
+        
+        # Filter out saved recommendations - only return real matches
+        saved_matches = [m for m in all_matches if m.confidence != 'recommendation'][:limit]
+        
+        logger.info(f"✅ Retrieved {len(saved_matches)} real matches from database (filtered {len(all_matches) - len(saved_matches)} recommendations)")
 
         if not saved_matches:
             return []
@@ -122,7 +127,6 @@ async def get_job_matches(
     except Exception as e:
         logger.error(f"Error getting job matches for user {current_user.id}: {str(e)}")
         return []
-
 @router.get("/stats")
 async def get_matching_stats(
     current_user: User = Depends(get_current_user)

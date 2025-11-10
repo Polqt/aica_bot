@@ -34,7 +34,7 @@ export function useSavedJobs() {
   }, []);
 
   const saveJob = useCallback(
-    async (jobId: string) => {
+    async (jobId: string, isRecommendation: boolean = false) => {
       if (savedJobIds.includes(jobId)) {
         toast.info('Job already saved');
         return;
@@ -42,7 +42,7 @@ export function useSavedJobs() {
 
       setSavingJobId(jobId);
       try {
-        const savedJob = await apiClient.saveJob(jobId);
+        const savedJob = await apiClient.saveJob(jobId, isRecommendation);
         setSavedJobs(prev => [...prev, savedJob]);
         setSavedJobIds(prev => [...prev, jobId]);
         toast.success('Job saved successfully');
