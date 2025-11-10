@@ -16,10 +16,6 @@ EXPERIENCE_YEAR_PATTERNS = [
     r'experience:\s*(\d+)\+?\s*years?',
     r'over\s*(\d+)\s*years?(?:\s*of\s*experience)?',
     
-    # Work history patterns - extract from date ranges
-    r'20(\d{2})\s*[-–]\s*(?:present|current|now)',  # e.g., "2020 - Present"
-    r'(\d{4})\s*[-–]\s*(?:present|current|now)',    # e.g., "2020 - Present"
-    
     # Summary/Profile patterns
     r'with\s*(\d+)\+?\s*years?',
     r'(\d+)\+?\s*years?\s*(?:professional|working)',
@@ -31,7 +27,6 @@ def extract_email(text: str) -> Optional[str]:
     if match:
         email = match.group()
         # Remove any trailing characters that might have been captured
-        # E.g., "email@example.com|University" -> "email@example.com"
         email = email.split('|')[0].split()[0]
         return email
     return None
@@ -50,8 +45,8 @@ def extract_linkedin(text: str) -> Optional[str]:
 def estimate_experience_years(text: str) -> Optional[int]:
     current_year = datetime.datetime.now().year
     
-    # Try explicit experience patterns first
-    for pattern in EXPERIENCE_YEAR_PATTERNS[:8]:  # First 8 are explicit statements
+    # Try explicit experience statements first - these are most reliable
+    for pattern in EXPERIENCE_YEAR_PATTERNS: 
         matches = re.findall(pattern, text, re.IGNORECASE)
         if matches:
             try:
@@ -67,7 +62,7 @@ def estimate_experience_years(text: str) -> Optional[int]:
                     years = int(match) if len(str(match)) <= 2 else int(match)
                     
                     # Sanity checks
-                    if years > 70:  # Too many years
+                    if years > 50:  # Too many years - likely a date like 2025
                         continue
                     if years == 0:  # Zero years is not useful
                         continue
@@ -77,8 +72,6 @@ def estimate_experience_years(text: str) -> Optional[int]:
                 continue
     
     # If no explicit statement, try to calculate from work history dates
-    # Look for "YYYY - Present" patterns in EXPERIENCE or WORK sections only
-    # First, try to identify if we're in the experience/work section
     text_lower = text.lower()
     
     # Find experience/work sections
@@ -102,10 +95,10 @@ def estimate_experience_years(text: str) -> Optional[int]:
         
         experience_section = text[exp_section_start:exp_section_end]
         
-        # Now look for "YYYY - Present" patterns in this section
+        # Now look for "YYYY - Present" patterns in this section ONLY
         present_patterns = [
-            r'(20\d{2})\s*[-–]\s*(?:present|current|now)',
-            r'(19\d{2})\s*[-–]\s*(?:present|current|now)',
+            r'(20[012]\d)\s*[-–]\s*(?:present|current|now)',  # 2000-2029 only
+            r'(19[89]\d)\s*[-–]\s*(?:present|current|now)',   # 1980-1999
         ]
         
         earliest_year = None
@@ -114,6 +107,7 @@ def estimate_experience_years(text: str) -> Optional[int]:
             for match in matches:
                 try:
                     year = int(match)
+                    # Validate year is reasonable
                     if 1980 <= year <= current_year:
                         if earliest_year is None or year < earliest_year:
                             earliest_year = year
@@ -122,7 +116,7 @@ def estimate_experience_years(text: str) -> Optional[int]:
         
         if earliest_year:
             calculated_years = current_year - earliest_year
-            if 0 < calculated_years <= 70:  # Must be > 0 and reasonable
+            if 0 < calculated_years <= 50:  # Maximum 50 years experience
                 return calculated_years
     
     return None

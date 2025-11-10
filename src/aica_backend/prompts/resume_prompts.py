@@ -149,26 +149,44 @@ def create_personal_info_prompt() -> ChatPromptTemplate:
             """You are an expert at extracting personal and contact information from resumes of all styles and formats.
 
             EXTRACTION PRIORITIES:
-            1. Full name (very top of resume)
+            1. Full name (from the resume body, NOT from references section)
             2. Contact information (phone, email, location)
             3. Professional profiles (LinkedIn, GitHub)
             
-            NAME EXTRACTION RULES:
-            - Look ONLY at the FIRST 5 LINES of the resume
-            - First proper name is the applicant's name
-            - Ignore names appearing later (references, etc.)
+            🚨 CRITICAL NAME EXTRACTION RULES:
+            - The applicant's name is usually on line 2-5 (after any reference headers)
+            - IGNORE any names in the first line if they have credentials (MBA, LPT, PhD, MD)
+            - First line with credentials like "Mary Jade Jakosalem, MBA, LPT" is likely a REFERENCE PERSON - SKIP IT
+            - Look for the FIRST proper name WITHOUT credentials attached
+            - Names may have unusual spacing (e.g., "BILLY M AGALO NA" = "Billy Magalona")
+            - The actual applicant's name is typically followed by a job title or contact info
+            
+            ⚠️ REFERENCE DETECTION:
+            Lines to SKIP when extracting names:
+            - Lines ending with ", MBA", ", LPT", ", PhD", ", MD" (these are references)
+            - Lines that appear BEFORE the actual resume content starts
+            - Names that appear after "Reference:", "Character Reference:", etc.
+            
+            ✅ CORRECT NAME EXTRACTION PATTERN:
+            1. Skip first line if it contains credentials (MBA, LPT, PhD, MD, etc.)
+            2. Look at lines 2-8 for the applicant's name
+            3. First proper name (2-4 capitalized words) WITHOUT credentials = applicant
+            4. Ignore all other names appearing later in the document
             
             CONTACT INFORMATION:
-            - Phone
-            - Email (single string, never array)
-            - Location
-            - LinkedIn"""
+            - Phone numbers in any format (+1, (555), 555-1234, etc.)
+            - Email addresses (any valid format)  
+            - Location/City (current residence or general area)
+            - LinkedIn URL (if present)"""
         ),
         (
             "human",
              """Extract personal and contact information from this resume.
             
-            ⚠️ NAME MUST COME ONLY FROM FIRST 5 LINES.
+            ⚠️ CRITICAL: 
+            1. Skip first line if it has credentials like "MBA, LPT, PhD, MD"
+            2. Extract name from lines 2-8 (the actual applicant)
+            3. Email must be a SINGLE STRING, never an array
             
             {resume_text}
             

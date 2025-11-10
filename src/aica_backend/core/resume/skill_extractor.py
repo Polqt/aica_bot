@@ -100,6 +100,15 @@ class SkillExtractor:
 
         text_lower = text.lower()
         
+        skip_chars = 500
+        if len(text) > skip_chars:
+            # Only analyze text after the header section
+            text_to_analyze = text[skip_chars:]
+            text_lower = text_to_analyze.lower()
+        else:
+            # For short resumes, be more careful
+            text_to_analyze = text
+        
         # Define education patterns in order of priority 
         education_patterns = [
             # Doctoral degrees
@@ -109,7 +118,7 @@ class SkillExtractor:
             # Master's degrees - with field specificity
             (r'master[\'s]?\s+(?:of\s+)?(?:science|business administration|arts|engineering|computer science|information technology)',
              'Master\'s Degree'),
-            (r'mba|m\.b\.a\.', 'Master\'s in Business Administration (MBA)'),
+            (r'mba\s+degree|master\s+in\s+business', 'Master\'s in Business Administration (MBA)'),
             (r'master[\'s]?|m\.s\.|m\.sc\.|m\.a\.|m\.eng', 'Master\'s Degree'),
             (r'graduate degree|post\s*graduate', 'Master\'s Degree'),
             
@@ -141,7 +150,7 @@ class SkillExtractor:
             unique_levels = list(dict.fromkeys(found_levels))
             return unique_levels[0]
         
-        # Fallback to config-based extraction
+        # Fallback to config-based extraction (also skipping header)
         config = load_skill_extraction_config()
         education_levels = [tuple(item) for item in config.get('education_levels', [])]
         
