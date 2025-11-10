@@ -1,6 +1,7 @@
 import os
 import asyncio
 import logging
+import json
 from typing import Optional, Tuple, List, Dict
 
 from langchain_anthropic import ChatAnthropic
@@ -91,16 +92,15 @@ class ResumeParser:
         
         try:
             # For name extraction, use ONLY the top portion of the resume to avoid reference confusion
-            # Most resumes have the name in the first 300-800 characters (first 3-8 lines)
-            max_chars_for_name = 800  # Reduced to focus on header area
+            # Most resumes have the name in the first 300-1000 characters (first 3-10 lines)
+            max_chars_for_name = 1000  
             truncated_for_name = text[:max_chars_for_name] if len(text) > max_chars_for_name else text
             
-            # For contact info, we can use a bit more
             max_chars = 3000
             truncated_text = text[:max_chars] if len(text) > max_chars else text
             
             prompt = create_personal_info_prompt().format_prompt(
-                resume_text=truncated_for_name,  # Use only top portion
+                resume_text=truncated_for_name,  
                 format_instructions=self.info_parser.get_format_instructions()
             )
             response = await self.llm.ainvoke(prompt)
@@ -108,7 +108,6 @@ class ResumeParser:
             clean_json = extract_json_from_text(response.content)
             
             try:
-                import json
                 parsed_data = json.loads(clean_json)
                 
                 if isinstance(parsed_data.get('email'), list):
@@ -125,7 +124,7 @@ class ResumeParser:
                 llm_result.full_name = InfoExtractor.clean_extracted_name(llm_result.full_name)
                 
                 name_lower = llm_result.full_name.lower()
-                top_section = text[:800].lower()
+                top_section = text[:1000].lower()  
                 
                 if name_lower not in top_section:
                     logger.warning(f"Name '{llm_result.full_name}' not found in resume header, using fallback")
@@ -145,7 +144,7 @@ class ResumeParser:
         
         except Exception as e:
             logger.error(f"Error extracting personal info: {e}")
-            max_chars_for_name = 800
+            max_chars_for_name = 1000  
             truncated_for_name = text[:max_chars_for_name] if len(text) > max_chars_for_name else text
             return InfoExtractor.extract_with_fallback(truncated_for_name)
     
@@ -227,9 +226,9 @@ class ResumeParser:
         for skill_list, category in skill_mappings:
             for skill in skill_list:
                 skill_name = skill.strip()
-                if skill_name:  # Only add non-empty skills
+                if skill_name:  
                     skills_to_store.append(UserSkillCreate(
-                        user_id="",  # Will be set by database layer
+                        user_id="",
                         skill_name=skill_name,
                         skill_category=category,
                         source="resume"

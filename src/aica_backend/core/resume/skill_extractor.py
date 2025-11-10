@@ -6,6 +6,7 @@ from .models import ResumeSkills
 from utils.config_loader import load_skill_extraction_config, load_skills_data
 from utils.pattern_utils import match_skill_pattern
 from utils.text_utils import remove_section_from_text
+from utils.pattern_utils import estimate_experience_years
 
 logger = logging.getLogger(__name__)
 
@@ -92,15 +93,58 @@ class SkillExtractor:
     
     @staticmethod
     def _estimate_experience_years(text: str) -> Optional[int]:
-        from utils.pattern_utils import estimate_experience_years
         return estimate_experience_years(text)
     
     @classmethod
     def _extract_education_level(cls, text: str) -> Optional[str]:
+
+        text_lower = text.lower()
+        
+        # Define education patterns in order of priority 
+        education_patterns = [
+            # Doctoral degrees
+            (r'ph\.?d\.?|doctor of philosophy|doctorate', 'PhD/Doctorate'),
+            (r'doctor of|doctoral degree', 'PhD/Doctorate'),
+            
+            # Master's degrees - with field specificity
+            (r'master[\'s]?\s+(?:of\s+)?(?:science|business administration|arts|engineering|computer science|information technology)',
+             'Master\'s Degree'),
+            (r'mba|m\.b\.a\.', 'Master\'s in Business Administration (MBA)'),
+            (r'master[\'s]?|m\.s\.|m\.sc\.|m\.a\.|m\.eng', 'Master\'s Degree'),
+            (r'graduate degree|post\s*graduate', 'Master\'s Degree'),
+            
+            # Bachelor's degrees - with field specificity
+            (r'bachelor[\'s]?\s+(?:of\s+)?(?:science|arts|engineering|computer science|information technology)',
+             'Bachelor\'s Degree'),
+            (r'bachelor[\'s]?|b\.s\.|b\.sc\.|b\.a\.|b\.eng|b\.tech', 'Bachelor\'s Degree'),
+            (r'undergraduate degree|college degree', 'Bachelor\'s Degree'),
+            (r'bsit|bs\s+(?:in\s+)?(?:it|computer|information)', 'Bachelor\'s in Information Technology'),
+            (r'bscs|bs\s+(?:in\s+)?computer science', 'Bachelor\'s in Computer Science'),
+            
+            # Associate degrees
+            (r'associate[\'s]?\s+degree|a\.s\.|a\.a\.', 'Associate Degree'),
+            
+            # High school / Secondary
+            (r'high\s*school|secondary\s+(?:school|education)', 'High School'),
+            (r'diploma|senior high school|shs', 'High School Diploma'),
+        ]
+        
+        # Find all matching education levels
+        found_levels = []
+        for pattern, level_name in education_patterns:
+            if re.search(pattern, text_lower):
+                found_levels.append(level_name)
+        
+        # Return the first (highest) match
+        if found_levels:
+            # Remove duplicates while preserving order
+            unique_levels = list(dict.fromkeys(found_levels))
+            return unique_levels[0]
+        
+        # Fallback to config-based extraction
         config = load_skill_extraction_config()
         education_levels = [tuple(item) for item in config.get('education_levels', [])]
         
-        text_lower = text.lower()
         for keyword, level in education_levels:
             if keyword in text_lower:
                 return level

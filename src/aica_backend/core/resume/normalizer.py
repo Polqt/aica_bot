@@ -4,7 +4,7 @@ from typing import List
 from .models import ResumeSkills
 from utils.config_loader import load_skill_normalizations
 from utils.text_utils import apply_smart_casing, normalize_skill_capitalization
-from utils.validation_utils import is_likely_person_name, is_valid_skill
+from utils.validation_utils import is_valid_skill
 
 
 class SkillNormalizer:
@@ -134,18 +134,29 @@ class TextCleaner:
         if not text:
             return ""
         
-        # Remove excessive whitespace
-        text = re.sub(r'\s+', ' ', text)
-        
         # Remove common resume artifacts
         artifacts_to_remove = [
             r'Page \d+ of \d+',
-            r'^\s*[\r\n]',
             r'\x00',  # null characters
-            r'[^\x00-\x7F]+',  # non-ASCII characters that might cause issues
         ]
         
         for pattern in artifacts_to_remove:
             text = re.sub(pattern, '', text, flags=re.MULTILINE)
         
-        return text.strip()
+        # Clean up each line individually to preserve line structure
+        lines = text.split('\n')
+        cleaned_lines = []
+        
+        for line in lines:
+            # Remove excessive horizontal whitespace within each line
+            line = re.sub(r'[ \t]+', ' ', line)
+            # Remove leading/trailing whitespace
+            line = line.strip()
+            # Only keep non-empty lines
+            if line:
+                cleaned_lines.append(line)
+        
+        # Join lines back with newlines
+        cleaned_text = '\n'.join(cleaned_lines)
+        
+        return cleaned_text.strip()

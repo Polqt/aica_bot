@@ -150,9 +150,9 @@ class JobMatchingService:
             
             context = UserContext(
                 skills=skill_names,
-                experience_years=user_profile.get("experience_years") if user_profile else None,
-                job_titles=user_profile.get("desired_roles", []) if user_profile else [],
-                preferred_locations=user_profile.get("locations", []) if user_profile else []
+                experience_years=user_profile.experience_years if user_profile else None,
+                job_titles=[],  # desired_roles not in UserProfile model yet
+                preferred_locations=[user_profile.location] if user_profile and user_profile.location else []
             )
             
             logger.info(f"🔍 RAG Search: {len(context.skills)} skills, "
