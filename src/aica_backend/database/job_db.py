@@ -5,36 +5,11 @@ import logging
 from typing import List, Dict, Any, Optional
 from supabase import create_client, Client
 from datetime import datetime
-import time
 
 from .models.job_models import JobSource, Job, JobListings, JobSearchFilters
+from utils import SimpleCache
 
 logger = logging.getLogger(__name__)
-
-class SimpleCache:
-    def __init__(self, max_size: int = 100, ttl: int = 300):  
-        self.cache = {}
-        self.max_size = max_size
-        self.ttl = ttl
-
-    def get(self, key: str) -> Any:
-        if key in self.cache:
-            item = self.cache[key]
-            if time.time() - item['timestamp'] < self.ttl:
-                return item['value']
-            else:
-                del self.cache[key]
-        return None
-
-    def set(self, key: str, value: Any) -> None:
-        if len(self.cache) >= self.max_size:
-            # Remove oldest item
-            oldest_key = min(self.cache.keys(), key=lambda k: self.cache[k]['timestamp'])
-            del self.cache[oldest_key]
-        self.cache[key] = {'value': value, 'timestamp': time.time()}
-
-    def clear(self) -> None:
-        self.cache.clear()
 
 
 class JobDatabase:
@@ -61,9 +36,6 @@ class JobDatabase:
             ).execute()
         except Exception as e:
             raise
-
-    def delete_job_source(self, url: str) -> None:
-        self.client.table("job_sources").delete().eq("url", url).execute()
 
     def get_job_sources(self) -> List[JobSource]:
         try:
@@ -157,18 +129,6 @@ class JobDatabase:
             return self._deserialize_job(job_data)
         except Exception as e:
             return None
-
-    def get_job_by_url(self, url: str) -> Optional[Job]:
-        try:
-            response = self.client.table("jobs").select("*").eq("url", url).execute()
-            
-            if not response.data:
-                return None
-                
-            job_data = response.data[0]
-            return self._deserialize_job(job_data)
-        except Exception as e:
-            return None
     
     def get_jobs_for_indexing(self, limit: int = 100) -> List[Job]:
         try:
@@ -223,23 +183,6 @@ class JobDatabase:
             )
         except Exception as e:
             return JobListings(jobs=[], total_count=0, page=page, page_size=page_size)
-        
-    def get_job_content(self, job_id: str) -> Optional[str]:
-        job = self.get_job(job_id)
-        if not job:
-            return None
-            
-        # Combine all relevant text fields
-        content_parts = [
-            job.title,
-            job.company,
-            job.description or "",
-            job.location or "",
-            " ".join(job.requirements) if job.requirements else "",
-            " ".join(job.skills) if job.skills else "",
-        ]
-        
-        return " ".join(filter(None, content_parts))
         
     def get_job_statistics(self) -> Dict[str, Any]:
         cache_key = "job_statistics"
@@ -373,60 +316,4 @@ class JobDatabase:
             
         except Exception as e:
             return None
-
-    def mark_job_as_expired(self, job_id: str) -> bool:
-        try:
-            response = (self.client.table("jobs")
-                       .update({
-                           "is_active": False,
-                           "expired_at": datetime.utcnow().isoformat()
-                       })
-                       .eq("id", job_id)
-                       .execute())
-            
-            logger.info(f"🗑️ Marked job {job_id} as expired")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to mark job {job_id} as expired: {str(e)}")
-            return False
-
-    def update_job_verification(self, job_id: str) -> bool:
-        try:
-            response = (self.client.table("jobs")
-                       .update({"last_verified_at": datetime.utcnow().isoformat()})
-                       .eq("id", job_id)
-                       .execute())
-            return True
-        except Exception as e:
-            logger.error(f"Failed to update verification for job {job_id}: {str(e)}")
-            return False
-
-    def get_jobs_for_verification(self, days_old: int = 7, limit: int = 100) -> List[Job]:
-        try:
-            from datetime import timedelta
-            cutoff_date = (datetime.utcnow() - timedelta(days=days_old)).isoformat()
-            
-            response = (self.client.table("jobs")
-                       .select("*")
-                       .eq("is_active", True)
-                       .lt("last_verified_at", cutoff_date)
-                       .order("last_verified_at", desc=False)
-                       .limit(limit)
-                       .execute())
-            
-            if not response.data:
-                return []
-            
-            jobs = []
-            for job_data in response.data:
-                try:
-                    job = self._deserialize_job(job_data)
-                    jobs.append(job)
-                except Exception as e:
-                    continue
-            
-            return jobs
-            
-        except Exception as e:
-            return []
         

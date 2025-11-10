@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import json
 
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status, Header, BackgroundTasks
@@ -15,11 +16,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Initialize singleton service at module level for reuse
 _matching_service: Optional[JobMatchingService] = None
 
 def get_matching_service() -> JobMatchingService:
-    """Get or create singleton JobMatchingService instance."""
     global _matching_service
     if _matching_service is None:
         logger.info("🔧 Creating JobMatchingService singleton")
@@ -75,12 +74,6 @@ async def get_job_matches(
     limit: int = 20,
     current_user: User = Depends(get_current_user)
 ) -> List[JobMatchResponse]:
-    """
-    Retrieve existing job matches from database.
-    
-    This endpoint is optimized for fast retrieval - it does NOT run matching logic,
-    only fetches pre-computed matches. Use /find-matches to regenerate matches.
-    """
     logger.info(f"📥 Fetching {limit} cached job matches for user {current_user.id}")
     try:
         # Use lightweight database connections directly - no need for full service
@@ -134,11 +127,6 @@ async def get_job_matches(
 async def get_matching_stats(
     current_user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    """
-    Get matching statistics from cached matches.
-    
-    Fast endpoint - only queries database, no ML processing.
-    """
     try:
         # Lightweight database access - no service needed
         user_db = UserDatabase()
@@ -274,11 +262,18 @@ async def clear_job_matches(
         )
         
 @router.post("/saved-jobs/{job_id}", response_model=SavedJobResponse)
-async def save_job(job_id: str, current_user: User = Depends(get_current_user)):
+async def save_job(job_id: str, is_recommendation: bool = False, current_user: User = Depends(get_current_user)):
+    """Save a job for the current user
+    
+    Args:
+        job_id: The ID of the job to save
+        is_recommendation: Whether this is a recommended job (fallback) vs a real match
+        current_user: The authenticated user
+    """
     try:
         # Use singleton service for database access
         matching_service = get_matching_service()
-        saved = await matching_service.save_user_job(current_user.id, job_id)
+        saved = await matching_service.save_user_job(current_user.id, job_id, is_recommendation=is_recommendation)
 
         if not saved:
             raise HTTPException(status_code=500, detail="Failed to save job")
@@ -287,47 +282,41 @@ async def save_job(job_id: str, current_user: User = Depends(get_current_user)):
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
 
-        # Try to get match data using the new method
-        match_data = matching_service.user_db.get_user_saved_job_with_match_data(current_user.id, job_id)
+        # Get match data directly from database
+        match_score = None
+        matched_skills = []
+        missing_critical_skills = []
+        skill_coverage = 0.0
+        ai_reasoning = ""
+        confidence = "medium"
 
-        if match_data:
-            # Use data from the joined query
-            match_score = match_data.get("match_score")
-            matched_skills = match_data.get("matched_skills", [])
-            missing_critical_skills = match_data.get("missing_critical_skills", [])
-            skill_coverage = match_data.get("skill_coverage", 0.0)
-            ai_reasoning = match_data.get("ai_reasoning", "")
-            confidence = match_data.get("confidence") or "medium"
-        else:
-            # Fallback: try separate query if join didn't work
-            match_score = None
-            matched_skills = []
-            missing_critical_skills = []
-            skill_coverage = 0.0
-            ai_reasoning = ""
-            confidence = "medium"
+        try:
+            match = matching_service.user_db.client.table("user_job_matches").select("*").eq("user_id", current_user.id).eq("job_id", job_id).execute()
+            if match.data and len(match.data) > 0:
+                match_data = match.data[0]
+                match_score = match_data.get("match_score")
+                
+                # Parse JSON fields if they're strings
+                matched_skills_raw = match_data.get("matched_skills", [])
+                matched_skills = json.loads(matched_skills_raw) if isinstance(matched_skills_raw, str) else matched_skills_raw
+                
+                missing_skills_raw = match_data.get("missing_critical_skills", [])
+                missing_critical_skills = json.loads(missing_skills_raw) if isinstance(missing_skills_raw, str) else missing_skills_raw
+                
+                skill_coverage = match_data.get("skill_coverage", 0.0)
+                ai_reasoning = match_data.get("ai_reasoning", "")
 
-            try:
-                match = matching_service.user_db.client.table("user_job_matches").select("*").eq("user_id", current_user.id).eq("job_id", job_id).execute()
-                if match.data and len(match.data) > 0:
-                    match_data = match.data[0]
-                    match_score = match_data.get("match_score")
-                    matched_skills = match_data.get("matched_skills", [])
-                    missing_critical_skills = match_data.get("missing_critical_skills", [])
-                    skill_coverage = match_data.get("skill_coverage", 0.0)
-                    ai_reasoning = match_data.get("ai_reasoning", "")
-
-                    # Get confidence from database or calculate if not provided
-                    confidence = match_data.get("confidence") or "medium"
-                    if not confidence and match_score is not None:
-                        if match_score >= 0.8:
-                            confidence = "high"
-                        elif match_score >= 0.6:
-                            confidence = "medium"
-                        else:
-                            confidence = "low"
-            except Exception as e:
-                logger.warning(f"Could not get match data for job {job_id}: {str(e)}")
+                # Get confidence from database or calculate if not provided
+                confidence = match_data.get("confidence") or "medium"
+                if not confidence and match_score is not None:
+                    if match_score >= 0.8:
+                        confidence = "high"
+                    elif match_score >= 0.6:
+                        confidence = "medium"
+                    else:
+                        confidence = "low"
+        except Exception as e:
+            logger.warning(f"Could not get match data for job {job_id}: {str(e)}")
 
         return SavedJobResponse(
             job_id=job_id,
@@ -385,19 +374,31 @@ async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: 
         for saved in saved_jobs:
             job = job_db.get_job_by_id(saved.job_id)
             if job:
-                # Try to get match data using the new method
-                match_data = user_db.get_user_saved_job_with_match_data(current_user.id, saved.job_id)
+                match_score = None
+                matched_skills = []
+                missing_critical_skills = []
+                skill_coverage = 0.0
+                ai_reasoning = ""
+                confidence = "medium"
 
-                if match_data:
-                    # Use data from the joined query
-                    match_score = match_data.get("match_score")
-                    matched_skills = match_data.get("matched_skills", [])
-                    missing_critical_skills = match_data.get("missing_critical_skills", [])
-                    skill_coverage = match_data.get("skill_coverage", 0.0)
-                    ai_reasoning = match_data.get("ai_reasoning", "")
-                    confidence = match_data.get("confidence") or "medium"
-                else:
-                    # Fallback: try separate query if join didn't work
+                try:
+                    match = user_db.client.table("user_job_matches").select("*").eq("user_id", current_user.id).eq("job_id", saved.job_id).execute()
+                    if match.data and len(match.data) > 0:
+                        match_data = match.data[0]
+                        match_score = match_data.get("match_score")
+                        
+                        # Parse JSON fields if they're strings
+                        matched_skills_raw = match_data.get("matched_skills", [])
+                        matched_skills = json.loads(matched_skills_raw) if isinstance(matched_skills_raw, str) else matched_skills_raw
+                        
+                        missing_skills_raw = match_data.get("missing_critical_skills", [])
+                        missing_critical_skills = json.loads(missing_skills_raw) if isinstance(missing_skills_raw, str) else missing_skills_raw
+                        
+                        skill_coverage = match_data.get("skill_coverage", 0.0)
+                        ai_reasoning = match_data.get("ai_reasoning", "")
+                        confidence = match_data.get("confidence") or "medium"
+                except Exception as e:
+                    logger.warning(f"Could not get match data for job {saved.job_id}: {str(e)}")
                     match_score = None
                     matched_skills = []
                     missing_critical_skills = []

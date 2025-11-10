@@ -27,8 +27,15 @@ class JobMatchResult:
 class JobMatchingService:
     _instance: Optional['JobMatchingService'] = None
     _initialized: bool = False
-    async def save_user_job(self, user_id: str, job_id: str):
-        return self.user_db.save_user_job(user_id, job_id)
+    async def save_user_job(self, user_id: str, job_id: str, is_recommendation: bool = False):
+        """Save a job for a user
+        
+        Args:
+            user_id: The user's ID
+            job_id: The job's ID
+            is_recommendation: Whether this is a recommended job (fallback) vs a real match
+        """
+        return self.user_db.save_user_job(user_id, job_id, is_recommendation=is_recommendation)
 
     async def remove_user_saved_job(self, user_id: str, job_id: str):
         return self.user_db.remove_user_saved_job(user_id, job_id)
@@ -129,7 +136,7 @@ class JobMatchingService:
                 return await self._find_matches_traditional(user_skills, limit)
 
         except Exception as e:
-            logger.error(f"Error in job matching for user {user_id}: {str(e)}")
+            logger  .error(f"Error in job matching for user {user_id}: {str(e)}")
             return []
     
     async def _find_matches_with_rag(

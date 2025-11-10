@@ -18,6 +18,9 @@ from .pattern_utils import (
     match_skill_pattern
 )
 
+from .cache import SimpleCache
+from .db_helpers import handle_db_response, deserialize_json_field
+
 from .text_utils import (
     extract_json_from_text,
     clean_extracted_name,
@@ -60,6 +63,9 @@ __all__ = [
     'estimate_experience_years',
     'build_skill_patterns',
     'match_skill_pattern',
+    'SimpleCache',
+    'handle_db_response',
+    'deserialize_json_field',
     'extract_json_from_text',
     'clean_extracted_name',
     'apply_smart_casing',
