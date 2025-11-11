@@ -11,15 +11,12 @@ class UserContext:
     experience_years: Optional[int] = None
     preferred_locations: List[str] = None
     preferred_industries: List[str] = None
-    job_titles: List[str] = None
     
     def __post_init__(self):
         if self.preferred_locations is None:
             self.preferred_locations = []
         if self.preferred_industries is None:
             self.preferred_industries = []
-        if self.job_titles is None:
-            self.job_titles = []
 
 
 class QueryBuilder:
@@ -55,11 +52,6 @@ class QueryBuilder:
             else:
                 level = "Senior level"
             query_parts.append(f"Experience: {level}")
-        
-        # Add job titles
-        if context.job_titles:
-            titles_str = ", ".join(context.job_titles[:3])  # Top 3 titles
-            query_parts.append(f"Roles: {titles_str}")
         
         # Add locations
         if context.preferred_locations:
@@ -108,10 +100,6 @@ class QueryBuilder:
         if context.experience_years is not None:
             query += f" and {context.experience_years} years of experience"
         
-        if context.job_titles:
-            titles = " or ".join(context.job_titles[:2])
-            query += f". I am looking for {titles} positions"
-        
         if context.preferred_locations:
             locations = " or ".join(context.preferred_locations[:2])
             query += f" in {locations}"
@@ -133,13 +121,6 @@ class QueryBuilder:
         
         # Natural language query
         queries.append(QueryBuilder.build_semantic_query(context))
-        
-        # Title-focused query
-        if context.job_titles:
-            for title in context.job_titles[:2]:  # Top 2 titles
-                queries.append(
-                    QueryBuilder.build_focused_query(context.skills, title)
-                )
         
         return queries
     

@@ -154,12 +154,10 @@ class JobMatchingService:
             context = UserContext(
                 skills=skill_names,
                 experience_years=user_profile.experience_years if user_profile else None,
-                job_titles=[],  # desired_roles not in UserProfile model yet
                 preferred_locations=[user_profile.location] if user_profile and user_profile.location else []
             )
             
             logger.info(f"🔍 RAG Search: {len(context.skills)} skills, "
-                       f"{len(context.job_titles)} roles, "
                        f"{len(context.preferred_locations)} locations")
             
             # Use RAG semantic search

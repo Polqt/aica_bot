@@ -65,7 +65,6 @@ class SkillNormalizer:
             for skill in [s.strip() for s in skills.soft_skills] 
             if is_valid_skill(skill, valid_short_skills, ai_variations)
         ))
-        skills.job_titles = list(set(filter(bool, [title.strip() for title in skills.job_titles])))
         skills.industries = list(set(filter(bool, [industry.strip() for industry in skills.industries])))
         
         # Validate experience years

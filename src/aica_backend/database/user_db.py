@@ -376,19 +376,16 @@ class UserDatabase:
             technical = [s.skill_name for s in skills if s.skill_category == "technical"]
             soft = [s.skill_name for s in skills if s.skill_category == "soft"]
             industries = [s.skill_name for s in skills if s.skill_category == "industry"]
-            job_titles = [s.skill_name for s in skills if s.skill_category == "job_title"]
             
             return SkillsResponse(
                 technical_skills=technical,
                 soft_skills=soft,
-                job_titles=job_titles,
                 industries=industries
             )
         except Exception as e:
             return SkillsResponse(
                 technical_skills=[],
                 soft_skills=[],
-                job_titles=[],
                 industries=[]
             )
             

@@ -68,7 +68,7 @@ class UserSkill(BaseModel):
     
     @validator('skill_category')
     def validate_skill_category(cls, v):
-        allowed_categories = ['technical', 'soft', 'industry', 'job_title']
+        allowed_categories = ['technical', 'soft', 'industry']
         if v not in allowed_categories:
             raise ValueError(f'Skill category must be one of: {", ".join(allowed_categories)}')
         return v
@@ -94,7 +94,7 @@ class UserSkillCreate(BaseModel):
 
     @validator('skill_category')
     def validate_skill_category(cls, v):
-        allowed_categories = ['technical', 'soft', 'industry', 'job_title']
+        allowed_categories = ['technical', 'soft', 'industry']
         if v not in allowed_categories:
             raise ValueError(f'Skill category must be one of: {", ".join(allowed_categories)}')
         return v
@@ -146,7 +146,6 @@ class SkillsResponse(BaseModel):
     technical_skills: List[str] = Field(default_factory=list)
     soft_skills: List[str] = Field(default_factory=list)
     experience_years: Optional[int] = None
-    job_titles: List[str] = Field(default_factory=list)
     education_level: Optional[str] = None
     industries: List[str] = Field(default_factory=list)
 

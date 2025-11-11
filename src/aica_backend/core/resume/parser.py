@@ -230,8 +230,7 @@ class ResumeParser:
         skill_mappings = [
             (skills.technical_skills, "technical"),
             (skills.soft_skills, "soft"),
-            (skills.industries, "industry"),
-            (skills.job_titles, "job_title")
+            (skills.industries, "industry")
         ]
         
         for skill_list, category in skill_mappings:

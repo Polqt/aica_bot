@@ -16,10 +16,6 @@ class ResumeSkills(BaseModel):
         description="Years of relevant experience",
         default=None
     )
-    job_titles: List[str] = Field(
-        description="Previous job titles",
-        default_factory=list
-    )
     education_level: Optional[str] = Field(
         description="Highest education level",
         default=None

@@ -67,7 +67,6 @@ class SkillExtractor:
             technical_skills=found_technical, # ["Python", "Docker", "AWS"]
             soft_skills=found_soft, # ["Leadership", "Communication", "Problem Solving"]
             experience_years=experience_years, # 5
-            job_titles=[],  # Fallback does not extract job titles
             education_level=education_level, # "Bachelor of Science in Computer Science"
             industries=industries # ["Information Technology", "Software Development"]
         )
