@@ -30,7 +30,6 @@ def get_supabase_client() -> Client:
         config = get_supabase_config()
         return create_client(config.url, config.key)
     except Exception as e:
-        logger.error(f"Failed to create Supabase client: {str(e)}")
         raise ValueError("Authentication service unavailable")
 
 def get_supabase_admin_client() -> Client:
@@ -48,11 +47,6 @@ def validate_token(token: str) -> Optional[Dict]:
         
     try:
         supabase = get_supabase_client()
-        
-        # Create a custom timeout configuration (5 seconds total)
-        timeout = httpx.Timeout(5.0, connect=2.0)
-        
-        # Get user with timeout
         try:
             user_response = supabase.auth.get_user(token)
         except (httpx.TimeoutException, httpx.ConnectTimeout, httpx.ReadTimeout) as timeout_error:
@@ -63,9 +57,7 @@ def validate_token(token: str) -> Optional[Dict]:
             logger.warning("Token validation failed: No user in response")
             return None
         
-        # Check if user is confirmed (for email confirmation flow)
         if hasattr(user_response.user, 'email_confirmed_at') and not user_response.user.email_confirmed_at:
-            logger.warning(f"Token validation failed: User email not confirmed for {user_response.user.email}")
             return None
             
         return {
@@ -74,7 +66,6 @@ def validate_token(token: str) -> Optional[Dict]:
             "user_metadata": user_response.user.user_metadata or {}
         }
     except Exception as e:
-        logger.warning(f"Token validation failed: {str(e)}")
         return None
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict:
@@ -87,7 +78,6 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 
     user = validate_token(credentials.credentials)
     if not user:
-        # Check if it's an email confirmation issue
         try:
             supabase = get_supabase_client()
             user_response = supabase.auth.get_user(credentials.credentials)

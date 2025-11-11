@@ -5,10 +5,10 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Backgro
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from api.utils.auth import get_supabase_client, get_current_user, get_supabase_admin_client
+from api.utils.user_helpers import ensure_user_exists
+from api.utils.background_tasks import process_resume_background, delayed_job_matching_background
 from database.models.user_models import UserCreate, UserLogin, TokenResponse, ResumeUploadResponse
 from database.user_db import UserDatabase
-from core.resume import ResumeParser
-from database.job_db import JobDatabase
 from services.job_matching import JobMatchingService
 from datetime import datetime
 
@@ -18,27 +18,6 @@ limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter()
 
-def _ensure_user_exists(user_id: str, email: str, db: UserDatabase) -> bool:
-    try:
-        user = db.get_user_by_id(user_id)
-        if user:
-            return True
-            
-        # Create user if doesn't exist
-        try:
-            db.create_user(email=email, password_hash="", user_id=user_id)
-            return True
-        except Exception as create_error:
-            # Handle duplicate email error
-            if "duplicate key" in str(create_error).lower() and "email" in str(create_error).lower():
-                logger.info(f"User already exists with email {email}, attempting to fetch")
-                user = db.get_user_by_email(email)
-                return user is not None
-            logger.error(f"Failed to create user {user_id}: {create_error}")
-            return False
-    except Exception as e:
-        logger.error(f"Error in _ensure_user_exists for user {user_id}: {e}")
-        return False
 
 async def _signup(user: UserCreate):
     try:
@@ -59,8 +38,7 @@ async def _signup(user: UserCreate):
 
         if response.user is None:
             raise HTTPException(status_code=400, detail="Failed to create user")
-        
-        # Always try to create user in our database, even if email needs confirmation
+
         try:
             db.create_user(
                 email=user.email,
@@ -89,11 +67,12 @@ async def _signup(user: UserCreate):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Signup failed: {str(e)}")
 
+
 @router.post("/signup", response_model=dict)
 @limiter.limit("5/minute")
 async def signup(request: Request, user: UserCreate):
-    """Create a new user account."""
     return await _signup(user)
+
 
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("10/minute")
@@ -122,18 +101,6 @@ async def login(request: Request, user: UserLogin):
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-@router.post("/resend-confirmation")
-async def resend_confirmation(email: dict):
-    try:
-        supabase = get_supabase_client()
-        response = supabase.auth.resend({
-            "type": "signup",
-            "email": email.get("email")
-        })
-        
-        return {"message": "Confirmation email sent. Please check your inbox."}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail="Failed to send confirmation email")
 
 @router.get("/profile")
 async def get_current_user_info(current_user: dict = Depends(get_current_user)):
@@ -144,7 +111,7 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
 
         # If user doesn't exist in our database but exists in Supabase, create them
         if not user:
-            if not _ensure_user_exists(current_user["id"], current_user["email"], db):
+            if not ensure_user_exists(current_user["id"], current_user["email"], db):
                 return {
                     "id": current_user["id"],
                     "email": current_user["email"],
@@ -192,120 +159,12 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
             "education_level": None
         }
 
-@router.post("/logout")
-async def logout():
-    return {"message": "Logged out successfully"}
-
-async def delayed_job_matching_background(user_id: str):
-    await asyncio.sleep(3)  
-    
-    db = UserDatabase()
-    
-    try:
-        db.update_user_profile(user_id, {"processing_step": "matching"})
-        
-        # Get user skills (from parsed resume)
-        user_skills = db.get_user_skills(user_id)
-        if not user_skills:
-            db.update_user_profile(user_id, {
-                "processing_step": "completed",
-                "matches_generated": False
-            })
-            return
-        
-        # Get available jobs
-        job_db = JobDatabase()
-        jobs = job_db.get_jobs_for_matching(limit=500)
-        
-        if not jobs:
-            db.update_user_profile(user_id, {
-                "processing_step": "completed",
-                "matches_generated": False
-            })
-            return
-        
-        # Use JobMatchingService with AI analysis
-        matching_service = JobMatchingService()
-        
-        # Use update_matches_for_user which handles everything internally
-        result = await matching_service.update_matches_for_user(user_id)
-        
-        matches_saved = result.get('matches_saved', 0)
-        logger.info(f"Background job matching completed for user {user_id}: {matches_saved} matches saved")
-        
-        # Update profile to indicate matches are ready
-        db.update_user_profile(user_id, {
-            "processing_step": "completed",
-            "matches_generated": matches_saved > 0
-        })
-        
-    except Exception as e:
-        logger.error(f"Job matching error for user {user_id}: {e}")
-        
-        # Mark as completed with error
-        try:
-            db.update_user_profile(user_id, {
-                "processing_step": "error",
-                "processing_error": f"Job matching failed: {str(e)}"
-            })
-        except Exception as update_error:
-            logger.error(f"Failed to update error status: {update_error}")
-
-async def process_resume_background(user_id: str, file_content: bytes, file_type: str, mode: str = None):
-    db = UserDatabase()
-    
-    try:
-        user = db.get_user_by_id(user_id)
-        if not user:
-            return
-
-        if mode == "replace" or mode is None:
-            db.update_user_profile(user_id, {"processing_step": "clearing_old_data"})
-            try:
-                db.clear_user_skills(user_id)
-                
-                db.clear_user_education(user_id)
-                
-                db.clear_user_experience(user_id)
-                
-                db.clear_job_matches(user_id)
-                
-                logger.info(f"Successfully cleared all old data for user {user_id}")
-            except Exception as clear_error:
-                logger.error(f"Error clearing old data for user {user_id}: {clear_error}")
-
-    
-        db.update_user_profile(user_id, {"processing_step": "parsing"})
-        
-        parser = ResumeParser()
-        await parser.process_and_store_resume(user_id, file_content, file_type)
-        
-        db.update_user_profile(user_id, {
-            "resume_processed": True,
-            "profile_completed": True,
-            "processing_step": "completed",
-            "matches_generated": False  # Will be updated after job matching completes
-        })
-    
-        
-    except Exception as e:
-        logger.error(f"Error processing resume for user {user_id}: {e}")
-        
-        try:
-            db.update_user_profile(user_id, {
-                "resume_processed": False,
-                "processing_step": "error",
-                "processing_error": str(e)
-            })
-        except Exception as update_error:
-            logger.error(f"Failed to update error status for user {user_id}: {str(update_error)}")      
-
 @router.post("/upload-resume", response_model=ResumeUploadResponse)
 async def upload_resume(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user),
-    mode: str = None  # Optional: 'replace' or 'merge'
+    mode: str = None  
 ):
     try:
         # Validate file type
@@ -314,6 +173,7 @@ async def upload_resume(
             "application/msword", 
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         ]
+        
         if file.content_type not in allowed_types:
             raise HTTPException(
                 status_code=400, 
@@ -329,7 +189,7 @@ async def upload_resume(
         db = UserDatabase()
         user_id = current_user["id"]
         
-        if not _ensure_user_exists(user_id, current_user["email"], db):
+        if not ensure_user_exists(user_id, current_user["email"], db):
             raise HTTPException(status_code=500, detail="Failed to prepare user for resume upload")
         
         # Ensure profile exists
@@ -347,25 +207,6 @@ async def upload_resume(
         # Upload to Supabase Storage
         supabase = get_supabase_admin_client()  # Use admin client for storage operations
         bucket_name = "resumes"
-
-        # Ensure bucket exists 
-        try:
-            supabase.storage.create_bucket(bucket_name)
-        except Exception:
-            # Check if bucket actually exists
-            try:
-                buckets = supabase.storage.list_buckets()
-                bucket_exists = any(bucket.name == bucket_name for bucket in buckets)
-                if not bucket_exists:
-                    raise HTTPException(
-                        status_code=500, 
-                        detail=f"Storage bucket '{bucket_name}' does not exist and could not be created. Please check your Supabase configuration."
-                    )
-            except Exception as list_error:
-                raise HTTPException(
-                    status_code=500, 
-                    detail=f"Storage service unavailable. Please check your Supabase configuration: {str(list_error)}"
-                )
 
         # Upload file
         file_path = f"resumes/{unique_filename}"
@@ -391,13 +232,13 @@ async def upload_resume(
                 pass
             raise HTTPException(status_code=500, detail="Failed to update user profile")
         
-        # Add background task with mode parameter
+        # Process resume in background using AI Extraction
         background_tasks.add_task(
             process_resume_background,
             user_id,
             content,
             file.content_type,
-            mode  # Pass the mode to background processing
+            mode  
         )
 
         # Add delayed job matching task to ensure matches are generated after resume processing

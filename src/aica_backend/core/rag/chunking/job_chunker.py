@@ -8,13 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class JobChunker(BaseChunker):
-    """
-    Chunking strategy optimized for job postings.
-    
-    This chunker creates an initial summary chunk with key job information
-    (title, company, location) to ensure critical data is always retrieved,
-    then chunks the full job description while maintaining context.
-    """
 
     def __init__(self, embedder, chunk_size: int = CHUNK_SIZE, chunk_overlap: int = CHUNK_OVERLAP):
         self.embedder = embedder
@@ -24,7 +17,6 @@ class JobChunker(BaseChunker):
     def chunk_document(self, document: Dict, metadata: Dict = None) -> List[Dict]:
         """
         Chunk a job document into multiple text chunks with metadata.
-        
         This method implements the abstract method from BaseChunker.
         It processes a structured job document and returns chunks with metadata.
         """
@@ -86,7 +78,6 @@ class JobChunker(BaseChunker):
     def _create_summary_chunk(self, metadata: Dict) -> Optional[str]:
         """
         Create a summary chunk with key job information.
-        
         This ensures that title, company, and location are always retrievable
         even if they don't appear in the full job description chunks.
         """

@@ -15,7 +15,6 @@ class SkillMatcher:
     @classmethod
     @lru_cache(maxsize=1)
     def _load_skill_matching_config(cls) -> dict:
-        """Load skill matching configuration from JSON file."""
         try:
             config_path = Path(__file__).parent.parent.parent / 'data' / 'skill_matching_config.json'
             with open(config_path, 'r', encoding='utf-8') as f:
@@ -29,7 +28,6 @@ class SkillMatcher:
     
     @classmethod
     def _get_skill_relationships(cls) -> Dict[str, List[str]]:
-        """Get skill relationships, loading from config if needed."""
         if cls._skill_relationships is None:
             config = cls._load_skill_matching_config()
             cls._skill_relationships = config.get('skill_relationships', {})
@@ -37,7 +35,6 @@ class SkillMatcher:
     
     @classmethod
     def _get_skill_variations(cls) -> Dict[str, List[str]]:
-        """Get skill variations, loading from config if needed."""
         if cls._skill_variations is None:
             config = cls._load_skill_matching_config()
             cls._skill_variations = config.get('skill_variations', {})
@@ -97,7 +94,6 @@ class SkillMatcher:
     
     @classmethod
     def check_skill_relationship(cls, user_skill: str, job_skill: str) -> bool:
-        """Check if two skills are related."""
         skill_relationships = cls._get_skill_relationships()
         skill_variations = cls._get_skill_variations()
         
@@ -121,7 +117,6 @@ class SkillMatcher:
     
     @classmethod
     def skills_match_with_variations(cls, user_skill: str, job_skill: str) -> bool:
-        """Check if skills match considering variations."""
         user_skill = user_skill.lower().strip()
         job_skill = job_skill.lower().strip()
         

@@ -5,6 +5,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from api.dependencies import get_current_user
+from api.utils.background_tasks import regenerate_job_matches_background
 from core.resume_builder import ResumeBuilder
 from core.resume.pdf_generator import generate_resume_pdf
 from database.models.user_models import (
@@ -17,21 +18,6 @@ from database.models.user_models import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-
-async def regenerate_job_matches_background(user_id: str):
-    try:
-        from services.job_matching import JobMatchingService
-        logger.info(f"🔄 Background task: Regenerating job matches for user {user_id}")
-        matching_service = JobMatchingService()
-        # Clear old matches
-        matching_service.user_db.clear_job_matches(user_id)
-        logger.info(f"🗑️ Cleared old matches for user {user_id}")
-        # Generate new matches
-        result = await matching_service.update_matches_for_user(user_id)
-        logger.info(f"✅ Regenerated {result.get('matches_saved', 0)} new matches for user {user_id}")
-    except Exception as e:
-        logger.error(f"❌ Failed to regenerate matches for user {user_id}: {e}")
 
 
 @router.post("/education", response_model=UserEducation)
@@ -149,8 +135,6 @@ async def add_skill(
         builder = ResumeBuilder()
         result = builder.add_skill(current_user.id, skill)
         
-        # Trigger job match regeneration in background after adding skill
-        logger.info(f"Scheduling job match regeneration for user {current_user.id} after adding skill")
         background_tasks.add_task(regenerate_job_matches_background, current_user.id)
         
         return result
@@ -213,60 +197,6 @@ async def delete_skill(
         )
 
 
-class SkillBulkUpdateRequest(BaseModel):
-    skills_to_add: List[UserSkillCreate] = []
-    skill_ids_to_delete: List[str] = []
-
-
-@router.post("/skills/bulk-update")
-async def bulk_update_skills(
-    request: SkillBulkUpdateRequest,
-    background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Bulk update skills - add and delete multiple skills in a single request.
-    This is more efficient than processing skills one by one.
-    """
-    try:
-        builder = ResumeBuilder()
-        
-        deleted_count = 0
-        added_skills = []
-        
-        # Delete skills in batch if any
-        if request.skill_ids_to_delete:
-            logger.info(f"Deleting {len(request.skill_ids_to_delete)} skills for user {current_user.id}")
-            deleted_count = builder.delete_skills_batch(request.skill_ids_to_delete, current_user.id)
-            logger.info(f"Successfully deleted {deleted_count} skills")
-        
-        # Add skills in batch if any
-        if request.skills_to_add:
-            logger.info(f"Adding {len(request.skills_to_add)} skills for user {current_user.id}")
-            added_skills = builder.add_skills_batch(current_user.id, request.skills_to_add)
-            logger.info(f"Successfully added {len(added_skills)} skills")
-        
-        # Trigger job match regeneration once after all changes
-        if deleted_count > 0 or len(added_skills) > 0:
-            logger.info(f"Scheduling job match regeneration for user {current_user.id} after bulk skill update")
-            background_tasks.add_task(regenerate_job_matches_background, current_user.id)
-        
-        return {
-            "message": "Skills updated successfully",
-            "deleted_count": deleted_count,
-            "added_count": len(added_skills),
-            "added_skills": added_skills
-        }
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error in bulk skills update for user {current_user.id}: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Failed to update skills: {str(e)}"
-        )
-
-
 class ProfileUpdateRequest(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None
@@ -275,6 +205,7 @@ class ProfileUpdateRequest(BaseModel):
     experience_years: Optional[int] = None
     education_level: Optional[str] = None
     profile_completed: Optional[bool] = None
+
 
 @router.put("/profile", response_model=UserProfile)
 async def update_profile(
@@ -331,18 +262,6 @@ async def reset_resume_data(current_user: User = Depends(get_current_user)):
 
 @router.get("/export/pdf")
 async def export_resume_pdf(current_user: User = Depends(get_current_user)):
-    """
-    Export user's resume data as a professionally formatted PDF
-    
-    This endpoint generates a PDF resume from the user's profile data including:
-    - Personal information and contact details
-    - Skills grouped by category
-    - Work experience with descriptions
-    - Education history
-    
-    Returns:
-        StreamingResponse: PDF file download
-    """
     try:
         builder = ResumeBuilder()
         
@@ -378,8 +297,6 @@ async def export_resume_pdf(current_user: User = Depends(get_current_user)):
         name_part = profile.full_name.replace(" ", "_") if profile.full_name else "Resume"
         filename = f"{name_part}_Resume.pdf"
         
-        logger.info(f"Successfully generated PDF resume for user {current_user.id}")
-        
         # Return as downloadable file
         return StreamingResponse(
             pdf_buffer,
@@ -392,7 +309,6 @@ async def export_resume_pdf(current_user: User = Depends(get_current_user)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to export resume PDF for user {current_user.id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate PDF resume: {str(e)}"

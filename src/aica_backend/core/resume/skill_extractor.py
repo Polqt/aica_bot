@@ -51,16 +51,9 @@ class SkillExtractor:
     
     @classmethod
     def extract_with_fallback(cls, text: str) -> ResumeSkills:
-        """Extract skills, experience, education, and industries from resume text.
-        
-        Args:
-            text: Resume text to analyze
-            
-        Returns:
-            ResumeSkills object with extracted data
-        """
         text_lower = text.lower()
         
+        # Remove certification sections to avoid false positives
         certification_free_text = cls._remove_certification_sections(text_lower)
         
         found_technical = cls._extract_technical_skills(certification_free_text)
@@ -71,12 +64,12 @@ class SkillExtractor:
         industries = cls._extract_industries(text)
         
         return ResumeSkills(
-            technical_skills=found_technical,
-            soft_skills=found_soft,
-            experience_years=experience_years,
-            job_titles=[],
-            education_level=education_level,
-            industries=industries
+            technical_skills=found_technical, # ["Python", "Docker", "AWS"]
+            soft_skills=found_soft, # ["Leadership", "Communication", "Problem Solving"]
+            experience_years=experience_years, # 5
+            job_titles=[],  # Fallback does not extract job titles
+            education_level=education_level, # "Bachelor of Science in Computer Science"
+            industries=industries # ["Information Technology", "Software Development"]
         )
     
     @classmethod

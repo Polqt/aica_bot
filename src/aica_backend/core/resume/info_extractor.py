@@ -11,18 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 class InfoExtractor:
-    """Extracts personal information from resume text."""
-    
+
     @classmethod
     def extract_with_fallback(cls, text: str) -> PersonalInfo:
-        """Extract personal information using pattern matching.
-        
-        Args:
-            text: Resume text to extract information from
-            
-        Returns:
-            PersonalInfo object with extracted data
-        """
         extracted_info = {}
         
         extracted_info['email'] = extract_email(text)

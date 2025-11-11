@@ -34,7 +34,7 @@ class HuggingFaceEmbedder(BaseEmbedder):
                 separators=TEXT_SEPARATORS
             )
             
-            logger.info(f"✅ HuggingFaceEmbedder initialized successfully with model: {model_name}")
+            logger.info(f"HuggingFaceEmbedder initialized successfully with model: {model_name}")
         except Exception as e:
             logger.error(f"Failed to initialize HuggingFaceEmbedder: {e}")
             raise
@@ -54,7 +54,7 @@ class HuggingFaceEmbedder(BaseEmbedder):
             logger.error(f"Error creating embeddings: {e}")
             return []
     
-    def embed_single_text(self, text: str) -> List[float]:
+    def embed_single_text(self, text: str) -> List[float]: # Conver text to 384 dimensional vector
         try:
             if not text or not text.strip():
                 return []

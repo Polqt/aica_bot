@@ -3,7 +3,7 @@ import asyncio
 import json
 
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException, status, Header, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict, Any, Optional
 
 from api.dependencies import get_current_user
@@ -76,30 +76,22 @@ async def get_job_matches(
 ) -> List[JobMatchResponse]:
     logger.info(f"📥 Fetching {limit} cached job matches for user {current_user.id}")
     try:
-        # Use lightweight database connections directly - no need for full service
         user_db = UserDatabase()
         job_db = JobDatabase()
         
-        # Get matches from database - fast operation
         # Filter to EXCLUDE recommendations (confidence='recommendation') since those aren't real matches
-        all_matches = user_db.get_user_job_matches(current_user.id, limit=limit * 2)  # Get extra to filter
+        all_matches = user_db.get_user_job_matches(current_user.id, limit=limit * 2) 
         
-        # Filter out saved recommendations - only return real matches
         saved_matches = [m for m in all_matches if m.confidence != 'recommendation'][:limit]
         
-        logger.info(f"✅ Retrieved {len(saved_matches)} real matches from database (filtered {len(all_matches) - len(saved_matches)} recommendations)")
-
         if not saved_matches:
             return []
 
-        # Convert to response format
         responses = []
         for match in saved_matches:
             try:
-                # Get job details
                 job = job_db.get_job_by_id(match.job_id)
                 if not job:
-                    logger.warning(f"Job {match.job_id} not found in database")
                     continue
 
                 response = JobMatchResponse(
@@ -121,18 +113,17 @@ async def get_job_matches(
                 logger.error(f"Error processing match {match.id}: {str(e)}")
                 continue
 
-        logger.info(f"✅ Returning {len(responses)} job matches")
         return responses
 
     except Exception as e:
         logger.error(f"Error getting job matches for user {current_user.id}: {str(e)}")
         return []
+    
 @router.get("/stats")
 async def get_matching_stats(
     current_user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
     try:
-        # Lightweight database access - no service needed
         user_db = UserDatabase()
         matches = user_db.get_user_job_matches(current_user.id, limit=100)
 
@@ -146,7 +137,7 @@ async def get_matching_stats(
                 "last_updated": None
             }
 
-        # Calculate stats
+
         total_matches = len(matches)
         average_score = sum(m.match_score for m in matches) / total_matches
 
@@ -243,7 +234,6 @@ async def clear_job_matches(
     try:
         matching_service = JobMatchingService()
         
-        # Delete all matches for the user
         success = matching_service.user_db.clear_job_matches(current_user.id)
         
         if not success:
@@ -251,8 +241,6 @@ async def clear_job_matches(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to clear job matches"
             )
-        
-        logger.info(f"Cleared all job matches for user {current_user.id}")
         
         return {"message": "All job matches cleared successfully"}
         
@@ -267,15 +255,7 @@ async def clear_job_matches(
         
 @router.post("/saved-jobs/{job_id}", response_model=SavedJobResponse)
 async def save_job(job_id: str, is_recommendation: bool = False, current_user: User = Depends(get_current_user)):
-    """Save a job for the current user
-    
-    Args:
-        job_id: The ID of the job to save
-        is_recommendation: Whether this is a recommended job (fallback) vs a real match
-        current_user: The authenticated user
-    """
     try:
-        # Use singleton service for database access
         matching_service = get_matching_service()
         saved = await matching_service.save_user_job(current_user.id, job_id, is_recommendation=is_recommendation)
 
@@ -340,13 +320,11 @@ async def save_job(job_id: str, is_recommendation: bool = False, current_user: U
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error saving job {job_id} for user {current_user.id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to save job")
 
 @router.delete("/saved-jobs/{job_id}")
 async def remove_saved_job(job_id: str, current_user: User = Depends(get_current_user)):
     try:
-        # Use singleton service
         matching_service = get_matching_service()
         success = await matching_service.remove_user_saved_job(current_user.id, job_id)
 
@@ -357,14 +335,11 @@ async def remove_saved_job(job_id: str, current_user: User = Depends(get_current
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error removing saved job {job_id} for user {current_user.id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to remove saved job")
 
 @router.get("/saved-jobs", response_model=List[SavedJobResponse])
 async def get_saved_jobs(current_user: User = Depends(get_current_user), limit: int = 50):
-    """Fast retrieval of saved jobs from database."""
     try:
-        # Lightweight database access - no need for full service
         user_db = UserDatabase()
         job_db = JobDatabase()
         

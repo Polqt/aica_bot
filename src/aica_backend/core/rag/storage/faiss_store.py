@@ -33,7 +33,6 @@ class FAISSStore(BaseVectorStore):
         self.vector_store: Optional[FAISS] = None
         self.metadata_manager = MetadataManager()
         self.chunker = JobChunker(embedder)
-        # Legacy compatibility - expose metadata manager as _job_metadata
         self._job_metadata = self.metadata_manager._metadata
         self._load_or_create_store()
     
@@ -192,7 +191,6 @@ class FAISSStore(BaseVectorStore):
             return formatted_results[:k]
             
         except Exception as e:
-            logger.error(f"Error in search: {e}")
             return []
     
     def search_similar_jobs(
@@ -287,7 +285,6 @@ class FAISSStore(BaseVectorStore):
             return filtered_matches[:k]
             
         except Exception as e:
-            logger.error(f"Error searching similar jobs: {e}")
             return []
     
     def get_job_count(self) -> int:
