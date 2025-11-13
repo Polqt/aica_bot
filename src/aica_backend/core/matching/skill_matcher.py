@@ -42,6 +42,7 @@ class SkillMatcher:
     
     @classmethod
     def find_exact_matches(cls, user_skills: List[str], job_skills: List[str]) -> List[str]:
+        """Find direct skill overlaps (case-insensitive, substring matching)"""
         matched_skills = []
         user_skills_lower = {skill.lower().strip(): skill for skill in user_skills}
         
@@ -60,6 +61,7 @@ class SkillMatcher:
     
     @classmethod
     def find_partial_matches(cls, user_skills: List[str], job_skills: List[str]) -> List[str]:
+        """Find related skills using relationship mappings"""
         partial_matches = []
         user_skills_lower = [skill.lower().strip() for skill in user_skills]
         exact_matches = cls.find_exact_matches(user_skills, job_skills)
@@ -94,6 +96,7 @@ class SkillMatcher:
     
     @classmethod
     def check_skill_relationship(cls, user_skill: str, job_skill: str) -> bool:
+        """Check if two skills are related via relationship mapping"""
         skill_relationships = cls._get_skill_relationships()
         skill_variations = cls._get_skill_variations()
         

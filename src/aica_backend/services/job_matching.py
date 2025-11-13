@@ -116,24 +116,15 @@ class JobMatchingService:
         return list(skill_map.values())
 
     async def find_job_matches(self, user_id: str, limit: int = 20) -> List[JobMatchResult]:
-        """
-        Find job matches for a user.
-        
-        Uses RAG semantic search if available, otherwise falls back to keyword matching.
-        """
         try:
             # Get combined user skills (resume + manual entry)
             user_skills = self.get_combined_user_skills(user_id)
             if not user_skills:
                 return []
 
-            # NEW: Try RAG semantic search first if available
+            # RAG Semantic Search
             if self.use_rag and self.rag_searcher:
-                logger.info("🔍 Using RAG semantic search for job matching")
                 return await self._find_matches_with_rag(user_id, user_skills, limit)
-            else:
-                logger.info("🔍 Using traditional keyword matching for job matching")
-                return await self._find_matches_traditional(user_skills, limit)
 
         except Exception as e:
             logger  .error(f"Error in job matching for user {user_id}: {str(e)}")
@@ -157,9 +148,6 @@ class JobMatchingService:
                 preferred_locations=[user_profile.location] if user_profile and user_profile.location else []
             )
             
-            logger.info(f"🔍 RAG Search: {len(context.skills)} skills, "
-                       f"{len(context.preferred_locations)} locations")
-            
             # Use RAG semantic search
             rag_matches = self.rag_searcher.search_jobs(
                 context=context,
@@ -169,10 +157,8 @@ class JobMatchingService:
             )
             
             if not rag_matches:
-                logger.info("❌ No matches from RAG search")
+                logger.info("No matches from RAG search")
                 return []
-            
-            logger.info(f"✅ RAG found {len(rag_matches)} candidate matches")
             
             # Convert RAG matches to Job objects
             candidate_jobs = []
@@ -189,7 +175,6 @@ class JobMatchingService:
             
             # Run AI analysis on top candidates
             max_ai_calls = min(len(candidate_jobs), 15)
-            logger.info(f"Running AI analysis on {max_ai_calls} RAG candidates")
             
             for job in candidate_jobs[:max_ai_calls]:
                 try:
@@ -211,15 +196,14 @@ class JobMatchingService:
             logger.info(f"Returning {len(final_matches)} final RAG matches")
             for i, match in enumerate(final_matches[:5]):
                 logger.info(
-                    f"   Match {i+1}: {match.job.title} - "
+                    f"  Match {i+1}: {match.job.title} - "
                     f"Score: {match.match_score:.2f}, Confidence: {match.confidence}"
                 )
             
             return final_matches[:limit]
             
         except Exception as e:
-            logger.error(f"❌ RAG matching failed: {str(e)}, falling back to traditional")
-            return await self._find_matches_traditional(user_skills, limit)
+            logger.error(f"RAG matching failed: {str(e)}.")
     
     async def _find_matches_traditional(
         self, 

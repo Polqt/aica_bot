@@ -3,7 +3,7 @@ import logging
 from typing import List, Dict, Optional
 
 from langchain_community.vectorstores import FAISS
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 from .base import BaseVectorStore
 from .metadata_manager import MetadataManager
@@ -46,7 +46,7 @@ class FAISSStore(BaseVectorStore):
                     self.embedder.embeddings,
                     allow_dangerous_deserialization=True
                 )
-            except Exception as e:
+            except Exception:
                 self._create_empty_store()
         else:
             self._create_empty_store()
@@ -248,7 +248,7 @@ class FAISSStore(BaseVectorStore):
                 # Sort scores in descending order
                 sorted_scores = sorted(scores, reverse=True)
                 
-                # Weighted scoring: emphasize top matches, bonus for coverage
+                # Weighted scoring which ga emphasize top matches
                 if len(sorted_scores) >= 2:
                     weighted_score = (
                         sorted_scores[0] * TOP_CHUNK_WEIGHT +
@@ -277,14 +277,9 @@ class FAISSStore(BaseVectorStore):
                 if m["similarity_score"] >= score_threshold
             ]
             
-            logger.info(
-                f"Found {len(filtered_matches)} jobs matching query "
-                f"(from {len(results)} chunks, threshold: {score_threshold})"
-            )
-            
             return filtered_matches[:k]
             
-        except Exception as e:
+        except Exception:
             return []
     
     def get_job_count(self) -> int:

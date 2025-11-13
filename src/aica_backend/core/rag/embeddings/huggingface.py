@@ -54,7 +54,7 @@ class HuggingFaceEmbedder(BaseEmbedder):
             logger.error(f"Error creating embeddings: {e}")
             return []
     
-    def embed_single_text(self, text: str) -> List[float]: # Conver text to 384 dimensional vector
+    def embed_single_text(self, text: str) -> List[float]: # Convert text to 384 dimensional vector
         try:
             if not text or not text.strip():
                 return []
@@ -64,7 +64,7 @@ class HuggingFaceEmbedder(BaseEmbedder):
             logger.error(f"Error embedding single text: {e}")
             return []
     
-    def split_text(self, text: str) -> List[str]:
+    def split_text(self, text: str) -> List[str]: # Split long documents into manageable chunks
         try:
             if not text:
                 return []

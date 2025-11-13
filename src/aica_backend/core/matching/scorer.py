@@ -1,7 +1,6 @@
 from typing import Dict, List
 
 class MatchScorer:
-
     @staticmethod
     def calculate_confidence(match_score: float, skill_coverage: float) -> str:
         if match_score >= 0.8 and skill_coverage >= 0.7:
@@ -13,7 +12,7 @@ class MatchScorer:
     
     @staticmethod
     def categorize_missing_skills(missing_skills: List[str]) -> Dict[str, List[str]]:
-        # Top 3 are critical, next 3 are trainable, rest are advanced
+        """Prioritize skill gaps: critical tapos itrain then advanced"""
         critical_missing = missing_skills[:3]
         trainable_missing = missing_skills[3:6] if len(missing_skills) > 3 else []
         advanced_missing = missing_skills[6:] if len(missing_skills) > 6 else []
@@ -22,15 +21,15 @@ class MatchScorer:
                       "medium" if len(critical_missing) > 0 else "low"
         
         return {
-            "critical_gaps": critical_missing,
-            "trainable_skills": trainable_missing,
-            "advanced_skills": advanced_missing,
+            "critical_gaps": critical_missing, # Learn in 1-2 months
+            "trainable_skills": trainable_missing, # Learn in 2-4 weeks
+            "advanced_skills": advanced_missing, # Long-term goals
             "total_gaps": len(missing_skills),
             "gap_severity": gap_severity
         }
     
     @staticmethod
-    def calculate_match_metrics(
+    def calculate_match_metrics( #Stastistics for matched jobs
         direct_matches: int,
         related_matches: int,
         total_required: int,

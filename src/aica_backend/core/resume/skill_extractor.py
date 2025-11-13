@@ -14,8 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class SkillExtractor:
-    """Extracts skills and related information from resume text using pattern matching."""
-
     _technical_skills: Optional[List[str]] = None
     _soft_skills: Optional[List[str]] = None
     _education_patterns: Optional[List[Dict[str, Any]]] = None

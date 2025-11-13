@@ -46,12 +46,8 @@ class JobChunker(BaseChunker):
     
     def chunk_text(self, text: str, metadata: Dict = None) -> List[str]:
         """
-        Create optimized chunks for a job posting.
-        
-        Strategy:
-        1. Create a summary chunk with title, company, location
-        2. Split the full content using semantic text splitting
-        3. Enrich each chunk with job title for context
+        Optimized chunking strategy for job postings.
+        Creates a summary sa chunk + sa semantic content chunks.
         """
         if metadata is None:
             metadata = {}
@@ -76,11 +72,7 @@ class JobChunker(BaseChunker):
         return chunks
     
     def _create_summary_chunk(self, metadata: Dict) -> Optional[str]:
-        """
-        Create a summary chunk with key job information.
-        This ensures that title, company, and location are always retrievable
-        even if they don't appear in the full job description chunks.
-        """
+        """Then summarization sa title + company + location + top skills"""
         summary_parts = []
         
         if metadata.get("title"):
@@ -98,6 +90,7 @@ class JobChunker(BaseChunker):
         return None
     
     def _enrich_chunk_with_context(self, chunk: str, job_title: str) -> str:
+        """Prepend job title to maintain context in isolated chunks"""
         if job_title and job_title.lower() not in chunk.lower():
             return f"[{job_title}] {chunk}"
         return chunk
