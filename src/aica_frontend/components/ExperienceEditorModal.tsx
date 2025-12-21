@@ -128,13 +128,11 @@ export default function ExperienceEditorModal({
         .map(exp => exp.id)
         .filter((id): id is string => !!id);
 
-      // Process deletions
-      for (const id of deletedIds) {
-        await deleteExperience(id);
-      }
+      // Process deletions in parallel for better performance
+      await Promise.all(deletedIds.map(id => deleteExperience(id)));
 
-      // Process additions and updates
-      for (const exp of localExperience) {
+      // Process additions and updates in parallel
+      const updatePromises = localExperience.map(async exp => {
         const { id, isEditing, ...expData } = exp;
 
         if (id && !isEditing) {
@@ -156,7 +154,10 @@ export default function ExperienceEditorModal({
           // New entry
           await addExperience(expData);
         }
-      }
+      });
+
+      // Wait for all updates to complete in parallel
+      await Promise.all(updatePromises);
 
       await loadResumeData();
       toast.success('Experience updated successfully!');

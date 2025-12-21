@@ -4,10 +4,11 @@ Used for caching database queries to reduce load.
 """
 import time
 from typing import Any, Dict
+from collections import OrderedDict
 
 
 class SimpleCache:
-    """Simple in-memory cache with TTL support."""
+    """Simple in-memory cache with TTL support using OrderedDict for efficient LRU eviction."""
     
     def __init__(self, max_size: int = 100, ttl: int = 300):
         """
@@ -17,13 +18,14 @@ class SimpleCache:
             max_size: Maximum number of items to cache
             ttl: Time to live in seconds (default: 5 minutes)
         """
-        self.cache: Dict[str, Dict[str, Any]] = {}
+        self.cache: OrderedDict[str, Dict[str, Any]] = OrderedDict()
         self.max_size = max_size
         self.ttl = ttl
 
     def get(self, key: str) -> Any:
         """
         Get value from cache if exists and not expired.
+        Moves accessed item to end to maintain LRU order.
         
         Args:
             key: Cache key
@@ -34,6 +36,8 @@ class SimpleCache:
         if key in self.cache:
             item = self.cache[key]
             if time.time() - item['timestamp'] < self.ttl:
+                # Move to end to maintain LRU order
+                self.cache.move_to_end(key)
                 return item['value']
             else:
                 del self.cache[key]
@@ -42,15 +46,20 @@ class SimpleCache:
     def set(self, key: str, value: Any) -> None:
         """
         Set value in cache, removing oldest item if at capacity.
+        Uses OrderedDict for O(1) eviction instead of O(n).
         
         Args:
             key: Cache key
             value: Value to cache
         """
-        if len(self.cache) >= self.max_size:
-            # Remove oldest item
-            oldest_key = min(self.cache.keys(), key=lambda k: self.cache[k]['timestamp'])
-            del self.cache[oldest_key]
+        # If key exists, remove it first to update its position
+        if key in self.cache:
+            del self.cache[key]
+        elif len(self.cache) >= self.max_size:
+            # Remove oldest item in O(1) time using OrderedDict
+            self.cache.popitem(last=False)
+        
+        # Add new item at the end (most recently used position)
         self.cache[key] = {'value': value, 'timestamp': time.time()}
 
     def clear(self) -> None:

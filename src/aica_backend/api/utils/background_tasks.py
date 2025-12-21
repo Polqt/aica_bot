@@ -22,8 +22,7 @@ async def regenerate_job_matches_background(user_id: str):
 
 
 async def delayed_job_matching_background(user_id: str):
-    await asyncio.sleep(3)  
-    
+    # Removed unnecessary 3-second delay for better performance
     db = UserDatabase()
     
     try:

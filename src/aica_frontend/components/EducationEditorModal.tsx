@@ -123,13 +123,11 @@ export default function EducationEditorModal({
         .map(edu => edu.id)
         .filter((id): id is string => !!id);
 
-      // Process deletions
-      for (const id of deletedIds) {
-        await deleteEducation(id);
-      }
+      // Process deletions in parallel for better performance
+      await Promise.all(deletedIds.map(id => deleteEducation(id)));
 
-      // Process additions and updates
-      for (const edu of localEducation) {
+      // Process additions and updates in parallel
+      const updatePromises = localEducation.map(async edu => {
         const { id, isEditing, ...eduData } = edu;
 
         if (id && !isEditing) {
@@ -152,7 +150,10 @@ export default function EducationEditorModal({
           // New entry
           await addEducation(eduData);
         }
-      }
+      });
+
+      // Wait for all updates to complete in parallel
+      await Promise.all(updatePromises);
 
       await loadResumeData();
       toast.success('Education updated successfully!');

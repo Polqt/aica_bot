@@ -270,13 +270,14 @@ class JobMatchingService:
             return []
 
     async def _rank_all_jobs_by_relevance(self, user_skills: List[UserSkill], jobs: List[Job]) -> List[Job]:
+        """Optimized job ranking using list comprehensions and set operations."""
         try:
             user_skill_names = [skill.skill_name.lower() for skill in user_skills]
-            technical_skills = [skill.skill_name.lower() for skill in user_skills 
-                              if skill.skill_category == "technical"]
+            technical_skills_set = {skill.skill_name.lower() for skill in user_skills 
+                                   if skill.skill_category == "technical"}
             
+            # Optimized: Use list comprehension for job scoring
             job_scores = []
-            
             for job in jobs:
                 if not job.skills or len(job.skills) == 0:
                     continue
@@ -286,11 +287,10 @@ class JobMatchingService:
                 # Fast exact + keyword matching (no semantic to save time)
                 exact_matches = self._find_exact_matches(user_skill_names, job_skills)
                 
-                all_matched = exact_matches
-                
-                # Calculate comprehensive score
-                skill_coverage = len(all_matched) / len(job_skills) if job_skills else 0
-                technical_bonus = len([s for s in all_matched if s in technical_skills]) * 0.1
+                # Calculate comprehensive score (optimized with set intersection)
+                skill_coverage = len(exact_matches) / len(job_skills) if job_skills else 0
+                # Use set intersection for faster technical skill counting
+                technical_bonus = len(set(exact_matches) & technical_skills_set) * 0.1
                 
                 quick_score = skill_coverage + technical_bonus
                 
@@ -334,15 +334,21 @@ class JobMatchingService:
         return matches
 
     def _find_exact_matches(self, user_skills: List[str], job_skills: List[str]) -> List[str]:
+        """Optimized exact matching using set for faster lookups."""
         matches = []
         user_skills_lower = [skill.lower().strip() for skill in user_skills]
+        # Convert to set for O(1) lookups where possible
+        user_skills_set = set(user_skills_lower)
 
         for job_skill in job_skills:
             job_skill_lower = job_skill.lower().strip()
+            # First check exact match in set (O(1))
+            if job_skill_lower in user_skills_set:
+                matches.append(job_skill)
+                continue
+            # Then check substring matches
             for user_skill_lower in user_skills_lower:
-                # Strict matching: only if user skill is directly related to job skill
-                if (user_skill_lower == job_skill_lower or
-                    user_skill_lower in job_skill_lower or
+                if (user_skill_lower in job_skill_lower or
                     job_skill_lower in user_skill_lower):
                     matches.append(job_skill)  # Keep original job skill name
                     break

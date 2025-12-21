@@ -10,3 +10,10 @@ src/aica_backend/app.yaml
 src/aica_backend/.env
 src/aica_backend/.env.yaml
 src/aica_backend/.env.local
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
