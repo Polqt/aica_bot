@@ -68,9 +68,15 @@ class SkillMatcher:
                     matched_skills.append(job_skill)
                     break
         
-        # Cache the result (limit cache size to prevent memory issues)
-        if len(cls._exact_matches_cache) < 1000:
-            cls._exact_matches_cache[cache_key] = matched_skills
+        # Cache management: clear oldest entries if cache is full
+        if len(cls._exact_matches_cache) >= 1000:
+            # Remove oldest 20% of cache entries when limit is reached
+            items_to_remove = list(cls._exact_matches_cache.keys())[:200]
+            for key in items_to_remove:
+                del cls._exact_matches_cache[key]
+        
+        # Cache the result
+        cls._exact_matches_cache[cache_key] = matched_skills
         
         return matched_skills
     
@@ -102,9 +108,15 @@ class SkillMatcher:
                     partial_matches.append(job_skill)
                     break
         
-        # Cache the result (limit cache size to prevent memory issues)
-        if len(cls._partial_matches_cache) < 1000:
-            cls._partial_matches_cache[cache_key] = partial_matches
+        # Cache management: clear oldest entries if cache is full
+        if len(cls._partial_matches_cache) >= 1000:
+            # Remove oldest 20% of cache entries when limit is reached
+            items_to_remove = list(cls._partial_matches_cache.keys())[:200]
+            for key in items_to_remove:
+                del cls._partial_matches_cache[key]
+        
+        # Cache the result
+        cls._partial_matches_cache[cache_key] = partial_matches
         
         return partial_matches
     

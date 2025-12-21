@@ -25,6 +25,7 @@ class SimpleCache:
     def get(self, key: str) -> Any:
         """
         Get value from cache if exists and not expired.
+        Moves accessed item to end to maintain LRU order.
         
         Args:
             key: Cache key
@@ -35,6 +36,8 @@ class SimpleCache:
         if key in self.cache:
             item = self.cache[key]
             if time.time() - item['timestamp'] < self.ttl:
+                # Move to end to maintain LRU order
+                self.cache.move_to_end(key)
                 return item['value']
             else:
                 del self.cache[key]
@@ -49,12 +52,15 @@ class SimpleCache:
             key: Cache key
             value: Value to cache
         """
-        if len(self.cache) >= self.max_size:
+        # If key exists, remove it first to update its position
+        if key in self.cache:
+            del self.cache[key]
+        elif len(self.cache) >= self.max_size:
             # Remove oldest item in O(1) time using OrderedDict
             self.cache.popitem(last=False)
+        
+        # Add new item at the end (most recently used position)
         self.cache[key] = {'value': value, 'timestamp': time.time()}
-        # Move to end to maintain LRU order
-        self.cache.move_to_end(key)
 
     def clear(self) -> None:
         """Clear all cached items."""
