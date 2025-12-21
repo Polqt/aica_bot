@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 from typing import List, Dict
 from functools import lru_cache
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
@@ -12,9 +13,10 @@ class SkillMatcher:
     _skill_relationships: Dict[str, List[str]] = None
     _skill_variations: Dict[str, List[str]] = None
     
-    # Cache for expensive skill matching operations
-    _exact_matches_cache: Dict[str, List[str]] = {}
-    _partial_matches_cache: Dict[str, List[str]] = {}
+    # Cache for expensive skill matching operations using OrderedDict for O(1) eviction
+    _exact_matches_cache: OrderedDict = OrderedDict()
+    _partial_matches_cache: OrderedDict = OrderedDict()
+    _CACHE_MAX_SIZE = 1000
     
     @classmethod
     @lru_cache(maxsize=1)
@@ -46,13 +48,15 @@ class SkillMatcher:
     
     @classmethod
     def find_exact_matches(cls, user_skills: List[str], job_skills: List[str]) -> List[str]:
-        """Find direct skill overlaps (case-insensitive, substring matching) with caching."""
+        """Find direct skill overlaps (case-insensitive, substring matching) with efficient caching."""
         # Create cache key from sorted skill lists
         cache_key = (tuple(sorted(user_skills)), tuple(sorted(job_skills)))
         
-        # Return cached result if available
+        # Return cached result if available, move to end for LRU
         if cache_key in cls._exact_matches_cache:
-            return cls._exact_matches_cache[cache_key]
+            result = cls._exact_matches_cache[cache_key]
+            cls._exact_matches_cache.move_to_end(cache_key)
+            return result
         
         matched_skills = []
         user_skills_lower = {skill.lower().strip(): skill for skill in user_skills}
@@ -68,12 +72,10 @@ class SkillMatcher:
                     matched_skills.append(job_skill)
                     break
         
-        # Cache management: clear oldest entries if cache is full
-        if len(cls._exact_matches_cache) >= 1000:
-            # Remove oldest 20% of cache entries when limit is reached
-            items_to_remove = list(cls._exact_matches_cache.keys())[:200]
-            for key in items_to_remove:
-                del cls._exact_matches_cache[key]
+        # Cache management: O(1) eviction using OrderedDict
+        if len(cls._exact_matches_cache) >= cls._CACHE_MAX_SIZE:
+            # Remove oldest entry in O(1) time
+            cls._exact_matches_cache.popitem(last=False)
         
         # Cache the result
         cls._exact_matches_cache[cache_key] = matched_skills
@@ -82,13 +84,15 @@ class SkillMatcher:
     
     @classmethod
     def find_partial_matches(cls, user_skills: List[str], job_skills: List[str]) -> List[str]:
-        """Find related skills using relationship mappings with caching."""
+        """Find related skills using relationship mappings with efficient caching."""
         # Create cache key from sorted skill lists
         cache_key = (tuple(sorted(user_skills)), tuple(sorted(job_skills)), 'partial')
         
-        # Return cached result if available
+        # Return cached result if available, move to end for LRU
         if cache_key in cls._partial_matches_cache:
-            return cls._partial_matches_cache[cache_key]
+            result = cls._partial_matches_cache[cache_key]
+            cls._partial_matches_cache.move_to_end(cache_key)
+            return result
         
         partial_matches = []
         user_skills_lower = [skill.lower().strip() for skill in user_skills]
@@ -108,12 +112,10 @@ class SkillMatcher:
                     partial_matches.append(job_skill)
                     break
         
-        # Cache management: clear oldest entries if cache is full
-        if len(cls._partial_matches_cache) >= 1000:
-            # Remove oldest 20% of cache entries when limit is reached
-            items_to_remove = list(cls._partial_matches_cache.keys())[:200]
-            for key in items_to_remove:
-                del cls._partial_matches_cache[key]
+        # Cache management: O(1) eviction using OrderedDict
+        if len(cls._partial_matches_cache) >= cls._CACHE_MAX_SIZE:
+            # Remove oldest entry in O(1) time
+            cls._partial_matches_cache.popitem(last=False)
         
         # Cache the result
         cls._partial_matches_cache[cache_key] = partial_matches
