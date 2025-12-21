@@ -225,6 +225,7 @@ class ResumeParser:
             raise Exception(f"Failed to store resume data: {str(e)}")
     
     def _prepare_skills_for_storage(self, skills: ResumeSkills) -> List[UserSkillCreate]:
+        """Optimized skill preparation using list comprehension."""
         skills_to_store = []
         
         skill_mappings = [
@@ -233,26 +234,29 @@ class ResumeParser:
             (skills.industries, "industry")
         ]
         
-        for skill_list, category in skill_mappings:
-            for skill in skill_list:
-                skill_name = skill.strip()
-                if skill_name:  
-                    skills_to_store.append(UserSkillCreate(
-                        user_id="",
-                        skill_name=skill_name,
-                        skill_category=category,
-                        source="resume"
-                    ))
+        # Optimized: Use list comprehension for better performance
+        skills_to_store = [
+            UserSkillCreate(
+                user_id="",
+                skill_name=skill.strip(),
+                skill_category=category,
+                source="resume"
+            )
+            for skill_list, category in skill_mappings
+            for skill in skill_list
+            if skill.strip()  # Filter out empty skills
+        ]
         
         return skills_to_store
     
     def _prepare_profile_updates(self, parsed_resume: ParsedResume) -> Dict[str, any]:
+        """Optimized profile update preparation using dict comprehension."""
         profile_updates = {"resume_processed": True}
         
         info = parsed_resume.personal_info
         skills = parsed_resume.skills
         
-        # Map fields that have values
+        # Map fields that have values - optimized with dict comprehension
         field_mappings = [
             (info.full_name, "full_name"),
             (info.phone, "phone"),
@@ -262,8 +266,11 @@ class ResumeParser:
             (skills.education_level, "education_level")
         ]
         
-        for value, field_name in field_mappings:
-            if value and str(value).strip():
-                profile_updates[field_name] = value
+        # Optimized: Use dict comprehension for better performance
+        profile_updates.update({
+            field_name: value
+            for value, field_name in field_mappings
+            if value and str(value).strip()
+        })
         
         return profile_updates

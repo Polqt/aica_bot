@@ -12,6 +12,10 @@ class SkillMatcher:
     _skill_relationships: Dict[str, List[str]] = None
     _skill_variations: Dict[str, List[str]] = None
     
+    # Cache for expensive skill matching operations
+    _exact_matches_cache: Dict[str, List[str]] = {}
+    _partial_matches_cache: Dict[str, List[str]] = {}
+    
     @classmethod
     @lru_cache(maxsize=1)
     def _load_skill_matching_config(cls) -> dict:
@@ -42,7 +46,14 @@ class SkillMatcher:
     
     @classmethod
     def find_exact_matches(cls, user_skills: List[str], job_skills: List[str]) -> List[str]:
-        """Find direct skill overlaps (case-insensitive, substring matching)"""
+        """Find direct skill overlaps (case-insensitive, substring matching) with caching."""
+        # Create cache key from sorted skill lists
+        cache_key = (tuple(sorted(user_skills)), tuple(sorted(job_skills)))
+        
+        # Return cached result if available
+        if cache_key in cls._exact_matches_cache:
+            return cls._exact_matches_cache[cache_key]
+        
         matched_skills = []
         user_skills_lower = {skill.lower().strip(): skill for skill in user_skills}
         
@@ -57,11 +68,22 @@ class SkillMatcher:
                     matched_skills.append(job_skill)
                     break
         
+        # Cache the result (limit cache size to prevent memory issues)
+        if len(cls._exact_matches_cache) < 1000:
+            cls._exact_matches_cache[cache_key] = matched_skills
+        
         return matched_skills
     
     @classmethod
     def find_partial_matches(cls, user_skills: List[str], job_skills: List[str]) -> List[str]:
-        """Find related skills using relationship mappings"""
+        """Find related skills using relationship mappings with caching."""
+        # Create cache key from sorted skill lists
+        cache_key = (tuple(sorted(user_skills)), tuple(sorted(job_skills)), 'partial')
+        
+        # Return cached result if available
+        if cache_key in cls._partial_matches_cache:
+            return cls._partial_matches_cache[cache_key]
+        
         partial_matches = []
         user_skills_lower = [skill.lower().strip() for skill in user_skills]
         exact_matches = cls.find_exact_matches(user_skills, job_skills)
@@ -79,6 +101,10 @@ class SkillMatcher:
                 if cls.check_skill_relationship(user_skill_lower, job_skill_lower):
                     partial_matches.append(job_skill)
                     break
+        
+        # Cache the result (limit cache size to prevent memory issues)
+        if len(cls._partial_matches_cache) < 1000:
+            cls._partial_matches_cache[cache_key] = partial_matches
         
         return partial_matches
     
